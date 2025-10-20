@@ -1,0 +1,111 @@
+---
+description: Code Duplication File Patterns - Applies when working with source code files to prevent duplication and promote code reuse. Kích hoạt khi working với Swift, Kotlin, Java, JavaScript, TypeScript, Python, Go, Rust, C# files hoặc code creation tasks.
+alwaysApply: false
+---
+
+# Code Duplication Prevention - File Pattern Rules
+
+## 🎯 Purpose
+
+This rule applies specifically when working with source code files to prevent duplication and promote code reuse.
+
+## 🔍 Quick Discovery Commands
+
+### Before Creating Any Code in These Files:
+
+#### Swift Files (\*.swift)
+
+```bash
+grep -r "struct\|class\|enum\|protocol.*[TypeName]" . --include="*.swift"
+grep -r "func.*[FunctionName]" . --include="*.swift"
+grep -r "extension.*[TypeName]" . --include="*.swift"
+```
+
+#### Kotlin Files (\*.kt)
+
+```bash
+grep -r "class\|data class\|enum class\|interface.*[TypeName]" . --include="*.kt"
+grep -r "fun.*[FunctionName]" . --include="*.kt"
+```
+
+#### Java Files (\*.java)
+
+```bash
+grep -r "class\|interface\|enum.*[TypeName]" . --include="*.java"
+grep -r "public\|private.*[MethodName]" . --include="*.java"
+```
+
+#### TypeScript/JavaScript Files (_.ts, _.js)
+
+```bash
+grep -r "interface\|type\|enum.*[TypeName]" . --include="*.ts" --include="*.js"
+grep -r "function\|const.*[FunctionName]" . --include="*.ts" --include="*.js"
+```
+
+#### Python Files (\*.py)
+
+```bash
+grep -r "class.*[ClassName]" . --include="*.py"
+grep -r "def.*[FunctionName]" . --include="*.py"
+```
+
+## 🚨 Common Duplication Patterns to Avoid
+
+### 1. Duplicate Type Definitions
+
+- ❌ Same struct/class/interface defined in multiple files
+- ❌ Copy-paste type definitions
+- ❌ Missing imports leading to redefinition
+
+### 2. Duplicate Function Logic
+
+- ❌ Identical function implementations
+- ❌ Copy-paste code blocks
+- ❌ Missing utility functions
+
+### 3. Import Issues
+
+- ❌ Unused imports
+- ❌ Missing imports
+- ❌ Circular dependencies
+
+## ✅ Best Practices
+
+### 1. Single Source of Truth
+
+- Each type/function defined in ONE place only
+- Use imports to share code
+- Document type ownership
+
+### 2. Proper Organization
+
+- Shared types in common modules
+- Utility functions in dedicated files
+- Clear module boundaries
+
+### 3. Discovery Before Creation
+
+- Always search existing codebase first
+- Check for similar functionality
+- Verify no duplicates exist
+
+## 🔧 Quick Actions
+
+### When Creating New Code:
+
+1. **Search existing codebase** using appropriate commands above
+2. **Check for similar functionality** in existing files
+3. **Verify no duplicates exist** before proceeding
+4. **Use imports** instead of redefining
+5. **Document decisions** and maintain single source of truth
+
+### When Duplicates Found:
+
+1. **Reuse existing code** instead of creating new
+2. **Extend existing functionality** if needed
+3. **Refactor duplicate code** into shared utilities
+4. **Update imports** to use shared code
+
+---
+
+**Remember:** Always search before you code! 🔍

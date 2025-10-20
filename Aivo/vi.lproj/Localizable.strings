@@ -1,0 +1,19 @@
+/* 
+  Localizable.strings
+  BaseIOSProject
+
+  Created by Huy on 15/10/25.
+  
+*/
+"home_screen_title" = "Trang chủ";
+"show_inter_ad" = "Hiển thị InterAd";
+"splash.description" = "Hành động này có thể chứa quảng cáo!";
+"language_title" = "Ngôn ngữ";
+"current_language_badge" = "Đang sử dụng";
+"Go Screen A" = "Đi đến Màn hình A";
+"Go Screen B" = "Đi đến Màn hình B";
+"Go Screen C" = "Đi đến Màn hình C";
+"Select Language" = "Chọn ngôn ngữ";
+"Test Ads" = "Test quảng cáo";
+"Show RewardAd" = "Hiển thị quảng cáo thưởng";
+"Navigation" = "Điều hướng";

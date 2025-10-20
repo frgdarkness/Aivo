@@ -1,0 +1,40 @@
+---
+description: SwiftUI-specific development rules for iOS projects - Best practices cho SwiftUI components, state management, navigation, animations, và iOS ecosystem integration. Apply when editing Swift files, SwiftUI views, hoặc iOS-specific development.
+alwaysApply: false
+---
+# SwiftUI Development Rules
+
+## 🎯 SwiftUI Best Practices
+
+- Use `@State`, `@Binding`, `@ObservedObject` appropriately
+- Implement proper view lifecycle methods
+- Follow SwiftUI naming conventions (View suffix)
+- Use SwiftUI modifiers efficiently
+
+## 🎨 UI/UX Guidelines
+
+- Implement accessibility features (accessibility labels, hints)
+- Support Dynamic Type for text scaling
+- Use semantic colors from theme tokens
+- Implement proper animations with SwiftUI
+
+## 🏗️ Architecture Patterns
+
+- Follow MVVM pattern with ViewModels
+- Use dependency injection with Container
+- Implement proper data flow with StateFlow
+- Separate UI logic from business logic
+
+## 🔧 Health Care Specific
+
+- Handle HealthKit data properly
+- Implement proper error handling for health data
+- Use appropriate health-related UI components
+- Follow Apple Health app design guidelines
+
+## 📱 iOS Specific
+
+- Support iOS 15+ features appropriately
+- Handle device orientation changes
+- Implement proper navigation patterns
+- Use iOS-specific UI components when needed

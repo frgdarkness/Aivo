@@ -1,0 +1,1014 @@
+---
+description: Code Duplication Prevention - Comprehensive rules để prevent code duplication và promote code reuse. Kích hoạt khi working với code analysis, refactoring, hoặc code quality optimization.
+alwaysApply: false
+---
+
+# Code Duplication Prevention & Code Reuse Rules
+
+## 🎯 Mục Tiêu
+
+- **_BẮT BUỘC_** kiểm tra existing codebase trước khi tạo code mới
+- **_BẮT BUỘC_** tận dụng existing components và patterns
+- **_BẮT BUỘC_** maintain single source of truth cho mỗi functionality
+- **_NGHIÊM CẤM_** tạo duplicate code, types, hoặc functions
+
+## 🔍 Pre-Code Creation Checklist
+
+### 1. Type/Class Discovery Process
+
+**Trước khi tạo type/class mới, BẮT BUỘC thực hiện:**
+
+```bash
+# Step 1: Search existing types/classes
+grep -r "struct.*[FeatureName]" .
+grep -r "class.*[FeatureName]" .
+grep -r "enum.*[FeatureName]" .
+grep -r "protocol.*[FeatureName]" .
+
+# Step 2: Search by functionality
+grep -r "Reading" .
+grep -r "Context" .
+grep -r "Manager" .
+grep -r "Service" .
+
+# Step 3: Check imports
+grep -r "import.*[ModuleName]" .
+grep -r "from.*[ModuleName]" .
+```
+
+### 2. Function/Method Discovery Process
+
+**Trước khi tạo function/method mới:**
+
+```bash
+# Step 1: Search by function name
+grep -r "func.*[FunctionName]" .
+grep -r "def.*[FunctionName]" .
+grep -r "function.*[FunctionName]" .
+
+# Step 2: Search by functionality
+grep -r "save.*data" .
+grep -r "validate.*input" .
+grep -r "parse.*json" .
+
+# Step 3: Check existing utilities
+grep -r "Utils\|Helper\|Utility" .
+```
+
+### 3. Component/Module Discovery Process
+
+**Trước khi tạo component/module mới:**
+
+```bash
+# Step 1: Search existing modules
+find . -name "*[ModuleName]*" -type f
+find . -name "*[ComponentName]*" -type f
+
+# Step 2: Check existing services
+grep -r "Service\|Manager\|Handler" .
+
+# Step 3: Check existing configurations
+grep -r "Config\|Settings\|Options" .
+```
+
+## 📋 Mandatory Pre-Creation Validation
+
+### For New Types/Classes
+
+````markdown
+## Type Creation Validation Checklist
+
+- [ ] Searched existing codebase for similar types
+- [ ] Checked if functionality exists in existing types
+- [ ] Verified no duplicate definitions exist
+- [ ] Confirmed proper namespace/module organization
+- [ ] Documented type ownership và dependencies
+
+### Search Commands Used:
+
+```bash
+grep -r "struct [TypeName]" .
+grep -r "class [TypeName]" .
+grep -r "enum [TypeName]" .
+```
+````
+
+### Results:
+
+- [ ] No duplicates found
+- [ ] Existing types reviewed for reuse potential
+- [ ] New type is necessary and unique
+
+````
+
+### For New Functions/Methods
+
+```markdown
+## Function Creation Validation Checklist
+
+- [ ] Searched existing codebase for similar functions
+- [ ] Checked utility classes for existing implementations
+- [ ] Verified no duplicate logic exists
+- [ ] Confirmed function is not already in base classes
+
+### Search Commands Used:
+```bash
+grep -r "func [FunctionName]" .
+grep -r "def [FunctionName]" .
+grep -r "[SimilarFunctionality]" .
+````
+
+### Results:
+
+- [ ] No duplicates found
+- [ ] Existing functions reviewed for reuse
+- [ ] New function is necessary and unique
+
+````
+
+### For New Components/Modules
+
+```markdown
+## Component Creation Validation Checklist
+
+- [ ] Searched existing codebase for similar components
+- [ ] Checked if functionality can be added to existing components
+- [ ] Verified no duplicate modules exist
+- [ ] Confirmed proper module organization
+
+### Search Commands Used:
+```bash
+find . -name "*[ComponentName]*" -type f
+grep -r "[ComponentType]" .
+````
+
+### Results:
+
+- [ ] No duplicates found
+- [ ] Existing components reviewed for extension
+- [ ] New component is necessary and unique
+
+````
+
+## 🏗️ Code Reuse Strategies
+
+### 1. Type Reuse Strategy
+
+#### Central Types vs Service-Specific Types
+
+```markdown
+## Type Organization Strategy
+
+### Central Types (Recommended)
+- Common data models
+- Shared enums
+- Base protocols
+- Utility types
+
+Location: `Shared/Types/` hoặc `Common/Models/`
+
+### Service-Specific Types
+- Service-specific data structures
+- Internal implementation types
+- Service configuration types
+
+Location: `Services/[ServiceName]/Types/`
+
+### Decision Matrix:
+- Used by 2+ services → Central Types
+- Used by 1 service only → Service-Specific Types
+- Base functionality → Central Types
+- Implementation details → Service-Specific Types
+````
+
+#### Type Ownership Matrix
+
+```markdown
+## Type Ownership Documentation
+
+| Type Name        | Owner          | Location          | Dependencies | Used By                         |
+| ---------------- | -------------- | ----------------- | ------------ | ------------------------------- |
+| HeartRateReading | HealthService  | Services/Health/  | None         | HealthService, AnalyticsService |
+| UserProfile      | UserService    | Shared/Types/     | AuthService  | UserService, ProfileService     |
+| APIConfig        | NetworkService | Services/Network/ | None         | All Services                    |
+
+### Rules:
+
+- Each type has ONE owner
+- Owner responsible for changes
+- Dependencies must be documented
+- Used By must be updated when changed
+```
+
+### 2. Function Reuse Strategy
+
+#### Utility Functions Organization
+
+```markdown
+## Function Organization Strategy
+
+### Base Classes/Protocols
+
+- Common functionality
+- Shared implementations
+- Base behaviors
+
+### Utility Classes
+
+- Pure functions
+- Helper methods
+- Common algorithms
+
+### Service-Specific Functions
+
+- Business logic
+- Service implementations
+- Internal helpers
+
+### Reuse Decision Tree:
+
+1. Is it used by multiple services? → Utility Class
+2. Is it base functionality? → Base Class/Protocol
+3. Is it service-specific? → Service Implementation
+4. Is it pure function? → Utility Class
+```
+
+### 3. Component Reuse Strategy
+
+#### Component Hierarchy
+
+```markdown
+## Component Reuse Hierarchy
+
+### Level 1: Base Components
+
+- Fundamental UI components
+- Core business logic
+- Base data structures
+
+### Level 2: Composite Components
+
+- Combination of base components
+- Feature-specific logic
+- Service integrations
+
+### Level 3: Feature Components
+
+- Complete feature implementations
+- User-facing functionality
+- Business workflows
+
+### Reuse Rules:
+
+- Level 1: Maximum reuse
+- Level 2: Moderate reuse
+- Level 3: Feature-specific
+```
+
+## 🔧 Implementation Guidelines
+
+### 1. Multi-Language Code Discovery
+
+#### Language-Specific Discovery Commands
+
+**_BẮT BUỘC_** sử dụng các commands sau trước khi tạo code mới:
+
+##### Swift/iOS Development
+
+```bash
+# Search existing types
+grep -r "struct.*[TypeName]" . --include="*.swift"
+grep -r "class.*[TypeName]" . --include="*.swift"
+grep -r "enum.*[TypeName]" . --include="*.swift"
+grep -r "protocol.*[TypeName]" . --include="*.swift"
+
+# Search existing functions
+grep -r "func.*[FunctionName]" . --include="*.swift"
+grep -r "extension.*[TypeName]" . --include="*.swift"
+```
+
+##### Kotlin/Android Development
+
+```bash
+# Search existing classes
+grep -r "class.*[ClassName]" . --include="*.kt"
+grep -r "data class.*[ClassName]" . --include="*.kt"
+grep -r "enum class.*[EnumName]" . --include="*.kt"
+grep -r "interface.*[InterfaceName]" . --include="*.kt"
+
+# Search existing functions
+grep -r "fun.*[FunctionName]" . --include="*.kt"
+grep -r "private fun.*[FunctionName]" . --include="*.kt"
+```
+
+##### Java Development
+
+```bash
+# Search existing classes
+grep -r "class.*[ClassName]" . --include="*.java"
+grep -r "interface.*[InterfaceName]" . --include="*.java"
+grep -r "enum.*[EnumName]" . --include="*.java"
+
+# Search existing methods
+grep -r "public.*[MethodName]" . --include="*.java"
+grep -r "private.*[MethodName]" . --include="*.java"
+```
+
+##### JavaScript/TypeScript Development
+
+```bash
+# Search existing types
+grep -r "interface.*[InterfaceName]" . --include="*.ts"
+grep -r "type.*[TypeName]" . --include="*.ts"
+grep -r "enum.*[EnumName]" . --include="*.ts"
+
+# Search existing functions
+grep -r "function.*[FunctionName]" . --include="*.js" --include="*.ts"
+grep -r "const.*[FunctionName].*=" . --include="*.js" --include="*.ts"
+grep -r "export.*[FunctionName]" . --include="*.js" --include="*.ts"
+```
+
+##### Python Development
+
+```bash
+# Search existing classes
+grep -r "class.*[ClassName]" . --include="*.py"
+grep -r "def.*[FunctionName]" . --include="*.py"
+
+# Search existing imports
+grep -r "import.*[ModuleName]" . --include="*.py"
+grep -r "from.*import.*[FunctionName]" . --include="*.py"
+```
+
+#### Automated Discovery Script Usage
+
+**_KHUYẾN NGHỊ_** sử dụng script `./scripts/code-discovery.sh` cho comprehensive search:
+
+```bash
+# Usage examples:
+./scripts/code-discovery.sh "HeartRateReading" "saveData"
+./scripts/code-discovery.sh "UserProfile" "validateInput"
+./scripts/code-discovery.sh "ApiConfig" "makeRequest"
+```
+
+**Script sẽ tự động:**
+
+- Search across all supported languages
+- Generate validation checklist
+- Show duplicate detection results
+- Provide reuse recommendations
+
+### 2. Code Review Integration
+
+#### Pre-Commit Hooks
+
+```bash
+#!/bin/bash
+# pre-commit-duplication-check.sh
+
+echo "🔍 Running duplication check..."
+
+# Check for duplicate type definitions
+duplicate_types=$(find . -name "*.swift" -exec grep -l "struct\|class\|enum" {} \; | xargs grep -h "struct\|class\|enum" | sort | uniq -d)
+
+if [ ! -z "$duplicate_types" ]; then
+    echo "❌ Duplicate type definitions found:"
+    echo "$duplicate_types"
+    exit 1
+fi
+
+# Check for duplicate function definitions
+duplicate_functions=$(find . -name "*.swift" -exec grep -l "func" {} \; | xargs grep -h "func.*(" | sort | uniq -d)
+
+if [ ! -z "$duplicate_functions" ]; then
+    echo "❌ Duplicate function definitions found:"
+    echo "$duplicate_functions"
+    exit 1
+fi
+
+echo "✅ No duplicates found"
+exit 0
+```
+
+### 3. Documentation Requirements
+
+#### Type Documentation Template
+
+````markdown
+## Type Documentation Template
+
+### [TypeName]
+
+**Purpose:** [Brief description]
+**Owner:** [Team/Developer]
+**Location:** [File path]
+**Dependencies:** [List of dependencies]
+**Used By:** [List of consumers]
+
+#### Definition:
+
+```swift
+struct [TypeName] {
+    // Properties
+}
+```
+````
+
+#### Usage Examples:
+
+```swift
+// Example 1
+// Example 2
+```
+
+#### Related Types:
+
+- [RelatedType1] - [Relationship]
+- [RelatedType2] - [Relationship]
+
+#### Change History:
+
+- [Date] - [Change description]
+
+````
+
+## 🚨 Multi-Language Anti-Patterns to Avoid
+
+### 1. Duplicate Type/Class Definitions
+
+#### Swift Anti-Pattern
+```swift
+// ❌ WRONG: Duplicate definitions
+// File 1: HealthReadingTypes.swift
+struct HeartRateReading {
+    let value: Double
+    let timestamp: Date
+}
+
+// File 2: HealthService.swift
+struct HeartRateReading {  // DUPLICATE!
+    let value: Double
+    let timestamp: Date
+}
+
+// ✅ CORRECT: Single definition with imports
+// File 1: HealthReadingTypes.swift
+struct HeartRateReading {
+    let value: Double
+    let timestamp: Date
+}
+
+// File 2: HealthService.swift
+import HealthReadingTypes  // Import existing type
+
+class HealthService {
+    func processReading(_ reading: HeartRateReading) {
+        // Use imported type
+    }
+}
+```
+
+#### Kotlin Anti-Pattern
+```kotlin
+// ❌ WRONG: Duplicate data classes
+// File 1: HealthTypes.kt
+data class HeartRateReading(
+    val value: Double,
+    val timestamp: Date
+)
+
+// File 2: HealthService.kt
+data class HeartRateReading(  // DUPLICATE!
+    val value: Double,
+    val timestamp: Date
+)
+
+// ✅ CORRECT: Single definition with imports
+// File 1: HealthTypes.kt
+data class HeartRateReading(
+    val value: Double,
+    val timestamp: Date
+)
+
+// File 2: HealthService.kt
+import com.example.health.HeartRateReading  // Import existing type
+
+class HealthService {
+    fun processReading(reading: HeartRateReading) {
+        // Use imported type
+    }
+}
+```
+
+#### Java Anti-Pattern
+```java
+// ❌ WRONG: Duplicate classes
+// File 1: HealthTypes.java
+public class HeartRateReading {
+    private double value;
+    private Date timestamp;
+    // constructors, getters, setters
+}
+
+// File 2: HealthService.java
+public class HeartRateReading {  // DUPLICATE!
+    private double value;
+    private Date timestamp;
+    // constructors, getters, setters
+}
+
+// ✅ CORRECT: Single definition with imports
+// File 1: HealthTypes.java
+public class HeartRateReading {
+    private double value;
+    private Date timestamp;
+    // constructors, getters, setters
+}
+
+// File 2: HealthService.java
+import com.example.health.HeartRateReading;  // Import existing type
+
+public class HealthService {
+    public void processReading(HeartRateReading reading) {
+        // Use imported type
+    }
+}
+```
+
+#### TypeScript Anti-Pattern
+```typescript
+// ❌ WRONG: Duplicate interfaces
+// File 1: health-types.ts
+interface HeartRateReading {
+    value: number;
+    timestamp: Date;
+}
+
+// File 2: health-service.ts
+interface HeartRateReading {  // DUPLICATE!
+    value: number;
+    timestamp: Date;
+}
+
+// ✅ CORRECT: Single definition with imports
+// File 1: health-types.ts
+export interface HeartRateReading {
+    value: number;
+    timestamp: Date;
+}
+
+// File 2: health-service.ts
+import { HeartRateReading } from './health-types';  // Import existing type
+
+class HealthService {
+    processReading(reading: HeartRateReading): void {
+        // Use imported type
+    }
+}
+````
+
+### 2. Duplicate Function/Method Logic
+
+#### Swift Anti-Pattern
+
+```swift
+// ❌ WRONG: Duplicate functions
+// File 1: UserService.swift
+func validateEmail(_ email: String) -> Bool {
+    return email.contains("@") && email.contains(".")
+}
+
+// File 2: AuthService.swift
+func validateEmail(_ email: String) -> Bool {  // DUPLICATE!
+    return email.contains("@") && email.contains(".")
+}
+
+// ✅ CORRECT: Shared utility function
+// File: Utils/ValidationUtils.swift
+func validateEmail(_ email: String) -> Bool {
+    return email.contains("@") && email.contains(".")
+}
+
+// File 1: UserService.swift
+import ValidationUtils
+// Use shared function
+
+// File 2: AuthService.swift
+import ValidationUtils
+// Use shared function
+```
+
+#### Kotlin Anti-Pattern
+
+```kotlin
+// ❌ WRONG: Duplicate functions
+// File 1: UserService.kt
+fun validateEmail(email: String): Boolean {
+    return email.contains("@") && email.contains(".")
+}
+
+// File 2: AuthService.kt
+fun validateEmail(email: String): Boolean {  // DUPLICATE!
+    return email.contains("@") && email.contains(".")
+}
+
+// ✅ CORRECT: Shared utility function
+// File: Utils/ValidationUtils.kt
+fun validateEmail(email: String): Boolean {
+    return email.contains("@") && email.contains(".")
+}
+
+// File 1: UserService.kt
+import com.example.utils.validateEmail
+// Use shared function
+
+// File 2: AuthService.kt
+import com.example.utils.validateEmail
+// Use shared function
+```
+
+#### Java Anti-Pattern
+
+```java
+// ❌ WRONG: Duplicate methods
+// File 1: UserService.java
+public boolean validateEmail(String email) {
+    return email.contains("@") && email.contains(".");
+}
+
+// File 2: AuthService.java
+public boolean validateEmail(String email) {  // DUPLICATE!
+    return email.contains("@") && email.contains(".");
+}
+
+// ✅ CORRECT: Shared utility class
+// File: Utils/ValidationUtils.java
+public class ValidationUtils {
+    public static boolean validateEmail(String email) {
+        return email.contains("@") && email.contains(".");
+    }
+}
+
+// File 1: UserService.java
+import com.example.utils.ValidationUtils;
+// Use shared method: ValidationUtils.validateEmail(email)
+
+// File 2: AuthService.java
+import com.example.utils.ValidationUtils;
+// Use shared method: ValidationUtils.validateEmail(email)
+```
+
+#### TypeScript Anti-Pattern
+
+```typescript
+// ❌ WRONG: Duplicate functions
+// File 1: user-service.ts
+function validateEmail(email: string): boolean {
+  return email.includes("@") && email.includes(".");
+}
+
+// File 2: auth-service.ts
+function validateEmail(email: string): boolean {
+  // DUPLICATE!
+  return email.includes("@") && email.includes(".");
+}
+
+// ✅ CORRECT: Shared utility function
+// File: utils/validation-utils.ts
+export function validateEmail(email: string): boolean {
+  return email.includes("@") && email.includes(".");
+}
+
+// File 1: user-service.ts
+import { validateEmail } from "./utils/validation-utils";
+// Use shared function
+
+// File 2: auth-service.ts
+import { validateEmail } from "./utils/validation-utils";
+// Use shared function
+```
+
+#### Python Anti-Pattern
+
+```python
+# ❌ WRONG: Duplicate functions
+# File 1: user_service.py
+def validate_email(email):
+    return "@" in email and "." in email
+
+# File 2: auth_service.py
+def validate_email(email):  # DUPLICATE!
+    return "@" in email and "." in email
+
+# ✅ CORRECT: Shared utility function
+# File: utils/validation_utils.py
+def validate_email(email):
+    return "@" in email and "." in email
+
+# File 1: user_service.py
+from utils.validation_utils import validate_email
+# Use shared function
+
+# File 2: auth_service.py
+from utils.validation_utils import validate_email
+# Use shared function
+```
+
+### 3. Copy-Paste Code Patterns
+
+```swift
+// ❌ WRONG: Copy-paste patterns
+class UserService {
+    func saveUser(_ user: User) {
+        // Network call logic
+        // Error handling
+        // Logging
+    }
+}
+
+class ProductService {
+    func saveProduct(_ product: Product) {
+        // Network call logic (COPY-PASTED!)
+        // Error handling (COPY-PASTED!)
+        // Logging (COPY-PASTED!)
+    }
+}
+
+// ✅ CORRECT: Shared base class or utility
+class BaseService {
+    func performNetworkCall<T>(_ request: Request, completion: @escaping (Result<T, Error>) -> Void) {
+        // Shared network logic
+    }
+
+    func handleError(_ error: Error) {
+        // Shared error handling
+    }
+
+    func log(_ message: String) {
+        // Shared logging
+    }
+}
+
+class UserService: BaseService {
+    func saveUser(_ user: User) {
+        // Use inherited methods
+    }
+}
+
+class ProductService: BaseService {
+    func saveProduct(_ product: Product) {
+        // Use inherited methods
+    }
+}
+```
+
+## 📊 Quality Metrics
+
+### 1. Duplication Detection Metrics
+
+```markdown
+## Code Duplication Metrics
+
+### Type Duplication
+
+- [ ] Zero duplicate type definitions
+- [ ] All types properly namespaced
+- [ ] Type ownership documented
+
+### Function Duplication
+
+- [ ] Zero duplicate function signatures
+- [ ] All utilities properly organized
+- [ ] Function reuse documented
+
+### Component Duplication
+
+- [ ] Zero duplicate component logic
+- [ ] All components properly abstracted
+- [ ] Component hierarchy maintained
+
+### Overall Metrics:
+
+- Duplication Rate: < 5%
+- Reuse Rate: > 80%
+- Type Ownership: 100% documented
+```
+
+### 2. Code Review Checklist
+
+```markdown
+## Code Review Checklist - Duplication Prevention
+
+### Before Creating New Code:
+
+- [ ] Searched existing codebase for similar functionality
+- [ ] Checked if existing code can be reused or extended
+- [ ] Verified no duplicate definitions exist
+- [ ] Confirmed proper organization structure
+
+### During Code Review:
+
+- [ ] No duplicate type definitions
+- [ ] No duplicate function logic
+- [ ] Proper imports and dependencies
+- [ ] Single source of truth maintained
+- [ ] Documentation updated
+
+### After Code Review:
+
+- [ ] Type ownership documented
+- [ ] Dependencies updated
+- [ ] Usage examples provided
+- [ ] Change history recorded
+```
+
+## 🤖 AI Behavior Rules for Code Duplication Prevention
+
+### 1. Mandatory Pre-Creation Discovery
+
+**_BẮT BUỘC_** AI phải thực hiện discovery process trước khi tạo bất kỳ code mới nào:
+
+#### Khi User Yêu Cầu Tạo Type/Class Mới:
+
+```markdown
+1. **Immediate Discovery**: Chạy discovery commands cho language tương ứng
+2. **Script Usage**: Sử dụng `./scripts/code-discovery.sh [TypeName]` nếu available
+3. **Results Analysis**: Phân tích kết quả và báo cáo findings
+4. **Recommendation**: Đề xuất reuse existing code hoặc tạo mới nếu cần thiết
+5. **Validation**: Tạo validation checklist trước khi proceed
+```
+
+#### Khi User Yêu Cầu Tạo Function/Method Mới:
+
+```markdown
+1. **Function Discovery**: Search existing functions với similar functionality
+2. **Utility Check**: Kiểm tra existing utility classes/functions
+3. **Reuse Assessment**: Đánh giá khả năng reuse existing code
+4. **Recommendation**: Đề xuất approach tối ưu
+```
+
+### 2. Script Usage Guidelines
+
+#### Khi Nào Sử Dụng Script:
+
+- **User requests new type/class creation**
+- **User requests new function/method creation**
+- **User mentions "duplicate code" issues**
+- **Code review reveals potential duplicates**
+- **Refactoring existing code**
+
+#### Script Usage Examples:
+
+```bash
+# For new type creation
+./scripts/code-discovery.sh "HeartRateReading" "saveReading"
+
+# For new function creation
+./scripts/code-discovery.sh "UserProfile" "validateProfile"
+
+# For duplicate investigation
+./scripts/code-discovery.sh "ApiConfig" "makeRequest"
+```
+
+### 3. AI Response Templates
+
+#### When Duplicates Found:
+
+```markdown
+🚫 **DUPLICATE CODE DETECTED**
+
+**Found existing code:**
+
+- [List existing code locations]
+- [Similar functionality identified]
+
+**Recommendation:**
+
+- [ ] Reuse existing code: [Specific location]
+- [ ] Extend existing code: [Specific approach]
+- [ ] Refactor existing code: [Specific changes]
+
+**Action Required:**
+
+1. Import existing code instead of creating new
+2. Extend existing functionality if needed
+3. Document the reuse decision
+
+**Validation Checklist:**
+
+- [ ] No duplicate definitions created
+- [ ] Proper imports added
+- [ ] Single source of truth maintained
+```
+
+#### When No Duplicates Found:
+
+```markdown
+✅ **NO DUPLICATES FOUND**
+
+**Search Results:**
+
+- [List search commands used]
+- [Confirmation of no existing code]
+
+**Proceeding with Creation:**
+
+- [ ] New code is necessary and unique
+- [ ] Proper location identified
+- [ ] Dependencies documented
+
+**Validation Checklist:**
+
+- [ ] New code follows naming conventions
+- [ ] Proper module organization
+- [ ] Documentation added
+```
+
+### 4. Error Prevention Protocols
+
+#### Before Any Code Creation:
+
+1. **Run Discovery**: Execute appropriate discovery commands
+2. **Analyze Results**: Check for existing similar code
+3. **Assess Reuse**: Determine if existing code can be reused
+4. **Recommend Action**: Propose optimal approach
+5. **Get Confirmation**: Wait for user approval before proceeding
+
+#### During Code Review:
+
+1. **Check for Duplicates**: Scan for duplicate definitions
+2. **Verify Imports**: Ensure proper import usage
+3. **Validate Organization**: Confirm proper module structure
+4. **Document Decisions**: Record reuse/creation rationale
+
+## 🔄 Continuous Improvement
+
+### 1. Regular Duplication Audits
+
+**_KHUYẾN NGHỊ_** chạy monthly audit để detect potential issues:
+
+```bash
+# Monthly duplication audit
+./scripts/code-discovery.sh "audit" "all"
+```
+
+#### Audit Checklist:
+
+- [ ] Run comprehensive type discovery
+- [ ] Check function duplication patterns
+- [ ] Analyze import organization
+- [ ] Review module structure
+- [ ] Document findings and recommendations
+
+````
+
+### 2. Refactoring Opportunities
+
+```markdown
+## Refactoring Opportunities Tracking
+
+### High Priority (Immediate Action)
+
+- [ ] Duplicate type definitions
+- [ ] Identical function implementations
+- [ ] Copy-paste code blocks
+
+### Medium Priority (Next Sprint)
+
+- [ ] Similar logic that can be abstracted
+- [ ] Repeated patterns that can be templated
+- [ ] Utility functions that can be centralized
+
+### Low Priority (Future Consideration)
+
+- [ ] Architectural improvements
+- [ ] Performance optimizations
+- [ ] Code organization enhancements
+````
+
+## 🎯 Success Criteria
+
+### 1. Immediate Goals
+
+- [ ] Zero duplicate type definitions
+- [ ] Zero duplicate function signatures
+- [ ] 100% type ownership documentation
+- [ ] Automated duplication detection
+
+### 2. Long-term Goals
+
+- [ ] < 5% code duplication rate
+- [ ] > 80% code reuse rate
+- [ ] Automated refactoring suggestions
+- [ ] Comprehensive code organization
+
+### 3. Team Adoption
+
+- [ ] All developers trained on duplication prevention
+- [ ] Code review process includes duplication checks
+- [ ] Automated tools integrated into workflow
+- [ ] Regular audits and improvements
+
+---
+
+**Remember:** Proactive duplication prevention is always better than reactive fixing. Always search before you code! 🔍

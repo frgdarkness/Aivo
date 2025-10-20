@@ -1,0 +1,34 @@
+---
+description: Documentation Rules - Comprehensive documentation and planning standards for all projects. Kích hoạt khi working với documentation, project planning, hoặc knowledge management tasks.
+alwaysApply: false
+---
+
+# Documentation Rules
+
+## 📚 Documentation Standards
+
+- Use clear, concise language
+- Follow markdown best practices
+- Include proper headings and structure
+- Keep documentation up to date
+
+## 📋 Planning Documents
+
+- Maintain accurate project status
+- Update task progress regularly
+- Document decisions and rationale
+- Keep requirements and design in sync
+
+## 🎯 Health Care Documentation
+
+- Document health data models
+- Explain health-related business logic
+- Maintain API documentation
+- Document user workflows
+
+## 🔧 Technical Documentation
+
+- Document architecture decisions
+- Explain complex algorithms
+- Maintain code comments
+- Document testing strategies

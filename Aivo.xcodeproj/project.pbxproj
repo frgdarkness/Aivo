@@ -1,0 +1,786 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		10C82245659571451C3EA1E1 /* Pods_Aivo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 740A3A956610A7F208B9BEDE /* Pods_Aivo.framework */; };
+		2118603E8D321BC78FEF93CF /* Pods_AivoTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11E755FF455404059F9E042C /* Pods_AivoTests.framework */; };
+		46FDCD23BBA0FD34EF53E3B4 /* Pods_Aivo_AivoUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A00B5CD6DCF68E9AD242059C /* Pods_Aivo_AivoUITests.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E55DC5BD2EA3BF4D00801CB1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E55DC5A72EA3BF4C00801CB1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E55DC5AE2EA3BF4C00801CB1;
+			remoteInfo = Aivo;
+		};
+		E55DC5C72EA3BF4D00801CB1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E55DC5A72EA3BF4C00801CB1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E55DC5AE2EA3BF4C00801CB1;
+			remoteInfo = Aivo;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		11E755FF455404059F9E042C /* Pods_AivoTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AivoTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		17E79F9846D0B29D91C90FC3 /* Pods-Aivo-AivoUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aivo-AivoUITests.debug.xcconfig"; path = "Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		39254F9D7277058A8ADBD06B /* Pods-AivoTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AivoTests.release.xcconfig"; path = "Target Support Files/Pods-AivoTests/Pods-AivoTests.release.xcconfig"; sourceTree = "<group>"; };
+		43A37BE2403C13A111249ED3 /* Pods-Aivo.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aivo.release.xcconfig"; path = "Target Support Files/Pods-Aivo/Pods-Aivo.release.xcconfig"; sourceTree = "<group>"; };
+		740A3A956610A7F208B9BEDE /* Pods_Aivo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Aivo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		83BA6D3CD3CBC5D069846E1A /* Pods-Aivo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aivo.debug.xcconfig"; path = "Target Support Files/Pods-Aivo/Pods-Aivo.debug.xcconfig"; sourceTree = "<group>"; };
+		A00B5CD6DCF68E9AD242059C /* Pods_Aivo_AivoUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Aivo_AivoUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D39C190FEB5638E3E4DEE850 /* Pods-AivoTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AivoTests.debug.xcconfig"; path = "Target Support Files/Pods-AivoTests/Pods-AivoTests.debug.xcconfig"; sourceTree = "<group>"; };
+		E55DC5AF2EA3BF4C00801CB1 /* Aivo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Aivo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E55DC5BC2EA3BF4D00801CB1 /* AivoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AivoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E55DC5C62EA3BF4D00801CB1 /* AivoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AivoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F763F2155ECA99E4FE61C831 /* Pods-Aivo-AivoUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Aivo-AivoUITests.release.xcconfig"; path = "Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests.release.xcconfig"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E55DC5E62EA3C1C800801CB1 /* Exceptions for "Aivo" folder in "Aivo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E55DC5AE2EA3BF4C00801CB1 /* Aivo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		E55DC5B12EA3BF4C00801CB1 /* Aivo */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E55DC5E62EA3C1C800801CB1 /* Exceptions for "Aivo" folder in "Aivo" target */,
+			);
+			path = Aivo;
+			sourceTree = "<group>";
+		};
+		E55DC5BF2EA3BF4D00801CB1 /* AivoTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AivoTests;
+			sourceTree = "<group>";
+		};
+		E55DC5C92EA3BF4D00801CB1 /* AivoUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AivoUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E55DC5AC2EA3BF4C00801CB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10C82245659571451C3EA1E1 /* Pods_Aivo.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5B92EA3BF4D00801CB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2118603E8D321BC78FEF93CF /* Pods_AivoTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5C32EA3BF4D00801CB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				46FDCD23BBA0FD34EF53E3B4 /* Pods_Aivo_AivoUITests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		41B6DD0B06BB7389CAE11ED1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				740A3A956610A7F208B9BEDE /* Pods_Aivo.framework */,
+				A00B5CD6DCF68E9AD242059C /* Pods_Aivo_AivoUITests.framework */,
+				11E755FF455404059F9E042C /* Pods_AivoTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		48F0F65F647ACA4E058C1DBD /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				83BA6D3CD3CBC5D069846E1A /* Pods-Aivo.debug.xcconfig */,
+				43A37BE2403C13A111249ED3 /* Pods-Aivo.release.xcconfig */,
+				17E79F9846D0B29D91C90FC3 /* Pods-Aivo-AivoUITests.debug.xcconfig */,
+				F763F2155ECA99E4FE61C831 /* Pods-Aivo-AivoUITests.release.xcconfig */,
+				D39C190FEB5638E3E4DEE850 /* Pods-AivoTests.debug.xcconfig */,
+				39254F9D7277058A8ADBD06B /* Pods-AivoTests.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		E55DC5A62EA3BF4C00801CB1 = {
+			isa = PBXGroup;
+			children = (
+				E55DC5B12EA3BF4C00801CB1 /* Aivo */,
+				E55DC5BF2EA3BF4D00801CB1 /* AivoTests */,
+				E55DC5C92EA3BF4D00801CB1 /* AivoUITests */,
+				E55DC5B02EA3BF4C00801CB1 /* Products */,
+				48F0F65F647ACA4E058C1DBD /* Pods */,
+				41B6DD0B06BB7389CAE11ED1 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		E55DC5B02EA3BF4C00801CB1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E55DC5AF2EA3BF4C00801CB1 /* Aivo.app */,
+				E55DC5BC2EA3BF4D00801CB1 /* AivoTests.xctest */,
+				E55DC5C62EA3BF4D00801CB1 /* AivoUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E55DC5AE2EA3BF4C00801CB1 /* Aivo */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E55DC5D02EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "Aivo" */;
+			buildPhases = (
+				8F09DF23BC1309719E6F86C9 /* [CP] Check Pods Manifest.lock */,
+				E55DC5AB2EA3BF4C00801CB1 /* Sources */,
+				E55DC5AC2EA3BF4C00801CB1 /* Frameworks */,
+				E55DC5AD2EA3BF4C00801CB1 /* Resources */,
+				73FD752AAEFBDE1878EE8A9E /* [CP] Embed Pods Frameworks */,
+				38FDF9360910C4E3F3801E50 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E55DC5B12EA3BF4C00801CB1 /* Aivo */,
+			);
+			name = Aivo;
+			productName = Aivo;
+			productReference = E55DC5AF2EA3BF4C00801CB1 /* Aivo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E55DC5BB2EA3BF4D00801CB1 /* AivoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E55DC5D32EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "AivoTests" */;
+			buildPhases = (
+				D19C7AC53972209A2EBE6991 /* [CP] Check Pods Manifest.lock */,
+				E55DC5B82EA3BF4D00801CB1 /* Sources */,
+				E55DC5B92EA3BF4D00801CB1 /* Frameworks */,
+				E55DC5BA2EA3BF4D00801CB1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E55DC5BE2EA3BF4D00801CB1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E55DC5BF2EA3BF4D00801CB1 /* AivoTests */,
+			);
+			name = AivoTests;
+			productName = AivoTests;
+			productReference = E55DC5BC2EA3BF4D00801CB1 /* AivoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E55DC5C52EA3BF4D00801CB1 /* AivoUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E55DC5D62EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "AivoUITests" */;
+			buildPhases = (
+				3D6DB05642474E22B68A1209 /* [CP] Check Pods Manifest.lock */,
+				E55DC5C22EA3BF4D00801CB1 /* Sources */,
+				E55DC5C32EA3BF4D00801CB1 /* Frameworks */,
+				E55DC5C42EA3BF4D00801CB1 /* Resources */,
+				306F828A97AA1C287F0CC465 /* [CP] Embed Pods Frameworks */,
+				2A1A8FD78A0D6F45E587D48B /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E55DC5C82EA3BF4D00801CB1 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				E55DC5C92EA3BF4D00801CB1 /* AivoUITests */,
+			);
+			name = AivoUITests;
+			productName = AivoUITests;
+			productReference = E55DC5C62EA3BF4D00801CB1 /* AivoUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E55DC5A72EA3BF4C00801CB1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					E55DC5AE2EA3BF4C00801CB1 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					E55DC5BB2EA3BF4D00801CB1 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = E55DC5AE2EA3BF4C00801CB1;
+					};
+					E55DC5C52EA3BF4D00801CB1 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = E55DC5AE2EA3BF4C00801CB1;
+					};
+				};
+			};
+			buildConfigurationList = E55DC5AA2EA3BF4C00801CB1 /* Build configuration list for PBXProject "Aivo" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				de,
+				"zh-Hans",
+				hi,
+				es,
+				vi,
+				ko,
+				"es-MX",
+				ar,
+				fr,
+				ja,
+				"pt-PT",
+			);
+			mainGroup = E55DC5A62EA3BF4C00801CB1;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E55DC5B02EA3BF4C00801CB1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E55DC5AE2EA3BF4C00801CB1 /* Aivo */,
+				E55DC5BB2EA3BF4D00801CB1 /* AivoTests */,
+				E55DC5C52EA3BF4D00801CB1 /* AivoUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E55DC5AD2EA3BF4C00801CB1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5BA2EA3BF4D00801CB1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5C42EA3BF4D00801CB1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2A1A8FD78A0D6F45E587D48B /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		306F828A97AA1C287F0CC465 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aivo-AivoUITests/Pods-Aivo-AivoUITests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		38FDF9360910C4E3F3801E50 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		3D6DB05642474E22B68A1209 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Aivo-AivoUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		73FD752AAEFBDE1878EE8A9E /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Aivo/Pods-Aivo-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		8F09DF23BC1309719E6F86C9 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Aivo-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		D19C7AC53972209A2EBE6991 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-AivoTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E55DC5AB2EA3BF4C00801CB1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5B82EA3BF4D00801CB1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E55DC5C22EA3BF4D00801CB1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E55DC5BE2EA3BF4D00801CB1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E55DC5AE2EA3BF4C00801CB1 /* Aivo */;
+			targetProxy = E55DC5BD2EA3BF4D00801CB1 /* PBXContainerItemProxy */;
+		};
+		E55DC5C82EA3BF4D00801CB1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E55DC5AE2EA3BF4C00801CB1 /* Aivo */;
+			targetProxy = E55DC5C72EA3BF4D00801CB1 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		E55DC5CE2EA3BF4D00801CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E55DC5CF2EA3BF4D00801CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		E55DC5D12EA3BF4D00801CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 83BA6D3CD3CBC5D069846E1A /* Pods-Aivo.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Aivo/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Aivo;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.music.ai.creator.Aivo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E55DC5D22EA3BF4D00801CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 43A37BE2403C13A111249ED3 /* Pods-Aivo.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Aivo/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Aivo;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.music.ai.creator.Aivo;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		E55DC5D42EA3BF4D00801CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D39C190FEB5638E3E4DEE850 /* Pods-AivoTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dev.app.base.AivoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aivo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aivo";
+			};
+			name = Debug;
+		};
+		E55DC5D52EA3BF4D00801CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 39254F9D7277058A8ADBD06B /* Pods-AivoTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dev.app.base.AivoTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Aivo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Aivo";
+			};
+			name = Release;
+		};
+		E55DC5D72EA3BF4D00801CB1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 17E79F9846D0B29D91C90FC3 /* Pods-Aivo-AivoUITests.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dev.app.base.AivoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Aivo;
+			};
+			name = Debug;
+		};
+		E55DC5D82EA3BF4D00801CB1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F763F2155ECA99E4FE61C831 /* Pods-Aivo-AivoUITests.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.dev.app.base.AivoUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Aivo;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E55DC5AA2EA3BF4C00801CB1 /* Build configuration list for PBXProject "Aivo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E55DC5CE2EA3BF4D00801CB1 /* Debug */,
+				E55DC5CF2EA3BF4D00801CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E55DC5D02EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "Aivo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E55DC5D12EA3BF4D00801CB1 /* Debug */,
+				E55DC5D22EA3BF4D00801CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E55DC5D32EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "AivoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E55DC5D42EA3BF4D00801CB1 /* Debug */,
+				E55DC5D52EA3BF4D00801CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E55DC5D62EA3BF4D00801CB1 /* Build configuration list for PBXNativeTarget "AivoUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E55DC5D72EA3BF4D00801CB1 /* Debug */,
+				E55DC5D82EA3BF4D00801CB1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E55DC5A72EA3BF4C00801CB1 /* Project object */;
+}

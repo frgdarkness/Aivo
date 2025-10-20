@@ -1,0 +1,34 @@
+---
+description: Xcode Project Configuration Rules - Comprehensive rules for Xcode project setup, configuration, và optimization. Kích hoạt khi working với iOS development, Xcode projects, hoặc iOS-specific configuration.
+alwaysApply: false
+---
+
+# Xcode Project Configuration Rules
+
+## 📱 iOS Project Setup
+
+- Maintain proper project structure
+- Configure build settings appropriately
+- Set up proper code signing
+- Manage dependencies with SPM
+
+## 🔧 Build Configuration
+
+- Use proper build configurations (Debug/Release)
+- Configure optimization settings
+- Set up proper deployment targets
+- Manage asset catalogs correctly
+
+## 📦 Dependency Management
+
+- Use Swift Package Manager for dependencies
+- Maintain proper package versions
+- Configure package dependencies correctly
+- Handle package conflicts appropriately
+
+## 🎯 Health Care Specific
+
+- Configure HealthKit entitlements
+- Set up proper privacy permissions
+- Configure background modes if needed
+- Handle app store submission requirements

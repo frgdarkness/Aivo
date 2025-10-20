@@ -1,0 +1,34 @@
+---
+description: XCTest Rules - Comprehensive XCTest-specific rules for iOS testing. Kích hoạt khi working với iOS testing, XCTest framework, hoặc iOS test automation.
+alwaysApply: false
+---
+
+# XCTest Development Rules
+
+## 🧪 Testing Best Practices
+
+- Write unit tests for business logic
+- Implement UI tests for critical user flows
+- Use proper test naming conventions
+- Follow AAA pattern (Arrange, Act, Assert)
+
+## 📱 iOS Testing Specific
+
+- Test SwiftUI views with ViewInspector when needed
+- Mock external dependencies properly
+- Test HealthKit integration thoroughly
+- Verify accessibility features in tests
+
+## 🎯 Health Care Testing
+
+- Test health data validation
+- Verify proper error handling
+- Test data persistence
+- Validate UI state changes
+
+## 🔧 Test Organization
+
+- Group related tests logically
+- Use descriptive test method names
+- Keep tests independent and isolated
+- Mock external services appropriately

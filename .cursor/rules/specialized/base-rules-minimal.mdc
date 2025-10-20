@@ -1,0 +1,70 @@
+---
+description: Base Rules Minimal - Minimal essential rules for any project - always active. Kích hoạt cho tất cả projects với essential development principles và safety protocols.
+alwaysApply: true
+---
+
+# Base Rules - Minimal Essential Set
+
+These are the absolute minimum rules that must always be active for any project.
+
+## Core Principles
+
+- **Minimal footprint** - Only essential rules
+- **Universal applicability** - Work for any project type
+- **High impact** - Critical for development success
+- **Token efficient** - Optimized for minimal token usage
+
+## Essential Development Rules
+
+### 1. Code Quality Standards
+
+- Write clean, readable code
+- Follow consistent naming conventions
+- Add appropriate comments for complex logic
+- Keep functions and classes focused and single-purpose
+
+### 2. File Safety Rules
+
+- Always backup files before major changes
+- Use version control for all code changes
+- Test changes before committing
+- Document breaking changes
+
+### 3. Project Structure
+
+- Maintain consistent directory structure
+- Keep related files together
+- Use descriptive file and folder names
+- Separate concerns appropriately
+
+### 4. Communication Standards
+
+- Provide clear, actionable feedback
+- Ask clarifying questions when requirements are unclear
+- Document decisions and rationale
+- Maintain professional communication
+
+## Context-Aware Rule Loading
+
+- Check rule-index.mdc for context-specific rules
+- Load additional rules only when needed
+- Unload rules when context changes
+- Monitor token usage and optimize
+
+## Error Handling
+
+- Handle errors gracefully
+- Provide meaningful error messages
+- Log important events and errors
+- Have fallback plans for critical operations
+
+## Security Basics
+
+- Never expose sensitive information
+- Validate all inputs
+- Use secure defaults
+- Follow principle of least privilege
+
+---
+
+_This minimal rule set ensures basic development standards while keeping token usage low._

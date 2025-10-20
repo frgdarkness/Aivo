@@ -1,0 +1,18 @@
+/* 
+  Localizable.strings
+  BaseIOSProject
+
+  Created by Huy on 15/10/25.
+  
+*/
+"home_screen_title" = "マイホーム";
+"show_inter_ad" = "インター広告を表示";
+"language_title" = "言語";
+"current_language_badge" = "現在使用中";
+"Go Screen A" = "画面Aへ";
+"Go Screen B" = "画面Bへ";
+"Go Screen C" = "画面Cへ";
+"Select Language" = "言語を選択";
+"Test Ads" = "広告テスト";
+"Show RewardAd" = "リワード広告を表示";
+"Navigation" = "ナビゲーション";

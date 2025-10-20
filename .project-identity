@@ -1,0 +1,201 @@
+{
+  "📋 PROJECT_SUMMARY": {
+    "name": "Base AI Project Template",
+    "type": "template",
+    "stage": "template",
+    "description": "Multi-platform project template with AI-driven development workflows",
+    "nextAction": "Configure for specific platform (android/ios/web/backend) when setting up real project"
+  },
+  "personality": [
+    "Tuổi Teen",
+    "Sử dụng từ lóng của giới trẻ, emoji, bày tỏ cảm xúc mạnh mẽ"
+  ],
+  "projectName": "Base AI Project Template",
+  "projectType": "template",
+  "mainLanguages": "kotlin,swift,typescript,dart",
+  "mainFrameworks": "android,ios,react,flutter",
+  "keyTechnologies": "ai_integration,clean_architecture,tsddr_workflow,app_cloning_workflow",
+  "keyFeatures": "multi_platform_support,ai_workflows,automated_testing,app_cloning_analysis,legal_compliant_recreation",
+  "projectColors": {
+    "primary": "#2196F3",
+    "secondary": "#FF9800",
+    "accent": "#4CAF50",
+    "background": "#FAFAFA",
+    "surface": "#FFFFFF",
+    "error": "#F44336"
+  },
+  "libraries": {
+    "android": "jetpack_compose,room,retrofit,hilt,navigation",
+    "ios": "swiftui,combine,core_data,alamofire",
+    "web": "react,nextjs,tailwind,axios,zustand",
+    "backend": "express,prisma,jwt,bcrypt,cors",
+    "testing": "junit,espresso,xctest,jest,cypress",
+    "ai_integration": "openai_api,anthropic_api,context7_mcp"
+  },
+  "projectLifecycle": {
+    "stage1_brainstorm": {
+      "workflowRules": ".ai-system/workflows/planning/kiro-spec-driven-workflow.md,.ai-system/workflows/brainstorm/brainstorm-workflow.md",
+      "autoTriggers": "new_project,empty_folder,no_brainstorm_files",
+      "requiredOutputs": "Brainstorm_[ProjectName].md,Updated .project-identity,.kiro/specs/[project]/tasks.md",
+      "uiFirstValidation": {
+        "enabled": true,
+        "mandatoryForNewProjects": true,
+        "blockingConditions": "missing_ui_coverage,incomplete_user_flow,missing_crud_ui",
+        "validationRules": ".ai-system/workflows/planning/ui-first-methodology.md,.ai-system/templates/ui-first-validation-checklist.md"
+      },
+      "nextStage": "stage2_setup"
+    },
+    "stage2_setup": {
+      "workflowRules": ".ai-system/workflows/planning/kiro-spec-driven-workflow.md,.ai-system/workflows/development/task-management.md",
+      "requiredOutputs": "project_structure,tech_stack,dev_environment",
+      "uiFirstEnforcement": {
+        "enabled": true,
+        "requireUIFirstPhase": true,
+        "mandatoryTemplates": ".ai-system/templates/ui-first-requirements-template.md,.ai-system/templates/ui-first-design-template.md,.ai-system/templates/ui-first-tasks-template.md",
+        "validationChecklist": ".ai-system/templates/ui-first-validation-checklist.md"
+      },
+      "nextStage": "stage2_5_clean_architecture_codebase"
+    },
+    "stage2_5_clean_architecture_codebase": {
+      "workflowRules": ".trae/rules/project_rules.md#clean-architecture-code-base-stage",
+      "criticalRules": "structure_only,no_business_logic,empty_methods,mandatory_validation",
+      "autoTriggers": "after_kiro_tasks,before_implementation,architecture_mention",
+      "blockingRules": "stop_business_logic,stop_real_ui,stop_api_logic,stop_detailed_tests",
+      "requiredOutputs": "clean_architecture_structure,empty_classes,repository_interfaces,use_case_classes,viewmodel_base,di_setup,navigation_structure,model_classes,config_files",
+      "transitionControl": {
+        "requiresUserConfirmation": true,
+        "confirmationMessage": "Xác nhận code base chỉ chứa structure?"
+      },
+      "nextStage": "stage3_development"
+    },
+    "stage3_development": {
+      "workflowRules": ".ai-system/workflows/development/task-management.md,.ai-system/workflows/development/kiro-task-execution-workflow.md",
+      "platformSpecificRules": {
+        "android": ".ai-system/rules/platforms/android-workflow.md,docs/TSDDR-2.0-Guide.md",
+        "ios": ".ai-system/rules/platforms/ios-workflow.md,docs/TSDDR-2.0-Guide.md",
+        "web": ".ai-system/rules/platforms/frontend-rules.md,.ai-system/rules/development/development-rules.md"
+      }
+    }
+  },
+  "coreRules": {
+    "always_applied": ".ai-system/rules/core/base-rules.md,.ai-system/workflows/integration/context7-auto-workflow.md,.ai-system/rules/development/development-rules.md,.ai-system/rules/core/markdown-unified-rules.md,.ai-system/workflows/integration/trae-ai-integration.md,.ai-system/workflows/design/design-to-prompt.md",
+    "error_fixing": ".ai-system/rules/development/error-fixing-with-function-index.md,.ai-system/rules/development/function-index-system-rules.md",
+    "ui_first_methodology": {
+      "enabled": true,
+      "mandatoryForNewProjects": true,
+      "workflowIntegration": ".ai-system/workflows/planning/ui-first-methodology.md",
+      "templates": ".ai-system/templates/ui-first-requirements-template.md,.ai-system/templates/ui-first-design-template.md,.ai-system/templates/ui-first-tasks-template.md",
+      "validationChecklist": ".ai-system/templates/ui-first-validation-checklist.md",
+      "blockingConditions": "missing_ui_coverage,incomplete_user_flow,missing_crud_ui,ui_logic_mismatch",
+      "autoTriggers": "new_project_without_existing_code,prd_received,ui_design_request"
+    },
+    "image_processing": {
+      "auto_analyze_images": true,
+      "screenshot_detection": "auto_trigger_design_to_prompt",
+      "mobile_app_screenshots": "activate_design_to_prompt_workflow",
+      "confirmation_required": "when_uncertain_about_image_type"
+    },
+    "project_management": ".ai-system/workflows/planning/kiro-spec-driven-workflow.md,.ai-system/workflows/development/project-stage-manager.md,.ai-system/workflows/development/resource-management.md",
+    "quality_assurance": "docs/TSDDR-2.0-Guide.md"
+  },
+  "integrations": {
+    "ai_apis": ".ai-system/rules/development/api-integration-rules.md",
+    "mcp_tools": true
+  },
+  "projectStructure": "docs/project/,docs/templates/,instructions/,scripts/,assets/,design/,.ai-system/,_backups/",
+  "projectIdentifiers": ".project-identity,.project-personality",
+  "platformWorkflows": {
+    "android": {
+      "workflows": ".ai-system/rules/platforms/android-workflow.md,.ai-system/workflows/development/task-management.md",
+      "buildSystem": "gradle",
+      "architecture": "clean_architecture,mvvm",
+      "testingStrategy": "unit_tests,integration_tests,ui_tests",
+      "codeQuality": "ktlint,detekt,sonarqube"
+    },
+    "ios": {
+      "workflows": ".ai-system/rules/platforms/ios-workflow.md,.ai-system/workflows/development/task-management.md",
+      "buildSystem": "xcode",
+      "architecture": "clean_architecture,mvvm",
+      "testingStrategy": "xctest,ui_tests,snapshot_tests",
+      "codeQuality": "swiftlint,sonarqube"
+    },
+    "web": {
+      "workflows": ".ai-system/rules/platforms/frontend-rules.md,.ai-system/workflows/development/task-management.md",
+      "buildSystem": "vite,webpack",
+      "architecture": "component_based,state_management",
+      "testingStrategy": "jest,cypress,testing_library",
+      "codeQuality": "eslint,prettier,sonarqube"
+    },
+    "backend": {
+      "workflows": ".ai-system/workflows/development/task-management.md",
+      "buildSystem": "npm,docker",
+      "architecture": "clean_architecture,microservices",
+      "testingStrategy": "jest,supertest,integration_tests",
+      "codeQuality": "eslint,prettier,sonarqube"
+    }
+  },
+  "integrationServices": {
+    "authentication": "firebase_auth,auth0,custom_jwt",
+    "database": "firebase_firestore,postgresql,mongodb",
+    "storage": "firebase_storage,aws_s3,cloudinary",
+    "analytics": "google_analytics,firebase_analytics,mixpanel",
+    "notifications": "firebase_messaging,onesignal,pusher",
+    "payments": "stripe,paypal,in_app_purchases"
+  },
+  "features": "multi_platform_support,offline_capability,real_time_sync,push_notifications,user_authentication,data_analytics,crash_reporting,performance_monitoring,app_cloning_workflow,source_analysis,code_recreation,resource_extraction",
+  "appCloningWorkflow": {
+    "enabled": true,
+    "workflows": {
+      "source_analysis": ".ai-system/workflows/development/source-analysis-phase.md",
+      "screen_structure_analysis": ".ai-system/workflows/development/screen-structure-analysis.md",
+      "multi_language_code_analysis": ".ai-system/workflows/development/multi-language-code-analysis.md",
+      "feature_business_logic_mapping": ".ai-system/workflows/development/feature-business-logic-mapping.md",
+      "code_recreation_phase": ".ai-system/workflows/development/code-recreation-phase.md",
+      "color_theme_analysis": ".ai-system/workflows/development/color-theme-analysis-system.md",
+      "resource_extraction": ".ai-system/workflows/development/resource-extraction-analysis.md",
+      "integration": ".ai-system/workflows/development/app-cloning-integration.md",
+      "validation_qa": ".ai-system/workflows/development/app-cloning-validation-qa.md"
+    },
+    "supportedPlatforms": "android,ios,web,react_native",
+    "legalCompliance": {
+      "enabled": true,
+      "principles": "no_direct_copying,original_implementation,inspired_by_design,clean_room_development",
+      "validation": "mandatory_legal_check,ip_compliance,copyright_compliance,trademark_compliance"
+    },
+    "analysisCapabilities": {
+      "apk_analysis": true,
+      "ipa_analysis": true,
+      "web_app_analysis": true,
+      "source_code_analysis": "java,kotlin,swift,smali,javascript,typescript,dart",
+      "ui_analysis": "layout_structure,color_extraction,theme_analysis,component_mapping",
+      "business_logic_mapping": "feature_identification,data_flow_analysis,dependency_mapping"
+    },
+    "recreationCapabilities": {
+      "code_generation": "platform_native,cross_platform",
+      "ui_recreation": "inspired_design,original_components,responsive_adaptation",
+      "asset_creation": "original_icons,inspired_drawables,theme_generation",
+      "architecture_implementation": "clean_architecture,mvvm,repository_pattern"
+    },
+    "qualityAssurance": {
+      "legal_validation": "automated_compliance_check,manual_review",
+      "technical_validation": "code_quality,performance,security,accessibility",
+      "functional_validation": "feature_parity,user_flow_accuracy,data_handling",
+      "continuous_monitoring": "real_time_metrics,quality_gates,release_readiness"
+    }
+  },
+  "projectMemorySystem": {
+    "manualIndexing": {
+      "enabled": true,
+      "template": ".ai-system/templates/manual-project-index-template.md",
+      "rules": ".ai-system/rules/development/manual-indexing-rules.md",
+      "workflow": ".ai-system/workflows/development/manual-indexing-workflow.md",
+      "triggers": "complex_analysis,function_docs,deep_understanding,manual_review"
+    }
+  },
+  "projectStatus": {
+    "currentPhase": "template",
+    "completedMilestones": "project_structure,ai_workflows,documentation_templates",
+    "nextMilestones": "platform_selection,feature_implementation,testing_setup",
+    "lastUpdated": "2024-12-19T12:00:00Z"
+  }
+}

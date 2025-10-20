@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Icon Generation Configuration",
+  "description": "Configuration schema for AI-powered icon generation system",
+  "type": "object",
+  "required": ["project", "icons", "generation"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "description": "Project metadata and settings",
+      "required": ["name", "type", "description"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Project name"
+        },
+        "type": {
+          "type": "string",
+          "description": "Project type (e.g., mobile-app, web-app, desktop-app)",
+          "enum": ["mobile-app", "web-app", "desktop-app", "game", "other"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief project description"
+        },
+        "target_platforms": {
+          "type": "array",
+          "description": "Target platforms for the icons",
+          "items": {
+            "type": "string",
+            "enum": ["ios", "android", "web", "windows", "macos", "linux"]
+          }
+        },
+        "brand_colors": {
+          "type": "array",
+          "description": "Primary brand colors in hex format",
+          "items": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        }
+      }
+    },
+    "icons": {
+      "type": "array",
+      "description": "List of icons to generate",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "description", "category"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Icon name (used for filename)"
+          },
+          "display_name": {
+            "type": "string",
+            "description": "Human-readable display name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of what the icon represents"
+          },
+          "category": {
+            "type": "string",
+            "description": "Icon category",
+            "enum": ["navigation", "action", "content", "communication", "toggle", "alert", "av", "device", "editor", "file", "hardware", "image", "maps", "notification", "social", "other"]
+          },
+          "keywords": {
+            "type": "array",
+            "description": "Keywords to help with icon generation",
+            "items": {
+              "type": "string"
+            }
+          },
+          "style_overrides": {
+            "type": "object",
+            "description": "Override default style for this specific icon",
+            "properties": {
+              "color_scheme": {
+                "type": "string",
+                "enum": ["monochrome", "duotone", "multicolor", "gradient"]
+              },
+              "complexity": {
+                "type": "string",
+                "enum": ["minimal", "simple", "detailed", "complex"]
+              },
+              "custom_prompt": {
+                "type": "string",
+                "description": "Custom prompt additions for this icon"
+              }
+            }
+          }
+        }
+      }
+    },
+    "generation": {
+      "type": "object",
+      "description": "Generation settings and preferences",
+      "required": ["style", "output"],
+      "properties": {
+        "style": {
+          "type": "object",
+          "description": "Visual style preferences",
+          "properties": {
+            "design_system": {
+              "type": "string",
+              "description": "Design system to follow",
+              "enum": ["material", "ios", "fluent", "custom", "minimal"]
+            },
+            "color_scheme": {
+              "type": "string",
+              "description": "Default color scheme",
+              "enum": ["monochrome", "duotone", "multicolor", "gradient"],
+              "default": "monochrome"
+            },
+            "stroke_width": {
+              "type": "number",
+              "description": "Stroke width for outlined icons",
+              "minimum": 0.5,
+              "maximum": 5,
+              "default": 2
+            },
+            "corner_radius": {
+              "type": "string",
+              "description": "Corner radius style",
+              "enum": ["sharp", "slightly-rounded", "rounded", "very-rounded"],
+              "default": "slightly-rounded"
+            },
+            "complexity": {
+              "type": "string",
+              "description": "Overall complexity level",
+              "enum": ["minimal", "simple", "detailed", "complex"],
+              "default": "simple"
+            },
+            "fill_style": {
+              "type": "string",
+              "description": "Fill style preference",
+              "enum": ["outlined", "filled", "mixed"],
+              "default": "outlined"
+            }
+          }
+        },
+        "output": {
+          "type": "object",
+          "description": "Output settings",
+          "required": ["format", "size"],
+          "properties": {
+            "format": {
+              "type": "string",
+              "description": "Output format",
+              "enum": ["svg", "png", "both"],
+              "default": "svg"
+            },
+            "size": {
+              "type": "object",
+              "description": "Icon dimensions",
+              "properties": {
+                "width": {
+                  "type": "integer",
+                  "minimum": 16,
+                  "maximum": 1024,
+                  "default": 24
+                },
+                "height": {
+                  "type": "integer",
+                  "minimum": 16,
+                  "maximum": 1024,
+                  "default": 24
+                }
+              }
+            },
+            "directory": {
+              "type": "string",
+              "description": "Output directory path",
+              "default": "./generated-icons"
+            },
+            "filename_pattern": {
+              "type": "string",
+              "description": "Filename pattern with placeholders: {name}, {category}, {timestamp}",
+              "default": "{name}"
+            }
+          }
+        },
+        "prompts": {
+          "type": "object",
+          "description": "Prompt templates and customization",
+          "properties": {
+            "base_template": {
+              "type": "string",
+              "description": "Base prompt template with placeholders"
+            },
+            "style_additions": {
+              "type": "array",
+              "description": "Additional style instructions",
+              "items": {
+                "type": "string"
+              }
+            },
+            "negative_prompts": {
+              "type": "array",
+              "description": "Things to avoid in generation",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "ai_settings": {
+          "type": "object",
+          "description": "AI model settings",
+          "properties": {
+            "model": {
+              "type": "string",
+              "description": "AI model to use",
+              "default": "gemini-2.5-flash-image-preview"
+            },
+            "temperature": {
+              "type": "number",
+              "description": "Generation temperature",
+              "minimum": 0,
+              "maximum": 2,
+              "default": 0.7
+            },
+            "max_retries": {
+              "type": "integer",
+              "description": "Maximum retry attempts",
+              "minimum": 1,
+              "maximum": 5,
+              "default": 3
+            }
+          }
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Additional metadata",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Config version",
+          "default": "1.0.0"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update timestamp"
+        },
+        "author": {
+          "type": "string",
+          "description": "Config author"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Additional notes"
+        }
+      }
+    }
+  }
+}

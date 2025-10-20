@@ -1,0 +1,40 @@
+---
+description: iOS Project Rules - Optimized rule configuration for iOS Health Care 3 project. Kích hoạt khi working với iOS-specific development, SwiftUI components, hoặc iOS ecosystem integration.
+alwaysApply: false
+---
+
+# iOS Health Care 3 - Optimized Cursor Rules
+
+## 🎯 Project Context
+
+- **Type**: iOS SwiftUI App
+- **Stage**: stage2_setup
+- **Focus**: Health tracking, beautiful UI, accessibility
+
+## 📋 Essential Rules (Always Applied)
+
+- `base-rules.mdc` - Core development principles
+- `ios-workflow.mdc` - iOS-specific workflows
+- `development-rules.mdc` - General development guidelines
+- `project-identity-enforcement.mdc` - Project context validation
+- `user-intent-analysis-workflow.mdc` - Intent understanding
+
+## 🔄 Context-Specific Rules
+
+- SwiftUI rules: Auto-attached when editing SwiftUI files
+- HealthKit rules: Auto-attached when working with health data
+- Testing rules: Auto-attached when in test files
+
+## ⚫ Disabled Rules (Manual Only)
+
+- All Android rules (not applicable to iOS)
+- Backend/API rules (iOS app, not backend)
+- Web frontend rules (SwiftUI, not web)
+- Cross-platform rules (native iOS only)
+
+## 🚀 Optimization Benefits
+
+- **Token Usage**: Reduced by 75-80%
+- **Performance**: Faster AI responses
+- **Relevance**: Only iOS-relevant rules loaded
+- **Maintainability**: Cleaner rule organization

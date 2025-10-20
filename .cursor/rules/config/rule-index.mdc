@@ -1,0 +1,253 @@
+---
+description: Central rule index for context-aware rule distribution
+globs: ["**"]
+alwaysApply: false
+---
+
+# Rule Distribution Index
+
+This is the central index that determines which rules to load based on context, instead of auto-attaching all rules.
+
+## Core Principle
+
+- **Only load rules when needed** based on current context
+- **Minimal base rules** always active
+- **Context-triggered rules** loaded on demand
+- **Agent-specific rules** loaded when specific workflows are invoked
+
+## Base Rules (Always Active)
+
+These rules are always loaded for any project:
+
+1. **base-rules.mdc** - Fundamental development principles
+2. **development-rules.mdc** - Core development guidelines
+3. **file-protection-rules.mdc** - File safety and backup rules
+
+## Context-Based Rule Loading
+
+### iOS Project Context
+
+When working on iOS files (`**/*.swift`, `**/*.xcodeproj/**`):
+
+- Load: `ios-workflow.mdc`
+- Load: `ios-project-template.mdc`
+- Load: `swiftui-rules.mdc` (auto-attached)
+
+### Planning Context
+
+When user requests planning or brainstorming:
+
+- Load: `planning-workflow.mdc`
+- Load: `brainstorm-detailed-workflow.mdc`
+- Load: `project-creation-workflow.mdc`
+
+### Task Management Context
+
+When working with Kiro tasks (`.kiro/specs/**`):
+
+- Load: `kiro-task-execution.mdc`
+- Load: `auto-task-execution.mdc`
+
+### Code Quality Context
+
+When performing code review or quality checks:
+
+- Load: `ai-manual-code-review-process.mdc`
+- Load: `ai-powered-review-implementation.mdc`
+
+### Testing Context
+
+When working with test files (`**/*Tests.swift`, `**/*Test*.swift`):
+
+- Load: `xctest-rules.mdc` (auto-attached)
+- Load: `tdd-guidelines.mdc`
+
+### Documentation Context
+
+When working with docs (`**/*.md`, `**/docs/**`):
+
+- Load: `documentation-rules.mdc` (auto-attached)
+- Load: `markdown-unified-rules.mdc`
+
+## Agent-Specific Rule Loading
+
+### Brainstorm Agent
+
+When user says "brainstorm" or planning-related keywords:
+
+- Load: `brainstorm-detailed-workflow.mdc`
+- Load: `expert-brainstorm-guide.mdc`
+- Load: `user-intent-analysis-workflow.mdc`
+
+### Planning Agent
+
+When user requests planning or project setup:
+
+- Load: `planning-workflow.mdc`
+- Load: `project-creation-workflow.mdc`
+- Load: `template-selection-workflow.mdc`
+
+### Development Agent
+
+When user requests code implementation:
+
+- Load: `development-rules.mdc`
+- Load: `four-role-development.mdc`
+- Load: `auto-task-execution.mdc`
+
+### Review Agent
+
+When user requests code review:
+
+- Load: `ai-manual-code-review-process.mdc`
+- Load: `ai-powered-review-implementation.mdc`
+- Load: `build-verification-workflow.mdc`
+
+### Optimization Agent
+
+When user requests optimization:
+
+- Load: `cursor-optimization-rules.mdc`
+- Load: `universal-code-deduplication.mdc`
+
+## Rule Loading Triggers
+
+### File Pattern Triggers
+
+```yaml
+swift_files:
+  patterns: ["**/*.swift", "**/*.xcodeproj/**"]
+  rules: ["ios-workflow.mdc", "swiftui-rules.mdc"]
+
+test_files:
+  patterns: ["**/*Tests.swift", "**/*Test*.swift"]
+  rules: ["xctest-rules.mdc", "tdd-guidelines.mdc"]
+
+doc_files:
+  patterns: ["**/*.md", "**/docs/**"]
+  rules: ["documentation-rules.mdc", "markdown-unified-rules.mdc"]
+```
+
+### Keyword Triggers
+
+```yaml
+brainstorm_keywords: ["brainstorm", "plan", "design", "requirements"]
+planning_keywords: ["setup", "create", "new project", "architecture"]
+development_keywords: ["implement", "code", "build", "develop"]
+review_keywords: ["review", "check", "validate", "test"]
+optimization_keywords: ["optimize", "improve", "refactor", "performance"]
+```
+
+### Context Triggers
+
+```yaml
+kiro_context:
+  patterns: [".kiro/**", "**/tasks.md"]
+  rules: ["kiro-task-execution.mdc", "auto-task-execution.mdc"]
+
+project_context:
+  patterns: [".project-identity", "Instruction.md"]
+  rules: ["project-creation-workflow.mdc", "project-identity-enforcement.mdc"]
+```
+
+## Implementation Strategy
+
+### Phase 1: Minimal Base Rules
+
+1. Keep only 3-5 essential rules always active
+2. Move all other rules to context-triggered loading
+3. Test with minimal rule set
+
+### Phase 2: Smart Loading
+
+1. Implement keyword detection for rule loading
+2. Implement file pattern matching
+3. Add context-aware rule distribution
+
+### Phase 3: Optimization
+
+1. Monitor token usage reduction
+2. Fine-tune rule loading triggers
+3. Optimize rule content for efficiency
+
+## Token Usage Target
+
+- **Before**: ~100+ rules auto-attached (high token usage)
+- **After**: 3-5 base rules + context-specific rules (80%+ reduction)
+- **Goal**: Maximum 15-20 rules loaded at any time
+
+## Rule Categories for Distribution
+
+### Always Active (3-5 rules)
+
+- base-rules.mdc
+- development-rules.mdc
+- file-protection-rules.mdc
+- rule-index.mdc (this file)
+
+### Context-Triggered (10-15 rules)
+
+- iOS-specific rules (when working on iOS)
+- Planning rules (when planning)
+- Testing rules (when testing)
+- Documentation rules (when documenting)
+
+### Agent-Triggered (20-30 rules)
+
+- Brainstorm agent rules
+- Planning agent rules
+- Development agent rules
+- Review agent rules
+
+### Manual Loading (Remaining rules)
+
+- Specialized workflows
+- Platform-specific rules not currently relevant
+- Advanced features not in current scope
+
+## Usage Instructions
+
+### For AI Assistant
+
+1. Always check this index before loading rules
+2. Load base rules first
+3. Detect context and load appropriate rules
+4. Load agent-specific rules based on user intent
+5. Avoid loading unnecessary rules
+
+### For User
+
+1. Be specific about what you want to do
+2. Mention keywords that trigger rule loading
+3. Work in focused contexts (iOS development, planning, etc.)
+4. Use explicit requests for specialized workflows
+
+## Migration Plan
+
+### Step 1: Identify Current Auto-Attach Rules
+
+- List all rules with `alwaysApply: false`
+- Categorize by function and importance
+- Determine which can be context-triggered
+
+### Step 2: Create New Structure
+
+- Keep only essential base rules
+- Move others to context-triggered loading
+- Update rule metadata
+
+### Step 3: Test and Optimize
+
+- Test with minimal rule set
+- Monitor token usage
+- Fine-tune loading triggers
+
+### Step 4: Document and Deploy
+
+- Update documentation
+- Train team on new system
+- Monitor effectiveness
+
+---
+
+_This index ensures optimal token usage while maintaining full functionality through smart rule distribution._

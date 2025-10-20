@@ -1,0 +1,138 @@
+{
+  "project": {
+    "name": "HealthTracker Pro",
+    "type": "mobile-app",
+    "description": "A comprehensive health and fitness tracking application",
+    "target_platforms": ["ios", "android"],
+    "brand_colors": ["#4CAF50", "#2196F3", "#FF5722"]
+  },
+  "icons": [
+    {
+      "name": "heart-rate-monitor",
+      "display_name": "Heart Rate Monitor",
+      "description": "Icon representing heart rate monitoring and cardiovascular health tracking",
+      "category": "content",
+      "keywords": ["heart", "pulse", "cardio", "health", "monitor", "vital signs"],
+      "style_overrides": {
+        "color_scheme": "duotone",
+        "complexity": "simple"
+      }
+    },
+    {
+      "name": "step-counter",
+      "display_name": "Step Counter",
+      "description": "Icon for step counting and walking activity tracking",
+      "category": "content",
+      "keywords": ["steps", "walking", "fitness", "activity", "pedometer", "exercise"],
+      "style_overrides": {
+        "color_scheme": "monochrome"
+      }
+    },
+    {
+      "name": "sleep-tracker",
+      "display_name": "Sleep Tracker",
+      "description": "Icon representing sleep monitoring and sleep quality analysis",
+      "category": "content",
+      "keywords": ["sleep", "rest", "moon", "night", "recovery", "wellness"],
+      "style_overrides": {
+        "complexity": "minimal"
+      }
+    },
+    {
+      "name": "water-reminder",
+      "display_name": "Water Reminder",
+      "description": "Icon for hydration tracking and water intake reminders",
+      "category": "notification",
+      "keywords": ["water", "hydration", "drink", "glass", "health", "reminder"],
+      "style_overrides": {
+        "color_scheme": "multicolor"
+      }
+    },
+    {
+      "name": "health-report",
+      "display_name": "Health Report",
+      "description": "Icon for health reports, analytics, and medical summaries",
+      "category": "content",
+      "keywords": ["report", "analytics", "chart", "medical", "data", "summary"],
+      "style_overrides": {
+        "complexity": "detailed"
+      }
+    },
+    {
+      "name": "medication-reminder",
+      "display_name": "Medication Reminder",
+      "description": "Icon for medication schedules and pill reminders",
+      "category": "notification",
+      "keywords": ["pill", "medicine", "medication", "pharmacy", "reminder", "health"],
+      "style_overrides": {
+        "color_scheme": "duotone"
+      }
+    },
+    {
+      "name": "workout-planner",
+      "display_name": "Workout Planner",
+      "description": "Icon for exercise planning and fitness routines",
+      "category": "action",
+      "keywords": ["workout", "exercise", "fitness", "gym", "training", "routine"],
+      "style_overrides": {
+        "complexity": "simple"
+      }
+    },
+    {
+      "name": "nutrition-tracker",
+      "display_name": "Nutrition Tracker",
+      "description": "Icon for food logging and nutrition monitoring",
+      "category": "content",
+      "keywords": ["food", "nutrition", "diet", "calories", "meal", "healthy eating"],
+      "style_overrides": {
+        "color_scheme": "multicolor"
+      }
+    }
+  ],
+  "generation": {
+    "style": {
+      "design_system": "material",
+      "color_scheme": "monochrome",
+      "stroke_width": 2,
+      "corner_radius": "slightly-rounded",
+      "complexity": "simple",
+      "fill_style": "outlined"
+    },
+    "output": {
+      "format": "svg",
+      "size": {
+        "width": 24,
+        "height": 24
+      },
+      "directory": "./generated-icons/health-app",
+      "filename_pattern": "{name}"
+    },
+    "prompts": {
+      "base_template": "Create a {complexity} {fill_style} icon for {description}. The icon should follow {design_system} design principles with {color_scheme} color scheme. Style: {corner_radius} corners, {stroke_width}px stroke width. Keywords: {keywords}. The icon should be clean, professional, and suitable for a {project_type} targeting {target_platforms}.",
+      "style_additions": [
+        "Ensure the icon is scalable and works well at small sizes",
+        "Use consistent visual weight across all icons",
+        "Maintain clarity and readability",
+        "Follow accessibility guidelines for contrast"
+      ],
+      "negative_prompts": [
+        "overly complex details",
+        "inconsistent stroke width",
+        "poor contrast",
+        "cluttered composition",
+        "inappropriate colors for medical context"
+      ]
+    },
+    "ai_settings": {
+      "model": "gemini-2.5-flash-image-preview",
+      "temperature": 0.7,
+      "max_retries": 3
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2024-01-17T10:00:00Z",
+    "author": "HealthTracker Team",
+    "notes": "Initial icon set for HealthTracker Pro mobile application. Focus on medical accuracy and user-friendly design."
+  }
+}

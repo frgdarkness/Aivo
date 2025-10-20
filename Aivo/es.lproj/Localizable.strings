@@ -1,0 +1,18 @@
+/* 
+  Localizable.strings
+  BaseIOSProject
+
+  Created by Huy on 15/10/25.
+  
+*/
+"home_screen_title" = "Mi Hogar";
+"show_inter_ad" = "Mostrar InterAd";
+"language_title" = "Idioma";
+"current_language_badge" = "Actualmente usado";
+"Go Screen A" = "Ir a Pantalla A";
+"Go Screen B" = "Ir a Pantalla B";
+"Go Screen C" = "Ir a Pantalla C";
+"Select Language" = "Seleccionar Idioma";
+"Test Ads" = "Probar Anuncios";
+"Show RewardAd" = "Mostrar Anuncio de Recompensa";
+"Navigation" = "Navegación";

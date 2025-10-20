@@ -1,0 +1,14 @@
+---
+description: Git Workflow Rules - Comprehensive git best practices, branching strategies, commit conventions, và collaboration workflows. Kích hoạt khi working với version control, git operations, hoặc team collaboration tasks.
+alwaysApply: false
+---
+
+# Git Workflow
+
+## Nguyên Tắc Cơ Bản
+
+- **_BẮT BUỘC_** khởi tạo git ngay từ đầu dự án
+- **_BẮT BUỘC_** commit thường xuyên sau mỗi feature nhỏ hoàn thành
+- **_BẮT BUỘC_** biết cách sử dụng git reset khi cần thiết
+- **_BẮT BUỘC_** không đợi "xong hết rồi mới commit"
+- **_KHUYẾN NGHỊ_** đặt git aliases để tăng tốc workflow

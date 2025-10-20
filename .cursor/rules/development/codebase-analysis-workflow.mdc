@@ -1,0 +1,1038 @@
+---
+description: Codebase Analysis Workflow - Quy trình phân tích mã cơ sở và lập kế hoạch phát triển có cấu trúc. Kích hoạt khi working với code analysis, project planning, hoặc structured development workflows.
+alwaysApply: false
+---
+# Universal Codebase Analysis & Planning Workflow
+
+**Version**: 2.0  
+**Created**: 2024-12-19  
+**Updated**: 2024-12-19  
+**Purpose**: Quy trình phân tích mã cơ sở và lập kế hoạch phát triển tự động cho mọi loại project
+
+## 🎯 Workflow Overview
+
+Workflow này tự động hóa quy trình phân tích codebase và lập kế hoạch phát triển thông qua 4 bước chính:
+
+1. **Quét và phân tích mã cơ sở** → Tạo file `.md` trong `code_base/context/`
+2. **Lập kế hoạch phát triển** → Tạo file `.md` trong `code_base/plan/`
+3. **Review và rà soát** → Tối ưu hóa kế hoạch
+4. **Xác nhận và thực hiện** → Người dùng xem tổng quan và quyết định
+
+## 🏗️ Project Type Detection
+
+Trước khi bắt đầu phân tích, AI phải xác định loại project để áp dụng quy trình phù hợp:
+
+### Supported Project Types
+
+- **Mobile**: Android, iOS, React Native, Flutter
+- **Web**: Frontend (React, Vue, Angular), Backend (Node.js, Python, Java)
+- **Desktop**: Electron, .NET, Java Swing/JavaFX
+- **AI/ML**: Python ML, TensorFlow, PyTorch
+- **Game**: Unity, Unreal Engine, Godot
+- **DevOps**: Infrastructure, CI/CD, Monitoring
+- **Library/Framework**: NPM packages, Python packages, etc.
+
+### Detection Method
+
+```
+1. Check project files:
+   - package.json → Web/Node.js
+   - build.gradle.kts → Android
+   - Podfile/xcodeproj → iOS
+   - requirements.txt/pyproject.toml → Python
+   - Cargo.toml → Rust
+   - go.mod → Go
+   - etc.
+
+2. Check folder structure:
+   - app/src/main/java → Android
+   - src/components → React/Vue
+   - Assets/Scripts → Unity
+   - etc.
+
+3. Apply appropriate specialized workflow
+```
+
+## 📋 Core Principles
+
+### 1. Universal Compatibility
+
+- **Multi-platform**: Hỗ trợ mọi loại project và technology stack
+- **Adaptive**: Tự động điều chỉnh theo đặc thù của từng project type
+- **Extensible**: Dễ dàng thêm support cho technology mới
+- **Consistent**: Cùng một quy trình cơ bản cho mọi project
+
+### 2. Comprehensive Analysis
+
+- **Toàn diện**: Quét tất cả files, folders, dependencies
+- **Sâu sắc**: Phân tích architecture, patterns, code quality
+- **Contextual**: Hiểu mục đích và business logic của project
+- **Technology-aware**: Áp dụng best practices cho từng technology
+
+### 3. Intelligent Planning
+
+- **Data-driven**: Dựa trên kết quả phân tích thực tế
+- **Type-specific**: Kế hoạch phù hợp với loại project
+- **Prioritized**: Sắp xếp theo độ ưu tiên và impact
+- **Realistic**: Timeline và resources khả thi
+
+### 4. Seamless Integration
+
+- **Workflow Integration**: Tích hợp với existing workflows
+- **Tool Integration**: Sử dụng existing tools và scripts
+- **Process Integration**: Phù hợp với development process hiện tại
+
+## Nguyên Tắc Cơ Bản
+
+- **_BẮT BUỘC_** thực hiện quét và phân tích toàn bộ mã cơ sở trước khi lập kế hoạch
+- **_BẮT BUỘC_** tạo tài liệu context chi tiết trong `code_base/context/`
+- **_BẮT BUỘC_** lập kế hoạch dựa trên phân tích mã cơ sở trong `code_base/plan/`
+- **_BẮT BUỘC_** thực hiện review và rà soát trước khi đưa ra kế hoạch cuối cùng
+- **_BẮT BUỘC_** cung cấp deep links để người dùng có thể điều hướng đến ngữ cảnh mã liên quan
+- **_BẮT BUỘC_** chờ xác nhận từ người dùng trước khi thực hiện kế hoạch
+- **_NGHIÊM CẤM_** bắt đầu development khi chưa hoàn thành quy trình phân tích
+
+## Universal Workflow Process
+
+### Bước 1: Project Detection & Codebase Analysis
+
+**Mục tiêu**: Xác định loại project và thu thập phân tích toàn diện codebase hiện tại
+
+#### 1.1 Project Type Detection
+
+- **_BẮT BUỘC_** scan project root files (package.json, build.gradle.kts, Podfile, requirements.txt, etc.)
+- **_BẮT BUỘC_** xác định primary technology stack và project category
+- **_BẮT BUỘC_** identify project type (Mobile/Web/Desktop/AI/Game/DevOps/Library)
+- **_BẮT BUỘC_** apply specialized analysis rules cho từng project type
+
+#### 1.2 Universal Codebase Scanning
+
+- **_BẮT BUỘC_** quét toàn bộ cấu trúc thư mục và file theo project type
+- **_BẮT BUỘC_** phân tích tech stack và dependencies phù hợp với technology
+- **_BẮT BUỘC_** xác định patterns và conventions theo best practices của platform
+- **_BẮT BUỘC_** check for project-specific configurations và build tools
+
+#### 1.3 Technology-Aware Architecture Analysis
+
+- **_BẮT BUỘC_** xác định architecture pattern phù hợp với project type
+- **_BẮT BUỘC_** phân tích data flow và dependencies theo technology stack
+- **_BẮT BUỘC_** xác định các modules và components chính theo platform conventions
+- **_BẮT BUỘC_** phân tích integration points, APIs và platform-specific features
+
+#### 1.4 Comprehensive Quality Assessment
+
+- **_BẮT BUỘC_** phân tích code conventions và style theo technology standards
+- **_BẮT BUỘC_** xác định technical debt và technology-specific code smells
+- **_BẮT BUỘC_** đánh giá test coverage và testing strategy cho platform
+- **_BẮT BUỘC_** phân tích performance và security considerations theo technology
+
+#### 1.5 Universal Context Documentation
+
+- **_BẮT BUỘC_** tạo thư mục `code_base/context/` nếu chưa có
+- **_BẮT BUỘC_** tạo file `CodebaseAnalysis_[ProjectName]_[Date].md` với universal template
+- **_BẮT BUỘC_** bao gồm deep links đến các file và functions cụ thể
+- **_BẮT BUỘC_** tạo technology-specific insights và recommendations
+- **_BẮT BUỘC_** document platform capabilities và limitations
+
+### Bước 2: Universal Development Planning
+
+**Mục tiêu**: Tạo technology-specific development plan dựa trên analysis
+
+#### 2.1 Technology-Aware Requirements Analysis
+
+- **_BẮT BUỘC_** xác định features cần implement theo platform capabilities
+- **_BẮT BUỘC_** prioritize theo business value và technology-specific complexity
+- **_BẮT BUỘC_** estimate effort dựa trên technology stack và team expertise
+- **_BẮT BUỘC_** identify platform-specific dependencies và blockers
+
+#### 2.2 Platform-Specific Solution Design
+
+- **_BẮT BUỘC_** design architecture changes theo best practices của technology
+- **_BẮT BUỘC_** plan implementation approach phù hợp với platform conventions
+- **_BẮT BUỘC_** define testing strategy theo technology testing frameworks
+- **_BẮT BUỘC_** plan deployment strategy cho target platforms
+
+#### 2.3 Universal Development Plan Creation
+
+- **_BẮT BUỘC_** tạo thư mục `code_base/plan/` nếu chưa có
+- **_BẮT BUỘC_** tạo file `DevelopmentPlan_[FeatureName]_[Date].md` với technology-specific sections
+- **_BẮT BUỘC_** include detailed timeline với technology-appropriate milestones
+- **_BẮT BUỘC_** define success criteria và platform-specific acceptance criteria
+- **_BẮT BUỘC_** include technology ecosystem considerations (libraries, tools, etc.)
+
+### Bước 3: Universal Review & Optimization
+
+**Mục tiêu**: Validate và optimize development plan theo technology best practices
+
+#### 3.1 Technology-Specific Technical Review
+
+- **_BẮT BUỘC_** review architecture design theo platform best practices
+- **_BẮT BUỘC_** validate technical feasibility với technology constraints
+- **_BẮT BUỘC_** check compliance với platform standards và conventions
+- **_BẮT BUỘC_** assess performance implications cho target platforms
+
+#### 3.2 Platform Risk Assessment
+
+- **_BẮT BUỘC_** review technology-specific risks và mitigation strategies
+- **_BẮT BUỘC_** assess timeline realism dựa trên technology complexity
+- **_BẮT BUỘC_** validate resource requirements cho technology stack
+- **_BẮT BUỘC_** check for platform-specific dependencies và limitations
+
+#### 3.3 Cross-Platform Plan Optimization
+
+- **_BẮT BUỘC_** optimize timeline theo technology development cycles
+- **_BẮT BUỘC_** refine implementation approach cho platform efficiency
+- **_BẮT BUỘC_** improve technology-specific risk mitigation
+- **_BẮT BUỘC_** enhance testing strategies cho target platforms
+
+#### 3.4 Universal Final Plan Creation
+
+- **_BẮT BUỘC_** tạo file `FinalPlan_[FeatureName]_[Date].md` với technology insights
+- **_BẮT BUỘC_** consolidate analysis và planning với platform considerations
+- **_BẮT BUỘC_** include executive summary với technology impact assessment
+- **_BẮT BUỘC_** provide clear go/no-go criteria cho từng platform target
+
+### Bước 4: Universal Confirmation & Execution
+
+**Mục tiêu**: Present technology-optimized plan cho user confirmation và execute
+
+#### 4.1 Technology-Aware Plan Presentation
+
+- **_BẮT BUỘC_** tạo comprehensive overview với platform-specific insights
+- **_BẮT BUỘC_** highlight technology decisions và platform trade-offs
+- **_BẮT BUỘC_** provide clear next steps cho từng technology component
+- **_BẮT BUỘC_** include platform-appropriate timeline với technology milestones
+
+#### 4.2 Cross-Platform User Confirmation
+
+- **_BẮT BUỘC_** wait for explicit user approval cho từng platform target
+- **_BẮT BUỘC_** address technology-specific concerns hoặc modifications
+- **_BẮT BUỘC_** confirm platform resource availability và technology timeline
+- **_BẮT BUỘC_** finalize scope cho từng technology stack
+
+#### 4.3 Platform-Optimized Implementation Execution
+
+- **_BẮT BUỘC_** execute theo technology-specific approved plan
+- **_BẮT BUỘC_** maintain progress tracking cho từng platform
+- **_BẮT BUỘC_** provide technology-aware regular updates
+- **_BẮT BUỘC_** handle platform issues theo technology escalation process
+
+#### 4.4 Universal Documentation & Technology Handover
+
+- **_BẮT BUỘC_** update documentation với platform implementation details
+- **_BẮT BUỘC_** create technology-specific knowledge transfer materials
+- **_BẮT BUỘC_** provide platform maintenance guidelines
+- **_BẮT BUỘC_** archive project artifacts theo technology organization structure
+
+## File Templates
+
+### Universal CodebaseAnalysis Template
+
+```markdown
+# Universal Codebase Analysis: [Project Name]
+
+**Generated**: [Date]
+**Analyzer**: AI Assistant
+**Technology Stack**: [Detected Technologies]
+**Project Type**: [Mobile/Web/Desktop/AI-ML/Game/DevOps/Library]
+**Scope**: [Full/Partial] Analysis
+
+## 📋 Executive Summary
+
+- **Project Type**: [Android/iOS/Web/Backend/etc.]
+- **Tech Stack**: [Main technologies]
+- **Platform Targets**: [Target platforms]
+- **Architecture**: [Pattern used]
+- **Code Quality**: [Rating/Assessment]
+- **Technology Readiness**: [Assessment]
+- **Cross-Platform Compatibility**: [Assessment]
+
+## 🏗️ Project Structure
+
+### Directory Overview
+```
+
+[Directory tree with annotations]
+
+```
+
+### Key Components
+| Component | Location | Purpose | Dependencies |
+|-----------|----------|---------|-------------|
+| [Component1] | [📁 path/to/component](path/to/component) | [Purpose] | [Dependencies] |
+| [Component2] | [📁 path/to/component](path/to/component) | [Purpose] | [Dependencies] |
+
+## 🔧 Technical Analysis
+### Architecture Pattern
+- **Pattern**: [MVC/MVP/MVVM/Clean/etc.]
+- **Implementation**: [How it's implemented]
+- **Compliance**: [How well it follows the pattern]
+
+### Dependencies & Libraries
+| Library | Version | Purpose | Update Status |
+|---------|---------|---------|---------------|
+| [Library1] | [Version] | [Purpose] | [✅/⚠️/❌] |
+| [Library2] | [Version] | [Purpose] | [✅/⚠️/❌] |
+
+### Data Flow
+```
+
+[Data flow diagram or description]
+
+```
+
+## 📊 Code Quality Assessment
+### Strengths
+- ✅ [Strength 1]
+- ✅ [Strength 2]
+
+### Areas for Improvement
+- ⚠️ [Issue 1] - [📄 Location](path/to/file#line)
+- ⚠️ [Issue 2] - [📄 Location](path/to/file#line)
+
+### Technical Debt
+- 🔴 [High Priority] - [📄 Location](path/to/file#line)
+- 🟡 [Medium Priority] - [📄 Location](path/to/file#line)
+
+## 🧪 Testing Strategy
+### Current State
+- **Unit Tests**: [Coverage/Status]
+- **Integration Tests**: [Coverage/Status]
+- **E2E Tests**: [Coverage/Status]
+
+### Test Files
+- [📄 Test File 1](path/to/test) - [Coverage]
+- [📄 Test File 2](path/to/test) - [Coverage]
+
+## 🔗 Integration Points
+### APIs & External Services
+| Service | Integration Point | Status |
+|---------|------------------|--------|
+| [Service1] | [📄 File](path/to/file) | [Status] |
+| [Service2] | [📄 File](path/to/file) | [Status] |
+
+### Database Schema
+- **Type**: [Database type]
+- **Schema**: [📄 Schema File](path/to/schema)
+- **Migrations**: [📁 Migrations](path/to/migrations)
+
+## 🚀 Deployment & Build
+### Build Configuration
+- **Build Files**: [📄 Build File](path/to/build)
+- **Environment**: [Development/Staging/Production]
+- **CI/CD**: [Status/Configuration]
+
+### Deployment Strategy
+- **Platform**: [Platform details]
+- **Process**: [Deployment process]
+- **Monitoring**: [Monitoring setup]
+
+## 💡 Recommendations
+### Immediate Actions
+1. [Recommendation 1] - [📄 Related Code](path/to/code)
+2. [Recommendation 2] - [📄 Related Code](path/to/code)
+
+### Long-term Improvements
+1. [Improvement 1]
+2. [Improvement 2]
+
+## 🔍 Deep Dive Sections
+### [📂 Core Module Analysis](./deep-dive/core-module.md)
+### [📂 API Layer Analysis](./deep-dive/api-layer.md)
+### [📂 Data Layer Analysis](./deep-dive/data-layer.md)
+### [📂 UI Layer Analysis](./deep-dive/ui-layer.md)
+
+---
+*Generated by AI Assistant - [Timestamp]*
+```
+
+### Universal DevelopmentPlan Template
+
+```markdown
+# Universal Development Plan: [Feature Name]
+
+**Created**: [Date]
+**Based on**: [CodebaseAnalysis file]
+**Technology Stack**: [Target Technologies]
+**Platform Targets**: [Target Platforms]
+**Estimated Duration**: [Timeline]
+**Complexity**: [Simple/Medium/Complex/Very Complex]
+
+## 📋 Overview
+
+### Feature Description
+
+[Detailed description of what needs to be built]
+
+### Success Criteria
+
+- [ ] [Criteria 1]
+- [ ] [Criteria 2]
+- [ ] [Criteria 3]
+
+### Impact Analysis
+
+- **Affected Components**: [List of components]
+- **Breaking Changes**: [Yes/No - Details]
+- **Migration Required**: [Yes/No - Details]
+
+## 🎯 Implementation Strategy
+
+### Approach
+
+[Chosen approach and rationale]
+
+### Architecture Integration
+
+- **Fits Pattern**: [How it fits current architecture]
+- **New Components**: [Components to be created]
+- **Modified Components**: [Components to be modified]
+
+### Technology Decisions
+
+| Decision    | Rationale   | Alternative Considered |
+| ----------- | ----------- | ---------------------- |
+| [Decision1] | [Rationale] | [Alternative]          |
+| [Decision2] | [Rationale] | [Alternative]          |
+
+## 📅 Implementation Phases
+
+### Phase 1: Foundation (Week 1)
+
+**Goal**: Set up basic structure and core functionality
+
+#### Tasks
+
+- [ ] **Setup** - [📄 Config File](path/to/config) - [2h]
+
+  - Create project structure
+  - Configure dependencies
+  - Setup build configuration
+
+- [ ] **Core Models** - [📁 Models Directory](path/to/models) - [4h]
+
+  - Define data models
+  - Create validation logic
+  - Setup serialization
+
+- [ ] **Basic API** - [📄 API File](path/to/api) - [6h]
+  - Create endpoint structure
+  - Implement basic CRUD
+  - Add error handling
+
+#### Deliverables
+
+- ✅ Basic project structure
+- ✅ Core data models
+- ✅ Basic API endpoints
+
+### Phase 2: Core Features (Week 2-3)
+
+**Goal**: Implement main functionality
+
+#### Tasks
+
+- [ ] **Business Logic** - [📁 Services](path/to/services) - [8h]
+
+  - Implement core algorithms
+  - Add validation rules
+  - Create service layer
+
+- [ ] **Database Integration** - [📄 Database](path/to/db) - [6h]
+
+  - Create database schema
+  - Implement data access layer
+  - Add migration scripts
+
+- [ ] **UI Components** - [📁 Components](path/to/components) - [10h]
+  - Create reusable components
+  - Implement main screens
+  - Add navigation logic
+
+#### Deliverables
+
+- ✅ Working business logic
+- ✅ Database integration
+- ✅ Basic UI implementation
+
+### Phase 3: Integration & Polish (Week 4)
+
+**Goal**: Integration, testing, and refinement
+
+#### Tasks
+
+- [ ] **Integration Testing** - [📁 Tests](path/to/tests) - [6h]
+
+  - Write integration tests
+  - Test API endpoints
+  - Validate data flow
+
+- [ ] **UI/UX Polish** - [📁 UI](path/to/ui) - [8h]
+
+  - Improve user experience
+  - Add loading states
+  - Implement error handling
+
+- [ ] **Performance Optimization** - [📄 Performance](path/to/perf) - [4h]
+  - Optimize database queries
+  - Improve API response times
+  - Add caching where needed
+
+#### Deliverables
+
+- ✅ Comprehensive test suite
+- ✅ Polished user interface
+- ✅ Optimized performance
+
+## 🔗 Code References
+
+### Files to Modify
+
+- [📄 Main Controller](path/to/controller) - Add new endpoints
+- [📄 Service Layer](path/to/service) - Implement business logic
+- [📄 Database Model](path/to/model) - Add new entities
+- [📄 UI Component](path/to/component) - Create new views
+
+### Files to Create
+
+- [📄 New Feature Service](path/to/new-service) - Core feature logic
+- [📄 New Data Model](path/to/new-model) - Data structure
+- [📄 New UI Screen](path/to/new-screen) - User interface
+- [📄 New Test Suite](path/to/new-tests) - Test coverage
+
+### Dependencies
+
+- [📄 Existing Service A](path/to/service-a) - Required for integration
+- [📄 Existing Model B](path/to/model-b) - Data dependency
+- [📄 Existing Component C](path/to/component-c) - UI dependency
+
+## ⚠️ Risk Assessment
+
+### Technical Risks
+
+| Risk    | Probability    | Impact         | Mitigation |
+| ------- | -------------- | -------------- | ---------- |
+| [Risk1] | [High/Med/Low] | [High/Med/Low] | [Strategy] |
+| [Risk2] | [High/Med/Low] | [High/Med/Low] | [Strategy] |
+
+### Dependencies & Blockers
+
+- **External Dependencies**: [List]
+- **Team Dependencies**: [List]
+- **Technical Blockers**: [List]
+
+## 🧪 Testing Strategy
+
+### Test Plan
+
+- **Unit Tests**: [📁 Unit Tests](path/to/unit-tests)
+- **Integration Tests**: [📁 Integration Tests](path/to/integration-tests)
+- **E2E Tests**: [📁 E2E Tests](path/to/e2e-tests)
+
+### Test Coverage Goals
+
+- **Minimum Coverage**: 80%
+- **Critical Path Coverage**: 100%
+- **Edge Cases**: Covered
+
+## 🚀 Deployment Plan
+
+### Deployment Strategy
+
+- **Environment**: [Staging → Production]
+- **Rollout**: [Gradual/Full]
+- **Rollback Plan**: [Strategy]
+
+### Monitoring
+
+- **Metrics**: [Key metrics to monitor]
+- **Alerts**: [Alert conditions]
+- **Logging**: [Logging strategy]
+
+## 📚 Documentation
+
+### Required Documentation
+
+- [ ] API Documentation
+- [ ] User Guide
+- [ ] Technical Documentation
+- [ ] Deployment Guide
+
+### Knowledge Transfer
+
+- [ ] Code walkthrough session
+- [ ] Documentation review
+- [ ] Q&A session
+
+---
+
+_Generated by AI Assistant - [Timestamp]_
+```
+
+### Universal FinalPlan Template
+
+```markdown
+# Universal Final Implementation Plan: [Feature Name]
+
+**Created**: [Date]
+**Technology Stack**: [Target Technologies]
+**Platform Targets**: [Target Platforms]
+**Review Status**: ✅ Approved / ⏳ Pending / ❌ Needs Revision
+**Implementation Ready**: [Yes/No]
+
+## 🎯 Executive Summary
+
+### What We're Building
+
+[Clear, concise description]
+
+### Why It Matters
+
+[Business value and user impact]
+
+### How We'll Build It
+
+[High-level approach]
+
+### When It'll Be Done
+
+[Timeline and milestones]
+
+## 🗺️ Navigation Guide
+
+_Click any link below to dive deeper into specific areas_
+
+### 📊 Analysis & Research
+
+- [📄 Codebase Analysis](../context/CodebaseAnalysis_[ProjectName]_[Date].md)
+- [📄 Technical Requirements](../context/technical-requirements.md)
+- [📄 Architecture Review](../context/architecture-review.md)
+
+### 📋 Planning Documents
+
+- [📄 Development Plan](./DevelopmentPlan_[FeatureName]_[Date].md)
+- [📄 Risk Assessment](./risk-assessment.md)
+- [📄 Testing Strategy](./testing-strategy.md)
+
+### 🔍 Code References
+
+- [📁 Core Components](../../src/core/) - Main business logic
+- [📁 API Layer](../../src/api/) - Service endpoints
+- [📁 Data Models](../../src/models/) - Data structures
+- [📁 UI Components](../../src/ui/) - User interface
+
+## 🚦 Implementation Options
+
+_Choose your preferred approach_
+
+### Option A: Incremental Implementation (Recommended)
+
+**Timeline**: 4 weeks | **Risk**: Low | **Effort**: Medium
+
+**Pros**:
+
+- ✅ Lower risk of breaking existing functionality
+- ✅ Easier to test and validate each step
+- ✅ Can deliver value incrementally
+
+**Cons**:
+
+- ⚠️ Takes longer to complete
+- ⚠️ Requires more coordination
+
+[📄 Detailed Plan](./incremental-plan.md)
+
+### Option B: Big Bang Implementation
+
+**Timeline**: 2 weeks | **Risk**: High | **Effort**: High
+
+**Pros**:
+
+- ✅ Faster completion
+- ✅ Less coordination overhead
+- ✅ Cleaner final result
+
+**Cons**:
+
+- ❌ Higher risk of breaking changes
+- ❌ Harder to test incrementally
+- ❌ All-or-nothing delivery
+
+[📄 Detailed Plan](./bigbang-plan.md)
+
+### Option C: Hybrid Approach
+
+**Timeline**: 3 weeks | **Risk**: Medium | **Effort**: Medium
+
+**Pros**:
+
+- ✅ Balanced risk and speed
+- ✅ Some incremental delivery
+- ✅ Manageable complexity
+
+**Cons**:
+
+- ⚠️ Requires careful planning
+- ⚠️ More complex coordination
+
+[📄 Detailed Plan](./hybrid-plan.md)
+
+## 📅 Recommended Timeline
+
+### Week 1: Foundation
+
+- [📄 Setup Tasks](./week1-tasks.md)
+- **Deliverable**: Basic structure and core models
+- **Review Point**: Architecture validation
+
+### Week 2-3: Core Development
+
+- [📄 Development Tasks](./week2-3-tasks.md)
+- **Deliverable**: Working feature implementation
+- **Review Point**: Functionality validation
+
+### Week 4: Integration & Testing
+
+- [📄 Testing Tasks](./week4-tasks.md)
+- **Deliverable**: Production-ready feature
+- **Review Point**: Quality assurance
+
+## 🎛️ Interactive Decision Points
+
+_These are points where you'll need to make decisions during implementation_
+
+### Decision Point 1: Database Schema
+
+**When**: Week 1, Day 2
+**Options**:
+
+- [📄 Option A: Extend existing tables](./db-option-a.md)
+- [📄 Option B: Create new tables](./db-option-b.md)
+- [📄 Option C: Hybrid approach](./db-option-c.md)
+
+### Decision Point 2: API Design
+
+**When**: Week 1, Day 4
+**Options**:
+
+- [📄 REST API](./api-rest.md)
+- [📄 GraphQL API](./api-graphql.md)
+- [📄 Hybrid API](./api-hybrid.md)
+
+### Decision Point 3: UI Framework
+
+**When**: Week 2, Day 1
+**Options**:
+
+- [📄 Use existing components](./ui-existing.md)
+- [📄 Create new components](./ui-new.md)
+- [📄 Third-party library](./ui-library.md)
+
+## 🔧 Technical Deep Dives
+
+_For developers who want to understand the technical details_
+
+### Architecture
+
+- [📄 System Architecture](./architecture/system-design.md)
+- [📄 Data Flow](./architecture/data-flow.md)
+- [📄 Component Interaction](./architecture/component-interaction.md)
+
+### Implementation Details
+
+- [📄 Core Algorithms](./implementation/algorithms.md)
+- [📄 Database Design](./implementation/database.md)
+- [📄 API Specification](./implementation/api-spec.md)
+- [📄 UI/UX Guidelines](./implementation/ui-guidelines.md)
+
+### Code Examples
+
+- [📄 Service Implementation](./examples/service-example.md)
+- [📄 Model Definition](./examples/model-example.md)
+- [📄 Component Usage](./examples/component-example.md)
+- [📄 Test Cases](./examples/test-examples.md)
+
+## ⚡ Quick Start Guide
+
+_For immediate implementation_
+
+### Prerequisites Checklist
+
+- [ ] [📄 Development Environment](./setup/dev-environment.md)
+- [ ] [📄 Required Dependencies](./setup/dependencies.md)
+- [ ] [📄 Database Setup](./setup/database.md)
+- [ ] [📄 Configuration](./setup/configuration.md)
+
+### First Steps
+
+1. **Clone and Setup** - [📄 Setup Guide](./setup/clone-setup.md)
+2. **Run Tests** - [📄 Testing Guide](./setup/run-tests.md)
+3. **Start Development** - [📄 Dev Guide](./setup/start-dev.md)
+
+## 🚨 Important Considerations
+
+### Breaking Changes
+
+- [📄 Impact Analysis](./considerations/breaking-changes.md)
+- [📄 Migration Guide](./considerations/migration.md)
+- [📄 Rollback Plan](./considerations/rollback.md)
+
+### Performance Impact
+
+- [📄 Performance Analysis](./considerations/performance.md)
+- [📄 Optimization Strategies](./considerations/optimization.md)
+- [📄 Monitoring Plan](./considerations/monitoring.md)
+
+### Security Considerations
+
+- [📄 Security Review](./considerations/security.md)
+- [📄 Authentication](./considerations/auth.md)
+- [📄 Data Protection](./considerations/data-protection.md)
+
+## ✅ Ready to Proceed?
+
+### Final Checklist
+
+- [ ] I understand the scope and requirements
+- [ ] I've reviewed the technical approach
+- [ ] I've chosen an implementation option
+- [ ] I understand the timeline and milestones
+- [ ] I'm aware of the risks and mitigation strategies
+- [ ] I have access to all necessary resources
+
+### Next Steps
+
+1. **Confirm Implementation Option**: [A/B/C]
+2. **Set Start Date**: [Date]
+3. **Assign Team Members**: [Team]
+4. **Schedule Review Points**: [Dates]
+
+---
+
+## 🤝 Approval Section
+
+**Technical Lead Approval**: ⏳ Pending
+**Product Owner Approval**: ⏳ Pending
+**Implementation Ready**: ❌ Not Ready
+
+**Comments/Feedback**:
+[Space for stakeholder feedback]
+
+---
+
+_Generated by AI Assistant - [Timestamp]_
+_Last Updated: [Date] by [Person]_
+```
+
+## Integration với Workflows Hiện Tại
+
+### Kết Hợp với Brainstorm Workflow
+
+- **_BẮT BUỘC_** thực hiện brainstorm trước khi bắt đầu codebase analysis
+- **_BẮT BUỘC_** sử dụng kết quả brainstorm làm input cho analysis
+- **_BẮT BUỘC_** reference brainstorm file trong analysis document
+
+### Kết Hợp với Planning Workflow
+
+- **_BẮT BUỘC_** sử dụng codebase analysis làm foundation cho planning
+- **_BẮT BUỘC_** tuân thủ 4-role development process
+- **_BẮT BUỘC_** integrate với template selection workflow
+
+### Kết Hợp với File Protection Rules
+
+- **_BẮT BUỘC_** backup files trước khi modify
+- **_BẮT BUỘC_** sử dụng version control cho tất cả changes
+- **_BẮT BUỘC_** document tất cả modifications
+
+## Universal AI Behavior Rules
+
+### Universal Analysis Phase Rules
+
+1. **_BẮT BUỘC_** always start with comprehensive cross-platform codebase scan
+2. **_BẮT BUỘC_** automatically identify project type và all technology stacks
+3. **_BẮT BUỘC_** analyze platform-specific patterns và universal conventions
+4. **_BẮT BUỘC_** assess technology-aware code quality và cross-platform technical debt
+5. **_BẮT BUỘC_** document findings trong technology-structured format
+6. **_BẮT BUỘC_** detect platform capabilities và limitations
+7. **_BẮT BUỘC_** identify cross-platform compatibility opportunities
+
+### Universal Planning Phase Rules
+
+1. **_BẮT BUỘC_** base all plans on comprehensive multi-technology analysis
+2. **_BẮT BUỘC_** consider platform-specific architecture và universal patterns
+3. **_BẮT BUỘC_** provide technology-realistic timelines và platform effort estimates
+4. **_BẮT BUỘC_** identify technology-specific và cross-platform risks
+5. **_BẮT BUỘC_** create platform-actionable và technology-specific implementation steps
+6. **_BẮT BUỘC_** plan for technology integration và compatibility
+7. **_BẮT BUỘC_** consider platform resource requirements và constraints
+
+### Universal Review Phase Rules
+
+1. **_BẮT BUỘC_** validate technical feasibility cho tất cả target platforms
+2. **_BẮT BUỘC_** ensure cross-platform compatibility với existing codebase
+3. **_BẮT BUỘC_** review platform-specific performance và universal scalability
+4. **_BẮT BUỘC_** assess technology-specific security considerations
+5. **_BẮT BUỘC_** optimize plan based on cross-platform review findings
+6. **_BẮT BUỘC_** validate technology ecosystem integration
+7. **_BẮT BUỘC_** ensure platform best practices compliance
+
+### Universal Execution Phase Rules
+
+1. **_BẮT BUỘC_** wait for explicit user approval cho tất cả platform targets
+2. **_BẮT BUỘC_** follow technology-approved plan exactly
+3. **_BẮT BUỘC_** provide platform-specific progress updates during implementation
+4. **_BẮT BUỘC_** handle technology errors gracefully với platform-appropriate fallbacks
+5. **_BẮT BUỘC_** document all cross-platform changes và technology decisions
+6. **_BẮT BUỘC_** maintain technology consistency across platforms
+7. **_BẮT BUỘC_** ensure universal workflow integration
+
+### Universal Development Request Handling
+
+1. **_BẮT BUỘC_** immediately trigger Bước 1 (Universal Project Detection & Analysis)
+2. **_BẮT BUỘC_** không skip bất kỳ technology detection step nào trong workflow
+3. **_BẮT BUỘC_** tạo tất cả required technology-aware documents theo universal templates
+4. **_BẮT BUỘC_** provide comprehensive cross-platform analysis trước khi planning
+5. **_BẮT BUỘC_** wait for user confirmation cho tất cả platform targets trước implementation
+6. **_BẮT BUỘC_** adapt workflow behavior based on detected project type
+7. **_BẮT BUỘC_** apply technology-specific best practices automatically
+
+### Universal File Organization Rules
+
+1. **_BẮT BUỘC_** tạo thư mục `code_base/context/` cho cross-platform analysis documents
+2. **_BẮT BUỘC_** tạo thư mục `code_base/plan/` cho technology-aware planning documents
+3. **_BẮT BUỘC_** use technology-consistent naming: `[DocumentType]_[FeatureName]_[Date].md`
+4. **_BẮT BUỘC_** include platform-specific deep links đến related files và documents
+5. **_BẮT BUỘC_** maintain cross-platform cross-references giữa các documents
+6. **_BẮT BUỘC_** organize documents by technology when multiple platforms involved
+7. **_BẮT BUỘC_** ensure universal accessibility across different technology stacks
+
+### Universal Quality Assurance Rules
+
+1. **_BẮT BUỘC_** validate tất cả technology analysis findings trước khi planning
+2. **_BẮT BUỘC_** ensure plans are platform-realistic và technology-achievable
+3. **_BẮT BUỘC_** review cross-platform technical feasibility của proposed solutions
+4. **_BẮT BUỘC_** verify universal compatibility với existing multi-technology codebase
+5. **_BẮT BUỘC_** document technology assumptions và platform constraints clearly
+6. **_BẮT BUỘC_** validate technology ecosystem integration possibilities
+7. **_BẮT BUỘC_** ensure platform best practices compliance across all targets
+
+### Universal Error Handling Rules
+
+1. **_BẮT BUỘC_** gracefully handle missing platform files hoặc incomplete technology stacks
+2. **_BẮT BUỘC_** provide clear technology-specific error messages với platform solutions
+3. **_BẮT BUỘC_** offer alternative cross-platform approaches khi primary technology fails
+4. **_BẮT BUỘC_** maintain universal workflow continuity despite platform-specific errors
+5. **_BẮT BUỘC_** document tất cả technology modifications và platform adaptations
+6. **_BẮT BUỘC_** provide technology fallback options for unsupported platforms
+7. **_BẮT BUỘC_** ensure graceful degradation across different technology capabilities
+
+## Directory Structure Requirements
+
+### code_base/context/
+
+```
+code_base/
+├── context/
+│   ├── CodebaseAnalysis_[ProjectName]_[Date].md
+│   ├── deep-dive/
+│   │   ├── core-module.md
+│   │   ├── api-layer.md
+│   │   ├── data-layer.md
+│   │   └── ui-layer.md
+│   ├── architecture/
+│   │   ├── system-design.md
+│   │   ├── data-flow.md
+│   │   └── component-interaction.md
+│   └── technical-requirements.md
+```
+
+### code_base/plan/
+
+```
+code_base/
+├── plan/
+│   ├── DevelopmentPlan_[FeatureName]_[Date].md
+│   ├── FinalPlan_[FeatureName]_[Date].md
+│   ├── options/
+│   │   ├── incremental-plan.md
+│   │   ├── bigbang-plan.md
+│   │   └── hybrid-plan.md
+│   ├── implementation/
+│   │   ├── algorithms.md
+│   │   ├── database.md
+│   │   ├── api-spec.md
+│   │   └── ui-guidelines.md
+│   └── considerations/
+│       ├── breaking-changes.md
+│       ├── performance.md
+│       └── security.md
+```
+
+## Success Metrics
+
+### Analysis Quality
+
+- **_BẮT BUỘC_** 100% project structure coverage
+- **_BẮT BUỘC_** All major components identified
+- **_BẮT BUỘC_** Architecture pattern clearly documented
+- **_BẮT BUỘC_** Dependencies mapped completely
+
+### Planning Quality
+
+- **_BẮT BUỘC_** All tasks have clear acceptance criteria
+- **_BẮT BUỘC_** Timeline estimates are realistic
+- **_BẮT BUỘC_** Risk mitigation strategies defined
+- **_BẮT BUỘC_** Code references are accurate và clickable
+
+### User Experience
+
+- **_BẮT BUỘC_** Navigation is intuitive và helpful
+- **_BẮT BUỘC_** Deep links work correctly
+- **_BẮT BUỘC_** Options are clearly presented
+- **_BẮT BUỘC_** Decision points are well-defined
+
+## Error Handling
+
+### Khi Không Thể Phân Tích Codebase
+
+```
+🚫 KHÔNG THỂ PHÂN TÍCH CODEBASE
+
+❌ Lý do: [Specific reason]
+❌ Affected files: [List of files]
+
+🔄 Đề xuất:
+1. [Suggestion 1]
+2. [Suggestion 2]
+3. [Fallback option]
+```
+
+### Khi Planning Không Khả Thi
+
+```
+🚫 KẾ HOẠCH KHÔNG KHẢ THI
+
+❌ Vấn đề: [Specific issues]
+❌ Conflicts: [Conflicts with existing code]
+
+🔄 Alternatives:
+1. [Alternative 1] - [Pros/Cons]
+2. [Alternative 2] - [Pros/Cons]
+3. [Simplified approach] - [Pros/Cons]
+```
+
+## Maintenance và Updates
+
+### Regular Updates
+
+- **_BẮT BUỘC_** update analysis khi codebase thay đổi significantly
+- **_BẮT BUỘC_** review plans khi requirements change
+- **_BẮT BUỘC_** maintain accuracy của deep links
+- **_BẮT BUỘC_** update templates based on feedback
+
+### Version Control
+
+- **_BẮT BUỘC_** version tất cả analysis và planning documents
+- **_BẮT BUỘC_** track changes và rationale
+- **_BẮT BUỘC_** maintain history cho future reference
+- **_BẮT BUỘC_** archive outdated plans properly

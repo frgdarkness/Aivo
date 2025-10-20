@@ -1,0 +1,256 @@
+---
+description: Context-aware rule loader that loads rules based on current context
+globs: ["**"]
+alwaysApply: false
+---
+
+# Context-Aware Rule Loader
+
+This rule provides intelligent rule loading based on current context, file patterns, and user intent.
+
+## Rule Loading Logic
+
+### 1. File Pattern Detection
+When working with specific file types, automatically load relevant rules:
+
+```javascript
+// Swift/iOS files
+if (currentFile.match(/\.(swift|xcodeproj)$/) || currentPath.includes('iOS')) {
+    loadRules(['ios-workflow.mdc', 'swiftui-rules.mdc']);
+}
+
+// Test files  
+if (currentFile.match(/Test.*\.swift$/)) {
+    loadRules(['xctest-rules.mdc', 'tdd-guidelines.mdc']);
+}
+
+// Documentation files
+if (currentFile.match(/\.md$/) || currentPath.includes('docs/')) {
+    loadRules(['documentation-rules.mdc', 'markdown-unified-rules.mdc']);
+}
+
+// Kiro task files
+if (currentPath.includes('.kiro/') || currentFile.includes('tasks.md')) {
+    loadRules(['kiro-task-execution.mdc', 'auto-task-execution.mdc']);
+}
+```
+
+### 2. Keyword-Based Loading
+Detect user intent from keywords and load appropriate rules:
+
+```javascript
+// Planning keywords
+if (userMessage.includes('brainstorm') || userMessage.includes('plan')) {
+    loadRules(['planning-workflow.mdc', 'brainstorm-detailed-workflow.mdc']);
+}
+
+// Development keywords
+if (userMessage.includes('implement') || userMessage.includes('code')) {
+    loadRules(['development-rules.mdc', 'four-role-development.mdc']);
+}
+
+// Review keywords
+if (userMessage.includes('review') || userMessage.includes('check')) {
+    loadRules(['ai-manual-code-review-process.mdc', 'ai-powered-review-implementation.mdc']);
+}
+
+// Optimization keywords
+if (userMessage.includes('optimize') || userMessage.includes('refactor')) {
+    loadRules(['cursor-optimization-rules.mdc', 'universal-code-deduplication.mdc']);
+}
+```
+
+### 3. Project Context Detection
+Load rules based on project characteristics:
+
+```javascript
+// iOS project
+if (projectType === 'ios' || hasFile('*.xcodeproj')) {
+    loadRules(['ios-workflow.mdc', 'ios-project-template.mdc']);
+}
+
+// Android project
+if (projectType === 'android' || hasFile('build.gradle')) {
+    loadRules(['android-workflow.mdc', 'android-project-template.mdc']);
+}
+
+// Web project
+if (projectType === 'web' || hasFile('package.json')) {
+    loadRules(['frontend-rules.mdc', 'backend-rules-optimized.mdc']);
+}
+```
+
+## Rule Loading Functions
+
+### Load Rules Function
+```javascript
+function loadRules(ruleNames) {
+    ruleNames.forEach(ruleName => {
+        if (!isRuleLoaded(ruleName)) {
+            loadRule(ruleName);
+            console.log(`Loaded rule: ${ruleName}`);
+        }
+    });
+}
+
+function unloadRules(ruleNames) {
+    ruleNames.forEach(ruleName => {
+        if (isRuleLoaded(ruleName)) {
+            unloadRule(ruleName);
+            console.log(`Unloaded rule: ${ruleName}`);
+        }
+    });
+}
+```
+
+### Context Detection Functions
+```javascript
+function detectCurrentContext() {
+    const context = {
+        fileType: getCurrentFileType(),
+        projectType: getProjectType(),
+        userIntent: detectUserIntent(),
+        workingDirectory: getCurrentDirectory()
+    };
+    
+    return context;
+}
+
+function getCurrentFileType() {
+    const file = getCurrentFile();
+    if (file.match(/\.swift$/)) return 'swift';
+    if (file.match(/\.kt$/)) return 'kotlin';
+    if (file.match(/\.js$|\.ts$/)) return 'javascript';
+    if (file.match(/\.md$/)) return 'markdown';
+    if (file.match(/Test.*\.swift$/)) return 'test';
+    return 'unknown';
+}
+
+function detectUserIntent() {
+    const message = getLastUserMessage();
+    const keywords = {
+        planning: ['plan', 'brainstorm', 'design', 'requirements'],
+        development: ['implement', 'code', 'build', 'develop'],
+        review: ['review', 'check', 'validate', 'test'],
+        optimization: ['optimize', 'improve', 'refactor', 'performance']
+    };
+    
+    for (const [intent, words] of Object.entries(keywords)) {
+        if (words.some(word => message.toLowerCase().includes(word))) {
+            return intent;
+        }
+    }
+    
+    return 'general';
+}
+```
+
+## Rule Loading Strategies
+
+### 1. Lazy Loading
+- Load rules only when needed
+- Unload rules when context changes
+- Keep memory usage minimal
+
+### 2. Predictive Loading
+- Pre-load likely needed rules based on project type
+- Cache frequently used rules
+- Anticipate user needs
+
+### 3. Context Switching
+- Smoothly transition between rule sets
+- Maintain relevant rules across contexts
+- Avoid loading/unloading overhead
+
+## Performance Optimization
+
+### Token Usage Monitoring
+```javascript
+function monitorTokenUsage() {
+    const loadedRules = getLoadedRules();
+    const tokenCount = calculateTokenUsage(loadedRules);
+    
+    if (tokenCount > MAX_TOKENS) {
+        console.warn(`Token usage high: ${tokenCount}/${MAX_TOKENS}`);
+        optimizeRuleSet();
+    }
+}
+
+function optimizeRuleSet() {
+    // Remove least recently used rules
+    const lruRules = getLeastRecentlyUsedRules();
+    unloadRules(lruRules);
+}
+```
+
+### Rule Prioritization
+```javascript
+const RULE_PRIORITIES = {
+    'base-rules-minimal.mdc': 1,
+    'rule-index.mdc': 1,
+    'file-protection-rules.mdc': 1,
+    'development-rules.mdc': 2,
+    'ios-workflow.mdc': 3,
+    'planning-workflow.mdc': 4
+};
+
+function prioritizeRules(rules) {
+    return rules.sort((a, b) => 
+        (RULE_PRIORITIES[a] || 5) - (RULE_PRIORITIES[b] || 5)
+    );
+}
+```
+
+## Usage Examples
+
+### Example 1: iOS Development
+```javascript
+// User opens Swift file
+context = detectCurrentContext();
+// context.fileType = 'swift'
+// context.projectType = 'ios'
+
+loadRules(['ios-workflow.mdc', 'swiftui-rules.mdc']);
+// Now iOS-specific rules are active
+```
+
+### Example 2: Planning Session
+```javascript
+// User says "Let's brainstorm the new feature"
+context = detectCurrentContext();
+// context.userIntent = 'planning'
+
+loadRules(['planning-workflow.mdc', 'brainstorm-detailed-workflow.mdc']);
+// Planning rules are now active
+```
+
+### Example 3: Code Review
+```javascript
+// User says "Please review this code"
+context = detectCurrentContext();
+// context.userIntent = 'review'
+
+loadRules(['ai-manual-code-review-process.mdc', 'ai-powered-review-implementation.mdc']);
+// Review rules are now active
+```
+
+## Integration with Rule Index
+
+This loader works in conjunction with `rule-index.mdc`:
+
+1. **Rule Index** defines which rules to load for each context
+2. **Context Loader** implements the actual loading logic
+3. **Base Rules** provide the foundation
+4. **Smart Distribution** ensures optimal token usage
+
+## Benefits
+
+- **Reduced Token Usage**: Only load rules when needed
+- **Improved Performance**: Faster response times with fewer rules
+- **Better Context Awareness**: Rules match current work context
+- **Flexible Architecture**: Easy to add new contexts and rules
+- **Automatic Optimization**: Self-managing rule loading
+
+---
+
+*This context-aware loader ensures optimal rule distribution while maintaining full functionality.*

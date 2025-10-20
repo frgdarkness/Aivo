@@ -1,0 +1,274 @@
+---
+description: Universal Base Rule - Universal base rule for all projects - the only rule that should auto-attach. Essential functionality và delegation to project-specific rule systems.
+alwaysApply: true
+---
+
+# Universal Base Rule
+
+This is the **ONLY** rule that should be auto-attached across all projects. It provides the minimal essential functionality and delegates to project-specific rule systems.
+
+## Core Principles
+
+### 1. Minimal Footprint
+
+- **Single rule auto-attach** - Only this rule loads automatically
+- **Universal applicability** - Works for any project type
+- **Token efficient** - Minimal content, maximum delegation
+
+### 2. Smart Delegation
+
+- Detect project type and load appropriate rules
+- Context-aware rule loading based on current work
+- Agent-based rule distribution for specialized tasks
+
+### 3. Essential Functions
+
+- File safety and backup
+- Basic code quality standards
+- Communication guidelines
+- Error handling basics
+
+## Project Detection & Rule Loading
+
+### Auto-Detection Logic
+
+```javascript
+function detectProjectAndLoadRules() {
+  const projectType = detectProjectType();
+  const context = detectCurrentContext();
+
+  switch (projectType) {
+    case "ios":
+      loadIOSRules(context);
+      break;
+    case "android":
+      loadAndroidRules(context);
+      break;
+    case "web":
+      loadWebRules(context);
+      break;
+    case "nodejs":
+      loadNodeJSRules(context);
+      break;
+    default:
+      loadGenericRules(context);
+  }
+}
+
+function detectProjectType() {
+  if (hasFile("*.xcodeproj") || hasFile("*.swift")) return "ios";
+  if (hasFile("build.gradle") || hasFile("*.kt")) return "android";
+  if (hasFile("package.json") && hasFile("src/")) return "web";
+  if (hasFile("package.json") && hasFile("server/")) return "nodejs";
+  return "generic";
+}
+```
+
+### Context-Aware Loading
+
+```javascript
+function detectCurrentContext() {
+  const fileType = getCurrentFileType();
+  const userIntent = detectUserIntent();
+  const workingArea = getWorkingArea();
+
+  return {
+    fileType: fileType,
+    intent: userIntent,
+    area: workingArea,
+    needsPlanning:
+      userIntent.includes("plan") || userIntent.includes("brainstorm"),
+    needsDevelopment:
+      userIntent.includes("code") || userIntent.includes("implement"),
+    needsReview: userIntent.includes("review") || userIntent.includes("check"),
+    needsTesting: fileType === "test" || userIntent.includes("test"),
+  };
+}
+```
+
+## Essential Functions (Always Available)
+
+### 1. File Safety
+
+- Always backup before major changes
+- Use version control for all modifications
+- Document breaking changes
+- Maintain file organization
+
+### 2. Code Quality Basics
+
+- Write clean, readable code
+- Use consistent naming conventions
+- Add comments for complex logic
+- Keep functions focused
+
+### 3. Communication Standards
+
+- Provide clear, actionable feedback
+- Ask clarifying questions when needed
+- Document important decisions
+- Maintain professional tone
+
+### 4. Error Handling
+
+- Handle errors gracefully
+- Provide meaningful error messages
+- Log important events
+- Have fallback plans
+
+## Rule Distribution System
+
+### Project-Specific Rules
+
+When project type is detected, load appropriate rules:
+
+**iOS Projects:**
+
+- iOS workflow rules
+- SwiftUI guidelines
+- XCTest rules (when testing)
+- HealthKit rules (when applicable)
+
+**Android Projects:**
+
+- Android workflow rules
+- Kotlin guidelines
+- Android testing rules
+- Material Design rules
+
+**Web Projects:**
+
+- Frontend/backend rules
+- Framework-specific rules (React, Vue, etc.)
+- API integration rules
+- Testing framework rules
+
+**Node.js Projects:**
+
+- Backend development rules
+- API design rules
+- Database rules
+- Deployment rules
+
+### Agent-Based Rules
+
+Load specialized rules based on user intent:
+
+**Planning Agent:**
+
+- Brainstorm workflows
+- Requirements gathering
+- Project setup rules
+
+**Development Agent:**
+
+- Code implementation rules
+- Architecture patterns
+- Best practices
+
+**Review Agent:**
+
+- Code review processes
+- Quality assurance
+- Testing strategies
+
+**Optimization Agent:**
+
+- Performance optimization
+- Code refactoring
+- Security improvements
+
+## Implementation Strategy
+
+### Phase 1: Universal Base ✅
+
+- Single rule auto-attach
+- Project detection
+- Basic delegation
+
+### Phase 2: Smart Loading
+
+- Context-aware rule loading
+- Agent-based distribution
+- Performance optimization
+
+### Phase 3: Advanced Features
+
+- Predictive loading
+- Rule caching
+- Usage analytics
+
+## Usage Examples
+
+### Example 1: iOS Development
+
+```javascript
+// User opens Swift file
+detectProjectAndLoadRules();
+// Detects: projectType = 'ios'
+// Loads: iOS workflow, SwiftUI rules, development guidelines
+```
+
+### Example 2: Planning Session
+
+```javascript
+// User says "Let's brainstorm"
+detectCurrentContext();
+// Detects: intent = 'planning'
+// Loads: Brainstorm workflows, planning rules, requirements gathering
+```
+
+### Example 3: Code Review
+
+```javascript
+// User says "Review this code"
+detectCurrentContext();
+// Detects: intent = 'review'
+// Loads: Review processes, quality assurance, testing rules
+```
+
+## Benefits
+
+### Token Efficiency
+
+- **Before**: 20+ rules auto-attached
+- **After**: 1 rule auto-attached
+- **Reduction**: 95%+ token savings
+
+### Performance
+
+- Faster initial load
+- Contextual rule loading
+- Reduced memory usage
+
+### Maintainability
+
+- Single point of control
+- Easy to update and extend
+- Clear delegation structure
+
+### Flexibility
+
+- Works with any project type
+- Adapts to user needs
+- Scales with complexity
+
+## Migration Guide
+
+### For Existing Projects
+
+1. Keep current rule structure
+2. Add this universal rule as the only auto-attach
+3. Convert existing rules to context-triggered
+4. Test and validate functionality
+
+### For New Projects
+
+1. Use only this universal rule
+2. Add project-specific rules as needed
+3. Configure context triggers
+4. Monitor and optimize
+
+---
+
+_This universal rule provides maximum efficiency while maintaining full functionality through intelligent delegation._

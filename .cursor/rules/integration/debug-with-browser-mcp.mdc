@@ -1,0 +1,13 @@
+---
+description: Debug with Browser MCP - Advanced debugging workflow sử dụng Browser MCP integration. Kích hoạt khi working với debugging, browser automation, hoặc MCP debugging workflows.
+alwaysApply: false
+---
+
+# Debug With Browser MCP
+
+## Nguyên Tắc Debug Với AI
+
+- **_BẮT BUỘC_** sử dụng Browser MCP thay vì copy-paste log riêng lẻ
+- **_BẮT BUỘC_** cung cấp context đầy đủ bao gồm cả UI và console log
+- **_BẮT BUỘC_** chụp screenshot khi gặp lỗi để AI thấy toàn cảnh
+- **_KHUYẾN NGHỊ_** mô tả ngắn gọn vấn đề trước khi cung cấp logs

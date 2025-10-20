@@ -1,0 +1,19 @@
+/* 
+  Localizable.strings
+  BaseIOSProject
+
+  Created by Huy on 15/10/25.
+  
+*/
+"home_screen_title" = "My Home";
+"splash.description" = "This action may contain ads!";
+"show_inter_ad" = "Show InterAd";
+"language_title" = "Language";
+"current_language_badge" = "Currently used";
+"Go Screen A" = "Go Screen A";
+"Go Screen B" = "Go Screen B";
+"Go Screen C" = "Go Screen C";
+"Select Language" = "Select Language";
+"Test Ads" = "Test Ads";
+"Show RewardAd" = "Show RewardAd";
+"Navigation" = "Navigation";

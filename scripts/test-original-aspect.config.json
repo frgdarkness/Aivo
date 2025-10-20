@@ -1,0 +1,53 @@
+{
+  "project": {
+    "name": "Test Original Aspect",
+    "type": "mobile-app",
+    "description": "Test project for original aspect ratio",
+    "target_platforms": ["android", "ios"],
+    "brand_colors": ["#2196F3", "#4CAF50"]
+  },
+  "icons": [
+    {
+      "name": "test-original",
+      "display_name": "Test Original",
+      "description": "Test icon with original aspect ratio",
+      "category": "other",
+      "keywords": ["test", "original", "aspect", "ratio"]
+    }
+  ],
+  "generation": {
+    "style": {
+      "design_system": "material",
+      "color_scheme": "monochrome",
+      "stroke_width": 2,
+      "corner_radius": "slightly-rounded",
+      "complexity": "simple",
+      "fill_style": "filled"
+    },
+    "output": {
+      "format": "png",
+      "size": {
+        "width": 512,
+        "height": 512
+      },
+      "directory": "output/test-icons",
+      "filename_pattern": "test-original-{timestamp}",
+      "crop": {
+        "enabled": true,
+        "aspect_ratio": "original",
+        "padding_percentage": 20,
+        "min_padding_px": 15
+      }
+    },
+    "prompts": {
+      "base_template": "Create a modern, clean icon with simple design",
+      "style_additions": ["flat design", "minimal", "professional", "clean design"],
+      "negative_prompts": ["complex details", "text", "realistic photos", "cluttered design", "overly detailed"]
+    },
+    "ai_settings": {
+      "model": "gemini-2.5-flash-image-preview",
+      "temperature": 0.7,
+      "max_retries": 2
+    }
+  }
+}
