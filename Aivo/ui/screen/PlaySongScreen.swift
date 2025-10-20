@@ -1,0 +1,385 @@
+import SwiftUI
+import AVFoundation
+
+// MARK: - Play Song Screen
+struct PlaySongScreen: View {
+    let songData: SongCreationData?
+    @State private var isPlaying = false
+    @State private var currentTime: TimeInterval = 0
+    @State private var duration: TimeInterval = 180 // 3 minutes for ai_tokyo
+    @State private var audioPlayer: AVAudioPlayer?
+    @State private var showLyrics = false
+    @State private var playbackTimer: Timer?
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var isScrubbing = false
+    @State private var scrubTime: TimeInterval = 0
+    
+    // Hard-coded song for now
+    private let song = Song.tokyo
+    
+    var body: some View {
+        ZStack {
+            // Background
+            AivoSunsetBackground()
+            
+            VStack(spacing: 0) {
+                // Header
+                headerView
+                songCoverView
+                // Main content
+                VStack(spacing: 0) {
+                    // Song info (empty now)
+                    songInfoView
+                    
+                    Slider(
+                        value: Binding(
+                            get: { isScrubbing ? scrubTime : currentTime },
+                            set: { newVal in
+                                if isScrubbing {
+                                    scrubTime = newVal
+                                } else {
+                                    currentTime = newVal
+                                }
+                            }
+                        ),
+                        in: 0...duration,
+                        onEditingChanged: { editing in
+                            if editing {
+                                // bắt đầu kéo → khóa cập nhật từ player
+                                isScrubbing = true
+                                scrubTime = currentTime
+                                // (tuỳ chọn) tạm dừng player nếu muốn
+                                // audioPlayer?.pause()
+                            } else {
+                                // thả tay → seek và mở khóa
+                                isScrubbing = false
+                                currentTime = scrubTime
+                                audioPlayer?.currentTime = scrubTime
+                                // (tuỳ chọn) phát tiếp nếu trước đó đang phát
+                                // if isPlaying { audioPlayer?.play() }
+                            }
+                        }
+                    )
+                    .accentColor(AivoTheme.Primary.orange)
+                    .padding(.top, 14)
+                    .padding(.horizontal, 20)
+                    
+                    // Lyrics section - Fill remaining height
+                    lyricsSection
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                
+                // Bottom controls
+                bottomControlsView
+            }
+        }
+        .onAppear {
+            setupAudioPlayer()
+        }
+        .onDisappear {
+            stopAudio()
+            playbackTimer?.invalidate()
+        }
+    }
+    
+    // MARK: - Header View
+    private var headerView: some View {
+        HStack {
+//            Button(action: { dismiss() }) {
+//                Image(systemName: "chevron.left")
+//                    .font(.title2)
+//                    .foregroundColor(.white)
+//            }
+            
+            Text("HERE'S YOUR SONG")
+                .font(.system(size: 24, weight: .black, design: .monospaced))
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            // Remove copy icon
+            Color.clear
+                .frame(width: 24, height: 24)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 20)
+    }
+    
+    // MARK: - Song Cover View
+    private var songCoverView: some View {
+        VStack(spacing: 0) {
+            // Cover image placeholder (using a colorful gradient for now)
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                AivoTheme.Primary.orange,
+                                AivoTheme.Primary.orangeLight,
+                                AivoTheme.Primary.orangeAccent
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 280, height: 280)
+                    .overlay(
+                        VStack {
+                            Image(systemName: "music.note")
+                                .font(.system(size: 60))
+                                .foregroundColor(.white)
+                        }
+                    )
+                    .shadow(color: AivoTheme.Shadow.orange, radius: 20, x: 0, y: 10)
+                
+                // Song title at bottom left
+                VStack {
+                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("AI Tokyo")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                            
+                            Text("\(songData?.mood.displayName ?? "Energetic") \(songData?.genre.displayName ?? "Electronic") for \(songData?.theme.displayName ?? "My City")")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.9))
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(.leading, 16)
+                        .padding(.bottom, 16)
+                        Spacer()
+                    }
+                }
+                .frame(width: 280, height: 280)
+                
+                // Play/Pause button at bottom right
+                VStack {
+                    Spacer()
+                    HStack {
+                        Spacer()
+                        Button(action: togglePlayPause) {
+                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
+                    }
+                }
+                .frame(width: 280, height: 280)
+            }
+        }
+    }
+    
+    // MARK: - Song Info View
+    private var songInfoView: some View {
+        EmptyView()
+    }
+    
+    // MARK: - Lyrics Section
+    // MARK: - Lyrics Section (card bo cong, margin = 20, title cố định, chỉ lời scroll)
+    private var lyricsSection: some View {
+        // bọc để set margin giống button + chừa đáy
+        VStack(spacing: 0) {
+            ZStack {
+                // card nền đen xám + bo góc
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(AivoTheme.Background.card) // màu đen xám của bạn
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AivoTheme.Primary.orange.opacity(0.25), lineWidth: 1)
+                    )
+
+                // nội dung trong card
+                VStack(alignment: .leading, spacing: 12) {
+                    // Title cố định (không scroll)
+                    Text("Lyrics")
+                        .font(.title2).fontWeight(.bold)
+                        .foregroundColor(AivoTheme.Primary.orange)
+
+                    Divider()
+                        .overlay(AivoTheme.Primary.orange.opacity(0.15))
+
+                    // Chỉ phần lời là scroll
+                    ScrollView(.vertical, showsIndicators: true) {
+                        LazyVStack(alignment: .leading, spacing: 10) {
+                            ForEach(lyricsArray, id: \.self) { line in
+                                if line.hasPrefix("[") {
+                                    Text(line)
+                                        .font(.headline).fontWeight(.bold)
+                                        .foregroundColor(AivoTheme.Primary.orange)
+                                } else {
+                                    Text(line)
+                                        .foregroundColor(.white)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                        }
+                        .padding(.bottom, 4) // đừng để dính sát đáy card khi scroll
+                    }
+                }
+                .padding(16) // padding bên trong card
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top) // card tự giãn phần còn lại
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous)) // nội dung scroll không tràn góc
+        }
+        .padding(.top, 20)
+        .padding(.horizontal, 20)   // = với Button Continue
+        .padding(.bottom, 12)       // margin bottom một chút trước khu vực nút
+    }
+
+    
+    // MARK: - Bottom Controls View
+    private var bottomControlsView: some View {
+        VStack(spacing: 12) {
+            // Progress bar
+//            Slider(value: $currentTime, in: 0...duration) { editing in
+//                if !editing {
+//                    // Seek to new position when user finishes dragging
+//                    audioPlayer?.currentTime = currentTime
+//                }
+//            }
+//            .accentColor(AivoTheme.Primary.orange)
+//            .padding(.top, 8)
+            
+            // Continue button
+            Button(action: continueAction) {
+                Text("Continue")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(AivoTheme.Primary.orange)
+                    .cornerRadius(12)
+                    .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 18)
+        .padding(.top, 16)
+        .background(
+            Rectangle()
+                .fill(AivoTheme.Background.primary)
+                .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -5)
+        )
+    }
+    
+    // MARK: - Computed Properties
+    private var lyricsArray: [String] {
+        return [
+            "[Verse 1]",
+            "In the neon lights of Tokyo",
+            "Where the future meets the past",
+            "AI dreams are coming true",
+            "This moment's built to last",
+            "",
+            "[Chorus]",
+            "Tokyo, Tokyo, city of tomorrow",
+            "Where technology and culture blend",
+            "Tokyo, Tokyo, let the music follow",
+            "This is where the journey ends",
+            "",
+            "[Verse 2]",
+            "Robots dance in harmony",
+            "With the rhythm of the street",
+            "Every beat tells a story",
+            "Of the people that we meet",
+            "",
+            "[Chorus]",
+            "Tokyo, Tokyo, city of tomorrow",
+            "Where technology and culture blend",
+            "Tokyo, Tokyo, let the music follow",
+            "This is where the journey ends"
+        ]
+    }
+    
+    // MARK: - Audio Setup
+    private func setupAudioPlayer() {
+        guard let url = Bundle.main.url(forResource: song.audioFileName, withExtension: "mp3") else {
+            print("Audio file not found")
+            return
+        }
+        
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer?.delegate = AudioPlayerDelegate { [self] in
+                isPlaying = false
+                currentTime = 0
+                playbackTimer?.invalidate()
+            }
+            duration = audioPlayer?.duration ?? 180
+            
+            // Start timer for progress updates
+            startPlaybackTimer()
+        } catch {
+            print("Error setting up audio player: \(error)")
+        }
+    }
+    
+    private func startPlaybackTimer() {
+        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            if let player = audioPlayer, player.isPlaying {
+                currentTime = player.currentTime
+            }
+        }
+    }
+    
+    private func togglePlayPause() {
+        if isPlaying {
+            audioPlayer?.pause()
+            playbackTimer?.invalidate()
+        } else {
+            audioPlayer?.play()
+            startPlaybackTimer()
+        }
+        isPlaying.toggle()
+    }
+    
+    private func stopAudio() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        isPlaying = false
+        playbackTimer?.invalidate()
+    }
+    
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+    
+    private func continueAction() {
+        // For now, just dismiss back to intro screen
+        dismiss()
+    }
+}
+
+// MARK: - Audio Player Delegate
+class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
+    let onFinish: () -> Void
+    
+    init(onFinish: @escaping () -> Void) {
+        self.onFinish = onFinish
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        onFinish()
+    }
+}
+
+// MARK: - Preview
+struct PlaySongScreen_Previews: PreviewProvider {
+    static var previews: some View {
+        PlaySongScreen(songData: SongCreationData(
+            mood: .energetic,
+            genre: .electronic,
+            theme: .myCity
+        ))
+    }
+}

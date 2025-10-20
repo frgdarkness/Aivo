@@ -1,170 +1,334 @@
-//
-//  IntroScreen.swift
-//  DreamHomeAI
-//
-//  Created by AI Assistant on 2025-01-01.
-//
-
 import SwiftUI
 
+// MARK: - Intro Screen Controller
 struct IntroScreen: View {
-    let onIntroCompleted: () -> Void
-    
-    @State private var currentPage = 0
-    private let introSlides = IntroSlideData.introSlides
+    @State private var currentStep = 1
+    @State private var selectedMood: SongMood?
+    @State private var selectedGenre: SongGenre?
+    @State private var selectedTheme: SongTheme?
+    @State private var showPlaySong = false
     
     var body: some View {
         ZStack {
-            // Background gradient
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.95, green: 0.95, blue: 1.0),
-                    Color.white
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            // Background
+            AivoSunsetBackground()
             
             VStack(spacing: 0) {
-                // Skip button
-//                HStack {
-//                    Spacer()
-//                    Button("Skip") {
-//                        onIntroCompleted()
-//                    }
-//                    .foregroundColor(.gray)
-//                    .font(.body)
-//                    .padding(.trailing, 20)
-//                    .padding(.top, 10)
-//                }
+                // Header
+                headerView
                 
-                // Page content
-                TabView(selection: $currentPage) {
-                    ForEach(0..<introSlides.count, id: \.self) { index in
-                        introSlideView(introSlides[index])
-                            .tag(index)
-                    }
-                }
-                .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .animation(.easeInOut, value: currentPage)
+                // Content based on current step
+                contentView
                 
-                // Page indicators
-                pageIndicators
+                Spacer()
                 
-                // Next button
-                nextButton
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 50)
+                // Continue Button
+                continueButton
             }
+            .padding(.horizontal, 20)
+            .padding(.top, 50)
         }
-        .onAppear {
-            // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_INTRO)
+        .fullScreenCover(isPresented: $showPlaySong) {
+            PlaySongScreen(songData: songCreationData)
         }
     }
     
-    // MARK: - Intro Slide View
-    private func introSlideView(_ slide: IntroSlideData) -> some View {
-        VStack(spacing: 0) {
-            // Fixed image section at top - always same height and position
-            ZStack {
-                // Main phone mockup - fixed size and position
-                Image(slide.imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 300, height: 400) // Fixed size for consistency
-                    .cornerRadius(20)
-                    .shadow(color: .black.opacity(0.2), radius: 10, x: 0, y: 5)
-                
-                // Floating theme cards (similar to design)
-                if slide.imageName == "intro_3" {
-                    floatingThemeCards
-                }
-            }
-            .frame(height: 320) // Fixed height for image section
-            .padding(.top, 40) // Fixed top padding
+    // MARK: - Header View
+    private var headerView: some View {
+        VStack(spacing: 8) {
+            Text("LET'S START!")
+                .font(.system(size: 32, weight: .black, design: .monospaced))
+                .foregroundColor(.white)
             
-            // Flexible content section - can expand/contract based on text length
-            VStack(spacing: 16) {
-                Text(slide.title)
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
+            if let mood = selectedMood, let genre = selectedGenre, let theme = selectedTheme {
+                Text("Make a \(mood.displayName) & \(genre.displayName) song for \(theme.displayName)")
+                    .font(.headline)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 20)
-                    .fixedSize(horizontal: false, vertical: true) // Allow text to expand vertically
-                
-                Text(slide.description)
-                    .font(.body)
-                    .foregroundColor(.gray)
+            } else if let mood = selectedMood, let genre = selectedGenre {
+                Text("Make a \(mood.displayName) & \(genre.displayName) song")
+                    .font(.headline)
+                    .foregroundColor(.white)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 30)
-                    .fixedSize(horizontal: false, vertical: true) // Allow text to expand vertically
+            } else if let mood = selectedMood {
+                Text("Make a \(mood.displayName) song")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Make a song")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
             }
-            .padding(.top, 30) // Fixed spacing from image
-            .frame(maxWidth: .infinity) // Take full width
-            
-            // Fixed spacer to push content up consistently
-            Spacer(minLength: 60) // Minimum space at bottom
+        }
+        .padding(.bottom, 40)
+    }
+    
+    // MARK: - Content View
+    @ViewBuilder
+    private var contentView: some View {
+        switch currentStep {
+        case 1:
+            MoodSelectionView(selectedMood: $selectedMood)
+        case 2:
+            GenreSelectionView(selectedGenre: $selectedGenre)
+        case 3:
+            ThemeSelectionView(selectedTheme: $selectedTheme)
+        default:
+            EmptyView()
         }
     }
     
-    // MARK: - Floating Theme Cards
-    private var floatingThemeCards: some View {
-        ZStack {
-            // Ready For It card
-            
-        }
-    }
-    
-    // MARK: - Page Indicators
-    private var pageIndicators: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<introSlides.count, id: \.self) { index in
-                Circle()
-                    .fill(currentPage == index ? Color.purple : Color.gray.opacity(0.3))
-                    .frame(width: 8, height: 8)
-                    .animation(.easeInOut, value: currentPage)
+    // MARK: - Continue Button
+    private var continueButton: some View {
+        Button(action: handleContinue) {
+            HStack {
+                Text("Continue")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                
+                Image(systemName: "arrow.right")
+                    .font(.headline)
             }
+            .foregroundColor(.black)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(AivoTheme.Primary.orange)
+            .cornerRadius(12)
+            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
         }
+        .disabled(!canContinue)
+        .opacity(canContinue ? 1.0 : 0.6)
         .padding(.bottom, 30)
     }
     
-    // MARK: - Next Button
-    private var nextButton: some View {
-        Button(action: {
-            if currentPage < introSlides.count - 1 {
-                withAnimation {
-                    currentPage += 1
-                }
-            } else {
-                onIntroCompleted()
+    // MARK: - Computed Properties
+    private var canContinue: Bool {
+        switch currentStep {
+        case 1:
+            return selectedMood != nil
+        case 2:
+            return selectedGenre != nil
+        case 3:
+            return selectedTheme != nil
+        default:
+            return false
+        }
+    }
+    
+    private var songCreationData: SongCreationData? {
+        guard let mood = selectedMood,
+              let genre = selectedGenre,
+              let theme = selectedTheme else {
+            return nil
+        }
+        return SongCreationData(mood: mood, genre: genre, theme: theme)
+    }
+    
+    // MARK: - Actions
+    private func handleContinue() {
+        if currentStep < 3 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStep += 1
             }
-        }) {
-            Text(currentPage == introSlides.count - 1 ? "Get Started" : "Next")
-                .font(.headline)
-                .fontWeight(.semibold)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.orange,
-                            Color.pink
-                        ]),
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(28)
+        } else {
+            // All steps completed, show play song screen
+            showPlaySong = true
         }
     }
 }
 
-#Preview {
-    IntroScreen {
-        Logger.d("Intro completed")
+// MARK: - Mood Selection View
+struct MoodSelectionView: View {
+    @Binding var selectedMood: SongMood?
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            // Step indicator
+            VStack(spacing: 8) {
+                Text("STEP I")
+                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                
+                Text("What is the **MOOD** of your song?")
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            
+            // Mood options
+            VStack(spacing: 16) {
+                ForEach(SongMood.getHottest(), id: \.self) { mood in
+                    MoodOptionButton(
+                        mood: mood,
+                        isSelected: selectedMood == mood,
+                        action: { selectedMood = mood }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Genre Selection View
+struct GenreSelectionView: View {
+    @Binding var selectedGenre: SongGenre?
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            // Step indicator
+            VStack(spacing: 8) {
+                Text("STEP 2")
+                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                
+                Text("What is the **GENRE** of your song?")
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            
+            // Genre options
+            VStack(spacing: 16) {
+                ForEach(SongGenre.getHottest(), id: \.self) { genre in
+                    GenreOptionButton(
+                        genre: genre,
+                        isSelected: selectedGenre == genre,
+                        action: { selectedGenre = genre }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Theme Selection View
+struct ThemeSelectionView: View {
+    @Binding var selectedTheme: SongTheme?
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            // Step indicator
+            VStack(spacing: 8) {
+                Text("STEP 3")
+                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                
+                Text("WHO is song for?")
+                    .font(.title2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.white)
+            }
+            
+            // Theme options
+            VStack(spacing: 16) {
+                ForEach(SongTheme.getHottest(), id: \.self) { theme in
+                    ThemeOptionButton(
+                        theme: theme,
+                        isSelected: selectedTheme == theme,
+                        action: { selectedTheme = theme }
+                    )
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Option Buttons
+struct MoodOptionButton: View {
+    let mood: SongMood
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(mood.displayName)
+                .font(.headline)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.clear : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
+                                    lineWidth: isSelected ? 3 : 1
+                                )
+                        )
+                )
+        }
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+}
+
+struct GenreOptionButton: View {
+    let genre: SongGenre
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(genre.displayName)
+                .font(.headline)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.clear : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
+                                    lineWidth: isSelected ? 3 : 1
+                                )
+                        )
+                )
+        }
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+}
+
+struct ThemeOptionButton: View {
+    let theme: SongTheme
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(theme.displayName)
+                .font(.headline)
+                .fontWeight(.medium)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? Color.clear : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(
+                                    isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
+                                    lineWidth: isSelected ? 3 : 1
+                                )
+                        )
+                )
+        }
+        .scaleEffect(isSelected ? 1.02 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSelected)
+    }
+}
+
+// MARK: - Preview
+struct IntroScreen_Previews: PreviewProvider {
+    static var previews: some View {
+        IntroScreen()
     }
 }

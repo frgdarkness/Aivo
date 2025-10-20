@@ -45,13 +45,8 @@ struct RootView: View {
                 .transition(.pushFromRight)
                 
             case .intro:
-                IntroScreen {
-                    userDefaultsManager.markIntroAsShowed()
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentScreen = .buyCredit
-                    }
-                }
-                .transition(.pushFromRight)
+                IntroScreen()
+                    .transition(.pushFromRight)
                 
             case .buyCredit:
                 BuyCreditScreen {
