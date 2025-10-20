@@ -15,21 +15,15 @@ struct HomeView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Background gradient
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.purple.opacity(0.6)]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
+                // Aivo Background with Orange Gradient
+                AivoSunsetBackground()
                 
                 VStack(spacing: 30) {
                     // Header with Title and Credit Badge
                     HStack {
-                        Text("home_screen_title")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
+                        Text("AIVO")
+                            .aivoText(.title)
+                            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
                         
                         Spacer()
                         
@@ -47,9 +41,7 @@ struct HomeView: View {
                     // Ad Test Buttons Section
                     VStack(spacing: 15) {
                         Text("Test Ads")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .aivoText(.subtitle)
                         
                         HStack(spacing: 15) {
                             // Show Interstitial Ad Button
@@ -70,10 +62,10 @@ struct HomeView: View {
                                 .frame(height: 70)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.orange.opacity(0.7))
+                                        .fill(AivoTheme.Primary.orange.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orangeLight.opacity(0.5), lineWidth: 1)
                                         )
                                 )
                             }
@@ -94,10 +86,10 @@ struct HomeView: View {
                                 .frame(height: 70)
                                 .background(
                                     RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.green.opacity(0.7))
+                                        .fill(AivoTheme.Primary.orangeLight.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 12)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.5), lineWidth: 1)
                                         )
                                 )
                             }
@@ -108,9 +100,7 @@ struct HomeView: View {
                     // Navigation buttons
                     VStack(spacing: 20) {
                         Text("Navigation")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.white)
+                            .aivoText(.subtitle)
                         
                         NavigationLink(destination: ScreenA(), isActive: $navigateToScreenA) {
                             Button(action: {
@@ -128,10 +118,10 @@ struct HomeView: View {
                                 .frame(height: 60)
                                 .background(
                                     RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white.opacity(0.2))
+                                        .fill(AivoTheme.Background.card.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                                         )
                                 )
                             }
@@ -153,10 +143,10 @@ struct HomeView: View {
                                 .frame(height: 60)
                                 .background(
                                     RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white.opacity(0.2))
+                                        .fill(AivoTheme.Background.card.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                                         )
                                 )
                             }
@@ -178,10 +168,10 @@ struct HomeView: View {
                                 .frame(height: 60)
                                 .background(
                                     RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white.opacity(0.2))
+                                        .fill(AivoTheme.Background.card.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                                         )
                                 )
                             }
@@ -203,10 +193,10 @@ struct HomeView: View {
                                 .frame(height: 60)
                                 .background(
                                     RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white.opacity(0.2))
+                                        .fill(AivoTheme.Background.card.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                                         )
                                 )
                             }
@@ -233,10 +223,10 @@ struct HomeView: View {
                                 .frame(height: 60)
                                 .background(
                                     RoundedRectangle(cornerRadius: 15)
-                                        .fill(Color.white.opacity(0.2))
+                                        .fill(AivoTheme.Background.card.opacity(0.8))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 15)
-                                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                                         )
                                 )
                             }

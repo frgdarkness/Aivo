@@ -81,7 +81,8 @@ struct SplashScreenView: View {
     
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            // Aivo Background with Orange Gradient
+            AivoSunsetBackground()
             
             VStack(spacing: 0) {
                 Spacer()
@@ -92,11 +93,15 @@ struct SplashScreenView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 120, height: 120)
                         .cornerRadius(20)
+                        .shadow(color: AivoTheme.Shadow.orange, radius: 15, x: 0, y: 0)
                     
-                    Text("DreamHome AI")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
+                    Text("AIVO")
+                        .aivoText(.title)
+                        .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+                    
+                    Text("AI Music Creator")
+                        .aivoText(.subtitle)
+                        .opacity(0.9)
                 }
                 .frame(maxHeight: UIScreen.main.bounds.height / 3)
                 
@@ -104,13 +109,12 @@ struct SplashScreenView: View {
                 
                 VStack(spacing: 16) {
                     ProgressView(value: progress, total: 1.0)
-                        .progressViewStyle(LinearProgressViewStyle(tint: .white))
+                        .progressViewStyle(LinearProgressViewStyle(tint: AivoTheme.Primary.orange))
                         .scaleEffect(x: 1, y: 2, anchor: .center)
                         .padding(.horizontal, 40)
                     
                     Text("splash.description")
-                        .font(.caption)
-                        .foregroundColor(.gray)
+                        .aivoText(.muted)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.bottom, 50)
