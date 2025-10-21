@@ -6,9 +6,6 @@ struct LibraryTabView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            headerView
-            
             // Content
             if songs.isEmpty {
                 emptyStateView
@@ -16,51 +13,6 @@ struct LibraryTabView: View {
                 songsListView
             }
         }
-    }
-    
-    // MARK: - Header View
-    private var headerView: some View {
-        HStack {
-            Text("AIVO AI MUSIC")
-                .font(.system(size: 24, weight: .black, design: .monospaced))
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            // VIP Button
-            Button(action: {}) {
-                HStack(spacing: 4) {
-                    Image(systemName: "crown.fill")
-                        .font(.caption)
-                        .foregroundColor(.yellow)
-                    
-                    Text("VIP")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    Capsule()
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
-                        )
-                )
-            }
-            
-            // Settings Button
-            Button(action: {}) {
-                Image(systemName: "gearshape")
-                    .font(.title2)
-                    .foregroundColor(.white)
-            }
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .padding(.bottom, 40)
     }
     
     // MARK: - Empty State View

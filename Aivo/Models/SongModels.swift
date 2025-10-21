@@ -11,6 +11,32 @@ enum SongMood: String, CaseIterable {
     case romantic = "Romantic"
     case calm = "Calm"
     case aggressive = "Aggressive"
+    case whimsical = "Whimsical"
+    case depressive = "Depressive"
+    case confident = "Confident"
+    case nostalgic = "Nostalgic"
+    case mysterious = "Mysterious"
+    case playful = "Playful"
+    case intense = "Intense"
+    case dreamy = "Dreamy"
+    case rebellious = "Rebellious"
+    case hopeful = "Hopeful"
+    case melancholic = "Melancholic"
+    case productivity = "Productivity"
+    case uplifting = "Uplifting"
+    case hype = "Hype"
+    case joyful = "Joyful"
+    case dark = "Dark"
+    case passionate = "Passionate"
+    case spiritual = "Spiritual"
+    case eclectic = "Eclectic"
+    case emotion = "Emotion"
+    case hard = "Hard"
+    case lyrical = "Lyrical"
+    case magical = "Magical"
+    case minimal = "Minimal"
+    case party = "Party"
+    case weird = "Weird"
     
     var displayName: String {
         return self.rawValue
@@ -34,11 +60,63 @@ enum SongMood: String, CaseIterable {
             return "Peaceful and serene"
         case .aggressive:
             return "Intense and powerful"
+        case .whimsical:
+            return "Playful and quirky"
+        case .depressive:
+            return "Dark and somber"
+        case .confident:
+            return "Bold and self-assured"
+        case .nostalgic:
+            return "Sentimental and wistful"
+        case .mysterious:
+            return "Enigmatic and intriguing"
+        case .playful:
+            return "Fun and lighthearted"
+        case .intense:
+            return "Powerful and dramatic"
+        case .dreamy:
+            return "Ethereal and otherworldly"
+        case .rebellious:
+            return "Defiant and non-conformist"
+        case .hopeful:
+            return "Optimistic and uplifting"
+        case .melancholic:
+            return "Pensive and reflective"
+        case .productivity:
+            return "Focused and driven"
+        case .uplifting:
+            return "Positive and inspiring"
+        case .hype:
+            return "Exciting and energetic"
+        case .joyful:
+            return "Happy and celebratory"
+        case .dark:
+            return "Mysterious and brooding"
+        case .passionate:
+            return "Intense and emotional"
+        case .spiritual:
+            return "Transcendent and meaningful"
+        case .eclectic:
+            return "Diverse and varied"
+        case .emotion:
+            return "Deeply emotional"
+        case .hard:
+            return "Tough and aggressive"
+        case .lyrical:
+            return "Poetic and expressive"
+        case .magical:
+            return "Enchanting and mystical"
+        case .minimal:
+            return "Simple and clean"
+        case .party:
+            return "Fun and celebratory"
+        case .weird:
+            return "Unconventional and quirky"
         }
     }
     
     static func getHottest() -> [SongMood] {
-        return [.chill, .happy, .motivational, .energetic]
+        return [.whimsical, .depressive, .confident, .happy, .chill, .motivational, .energetic, .romantic, .calm, .aggressive]
     }
 }
 
