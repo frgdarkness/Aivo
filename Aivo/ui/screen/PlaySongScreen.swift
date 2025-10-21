@@ -4,6 +4,8 @@ import AVFoundation
 // MARK: - Play Song Screen
 struct PlaySongScreen: View {
     let songData: SongCreationData?
+    let onIntroCompleted: () -> Void // Callback to SplashScreenView
+    
     @State private var isPlaying = false
     @State private var currentTime: TimeInterval = 0
     @State private var duration: TimeInterval = 180 // 3 minutes for ai_tokyo
@@ -14,6 +16,8 @@ struct PlaySongScreen: View {
     
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
+    
+    @StateObject private var userDefaultsManager = UserDefaultsManager.shared
     
     // Hard-coded song for now
     private let song = Song.tokyo
@@ -355,8 +359,11 @@ struct PlaySongScreen: View {
     }
     
     private func continueAction() {
-        // For now, just dismiss back to intro screen
-        dismiss()
+        // Mark intro as completed in UserDefaults
+        userDefaultsManager.markIntroAsShowed()
+        
+        // Call callback to SplashScreenView to navigate to HomeView
+        onIntroCompleted()
     }
 }
 
@@ -376,10 +383,13 @@ class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
 // MARK: - Preview
 struct PlaySongScreen_Previews: PreviewProvider {
     static var previews: some View {
-        PlaySongScreen(songData: SongCreationData(
-            mood: .energetic,
-            genre: .electronic,
-            theme: .myCity
-        ))
+        PlaySongScreen(
+            songData: SongCreationData(
+                mood: .energetic,
+                genre: .electronic,
+                theme: .myCity
+            ),
+            onIntroCompleted: {}
+        )
     }
 }

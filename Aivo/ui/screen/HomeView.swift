@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct HomeView: View {
+struct HomeViewSample: View {
     @State private var navigateToScreenA = false
     @State private var navigateToScreenB = false
     @State private var navigateToScreenC = false
@@ -265,5 +265,5 @@ struct HomeView: View {
 }
 
 #Preview {
-    HomeView()
+    HomeViewSample()
 }

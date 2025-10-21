@@ -45,8 +45,13 @@ struct RootView: View {
                 .transition(.pushFromRight)
                 
             case .intro:
-                IntroScreen()
-                    .transition(.pushFromRight)
+                IntroScreen { 
+                    // Callback when intro is completed
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentScreen = .home
+                    }
+                }
+                .transition(.pushFromRight)
                 
             case .buyCredit:
                 BuyCreditScreen {

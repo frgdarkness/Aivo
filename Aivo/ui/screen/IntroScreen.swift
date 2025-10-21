@@ -2,6 +2,8 @@ import SwiftUI
 
 // MARK: - Intro Screen Controller
 struct IntroScreen: View {
+    let onIntroCompleted: () -> Void // Callback to SplashScreenView
+    
     @State private var currentStep = 1
     @State private var selectedMood: SongMood?
     @State private var selectedGenre: SongGenre?
@@ -29,7 +31,10 @@ struct IntroScreen: View {
             .padding(.top, 50)
         }
         .fullScreenCover(isPresented: $showPlaySong) {
-            PlaySongScreen(songData: songCreationData)
+            PlaySongScreen(
+                songData: songCreationData,
+                onIntroCompleted: onIntroCompleted
+            )
         }
     }
     
@@ -329,6 +334,6 @@ struct ThemeOptionButton: View {
 // MARK: - Preview
 struct IntroScreen_Previews: PreviewProvider {
     static var previews: some View {
-        IntroScreen()
+        IntroScreen(onIntroCompleted: {})
     }
 }
