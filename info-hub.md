@@ -29,11 +29,11 @@ Bộ nhớ splash đơn giản để các AI tools biết ai đang làm gì, tr�
 ## 📝 Recent Activity Log
 *Chỉ ghi 5 hoạt động gần nhất*
 
-1. **2024-12-20 17:45** - Claude: Hoàn thành cập nhật PlaySongScreen với intro completion logic và callback flow (SplashScreen → IntroScreen → PlaySongScreen → HomeView)
-2. **2024-12-20 17:25** - Claude: Hoàn thành implement MainTabView với 4 tab (Home, Explore, Cover, Library) theo design Zuka
-3. **2024-12-20 16:55** - Claude: Hoàn thành implement SubscriptionScreen theo design Zuka với 3 gói (Weekly, Monthly, Annually) và ScrollView
-4. **2024-12-20 16:05** - Claude: Hoàn thành cập nhật PlaySongScreen UI theo yêu cầu (song info, play button position, lyrics layout)
-5. **2024-12-20 15:40** - Claude: Hoàn thành optimize 3-step flow với getHottest() và cải thiện PlaySongScreen UI
+1. **2024-12-20 18:10** - Claude: Hoàn thành implement HomeView mới theo design Zuka với title ngoài ScrollView, genre selection với icons, advanced options collapsible, và build thành công
+2. **2024-12-20 17:45** - Claude: Hoàn thành cập nhật PlaySongScreen với intro completion logic và callback flow (SplashScreen → IntroScreen → PlaySongScreen → HomeView)
+3. **2024-12-20 17:25** - Claude: Hoàn thành implement MainTabView với 4 tab (Home, Explore, Cover, Library) theo design Zuka
+4. **2024-12-20 16:55** - Claude: Hoàn thành implement SubscriptionScreen theo design Zuka với 3 gói (Weekly, Monthly, Annually) và ScrollView
+5. **2024-12-20 16:05** - Claude: Hoàn thành cập nhật PlaySongScreen UI theo yêu cầu (song info, play button position, lyrics layout)
 
 ---
 

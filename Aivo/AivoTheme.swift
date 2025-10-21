@@ -19,6 +19,23 @@ struct AivoTheme {
         static let orangeBright = Color(red: 1.0, green: 0.6, blue: 0.1) // #FF991A - Bright Orange
     }
     
+    struct Secondary {
+        // --- Warm Analogous (vàng - đỏ) ---
+        static let goldenSun = Color(red: 1.0, green: 0.85, blue: 0.4)   // #FFD966 - Vàng ánh kim (header, icon)
+        static let coralRed  = Color(red: 1.0, green: 0.45, blue: 0.3)   // #FF734D - Cam đỏ nổi bật (CTA, button)
+        static let sunsetPink = Color(red: 1.0, green: 0.65, blue: 0.55) // #FFA694 - Cam hồng pastel (badge, accent)
+
+        // --- Complementary / Contrast (tím - xanh) ---
+        static let royalPurple = Color(red: 0.45, green: 0.25, blue: 0.85) // #733DDA - Tím đối màu, tạo điểm nhấn mạnh
+        static let tealBlue    = Color(red: 0.0, green: 0.6, blue: 0.6)    // #009999 - Xanh teal hiện đại
+        static let oceanCyan   = Color(red: 0.0, green: 0.7, blue: 0.8)    // #00B3CC - Xanh cyan nổi bật khi mix cam
+
+        // --- Neutral & Deep (nền và text) ---
+        static let deepCharcoal = Color(red: 0.12, green: 0.12, blue: 0.14) // #1F1F24 - Gần đen dùng cho background
+        static let warmGray     = Color(red: 0.35, green: 0.33, blue: 0.32) // #595452 - Xám ấm, hợp cam
+        static let sandBeige    = Color(red: 0.95, green: 0.87, blue: 0.75) // #F3DEBF - Be sáng dùng làm nền phụ
+    }
+    
     // MARK: - Background Colors
     struct Background {
         static let primary = Color.black

@@ -89,6 +89,19 @@ enum SongGenre: String, CaseIterable {
         }
     }
     
+    var icon: String {
+        switch self {
+        case .edm:
+            return "icon_edm"
+        case .hiphop:
+            return "icon_hiphop"
+        case .rap:
+            return "icon_rap"
+        default:
+            return "icon_edm" // Default icon
+        }
+    }
+    
     static func getHottest() -> [SongGenre] {
         return [.rap, .pop_ballard, .rock, .edm]
     }
