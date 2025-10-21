@@ -45,6 +45,7 @@ enum SongMood: String, CaseIterable {
 enum SongGenre: String, CaseIterable {
     case rap = "Rap"
     case pop = "Pop"
+    case pop_ballard = "Pop/Ballad"
     case rock = "Rock"
     case kpop = "K-Pop"
     case electronic = "Electronic"
@@ -53,6 +54,7 @@ enum SongGenre: String, CaseIterable {
     case jazz = "Jazz"
     case classical = "Classical"
     case hiphop = "Hip-Hop"
+    case edm = "EDM"
     
     var displayName: String {
         return self.rawValue
@@ -80,11 +82,15 @@ enum SongGenre: String, CaseIterable {
             return "Classical orchestral music"
         case .hiphop:
             return "Hip-hop beats and culture"
+        case .pop_ballard:
+            return "Ballad-style pop music"
+        case .edm:
+            return "Electronic dance music"
         }
     }
     
     static func getHottest() -> [SongGenre] {
-        return [.rap, .pop, .rock, .electronic]
+        return [.rap, .pop_ballard, .rock, .edm]
     }
 }
 
