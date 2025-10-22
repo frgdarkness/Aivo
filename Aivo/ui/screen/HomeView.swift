@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Main Home View (Container)
 struct HomeView: View {
     @State private var selectedTab: TabItem = .home
+    @State private var showGenerateSongResult = false
     
     var body: some View {
         ZStack {
@@ -73,7 +74,9 @@ struct HomeView: View {
             }
             
             // Settings
-            Button(action: {}) {
+            Button(action: {
+                showGenerateSongResult = true
+            }) {
                 Image(systemName: "gearshape.fill")
                     .font(.title2)
                     .foregroundColor(.white)
@@ -115,6 +118,14 @@ struct HomeView: View {
                 .fill(AivoTheme.Background.primary)
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -5)
         )
+        .fullScreenCover(isPresented: $showGenerateSongResult) {
+            GenerateSongResultScreen(
+                audioUrl: "https://cdn1.suno.ai/53d93a26-3bed-4f54-b9fc-47433f424884.mp3",
+                onClose: {
+                    showGenerateSongResult = false
+                }
+            )
+        }
     }
 }
 
