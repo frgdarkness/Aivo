@@ -134,6 +134,28 @@ enum SongGenre: String, CaseIterable {
     case hiphop = "Hip-Hop"
     case edm = "EDM"
     
+    // New genres from the image
+    case arabicMariachi = "arabic mariachi"
+    case arabicPop = "arabic pop"
+    case arabicReggae = "arabic reggae"
+    case bachata = "bachata"
+    case bedroomPop = "bedroom pop"
+    case bedroomPopSka = "bedroom pop ska"
+    case bengaliDrill = "bengali drill"
+    case bengaliGrunge = "bengali grunge"
+    case bengaliSurf = "bengali surf"
+    case bigBandBoogie = "big band boogie"
+    case bigBandCumbia = "big band cumbia"
+    case bigBandGrunge = "big band grunge"
+    case bluegrass = "bluegrass"
+    case bluegrassKPop = "bluegrass k-pop"
+    case bluegrassPunk = "bluegrass punk"
+    case bluegrassRock = "bluegrass rock"
+    case bluesCumbia = "blues cumbia"
+    case bluesFolk = "blues folk"
+    case bluesRock = "blues rock"
+    case boogieCeltic = "boogie celtic"
+    
     var displayName: String {
         return self.rawValue
     }
@@ -164,6 +186,46 @@ enum SongGenre: String, CaseIterable {
             return "Ballad-style pop music"
         case .edm:
             return "Electronic dance music"
+        case .arabicMariachi:
+            return "Arabic mariachi fusion"
+        case .arabicPop:
+            return "Arabic pop music"
+        case .arabicReggae:
+            return "Arabic reggae fusion"
+        case .bachata:
+            return "Latin bachata music"
+        case .bedroomPop:
+            return "Indie bedroom pop"
+        case .bedroomPopSka:
+            return "Bedroom pop ska fusion"
+        case .bengaliDrill:
+            return "Bengali drill music"
+        case .bengaliGrunge:
+            return "Bengali grunge rock"
+        case .bengaliSurf:
+            return "Bengali surf music"
+        case .bigBandBoogie:
+            return "Big band boogie"
+        case .bigBandCumbia:
+            return "Big band cumbia"
+        case .bigBandGrunge:
+            return "Big band grunge"
+        case .bluegrass:
+            return "American bluegrass"
+        case .bluegrassKPop:
+            return "Bluegrass K-pop fusion"
+        case .bluegrassPunk:
+            return "Bluegrass punk fusion"
+        case .bluegrassRock:
+            return "Bluegrass rock fusion"
+        case .bluesCumbia:
+            return "Blues cumbia fusion"
+        case .bluesFolk:
+            return "Blues folk music"
+        case .bluesRock:
+            return "Blues rock fusion"
+        case .boogieCeltic:
+            return "Boogie celtic fusion"
         }
     }
     
@@ -181,7 +243,7 @@ enum SongGenre: String, CaseIterable {
     }
     
     static func getHottest() -> [SongGenre] {
-        return [.rap, .pop_ballard, .rock, .edm]
+        return [.rap, .pop_ballard, .rock, .edm, .hiphop, .electronic, .pop, .kpop, .jazz, .classical]
     }
 }
 

@@ -8,6 +8,8 @@ struct GenerateSongTabView: View {
     @State private var selectedMoods: [SongMood] = []
     @State private var selectedGenres: [SongGenre] = []
     @State private var showMultiMoodScreen = false
+    @State private var showMultiGenreScreen = false
+    @State private var showGenerateSongScreen = false
     @State private var isAdvancedExpanded = false
     @State private var songName = ""
     @State private var isVocalEnabled = false
@@ -45,7 +47,7 @@ struct GenerateSongTabView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 100) // Space for bottom navigation
         }
-        .sheet(isPresented: $showMultiMoodScreen) {
+        .fullScreenCover(isPresented: $showMultiMoodScreen) {
             SelectMultiMoodScreen(
                 initialSelectedMoods: selectedMoods,
                 onDone: { selectedMoods in
@@ -55,6 +57,23 @@ struct GenerateSongTabView: View {
                     // Do nothing, just dismiss
                 }
             )
+        }
+        .fullScreenCover(isPresented: $showMultiGenreScreen) {
+            SelectMultiGenreScreen(
+                initialSelectedGenres: selectedGenres,
+                onDone: { selectedGenres in
+                    self.selectedGenres = selectedGenres
+                },
+                onCancel: {
+                    // Do nothing, just dismiss
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showGenerateSongScreen) {
+            GenerateSongScreen {
+                // On completion, dismiss the screen
+                showGenerateSongScreen = false
+            }
         }
     }
     
@@ -272,7 +291,7 @@ struct GenerateSongTabView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(SongGenre.allCases, id: \.self) { genre in
+                    ForEach(SongGenre.getHottest().prefix(10), id: \.self) { genre in
                         Button(action: {
                             toggleGenreSelection(genre)
                         }) {
@@ -292,6 +311,30 @@ struct GenerateSongTabView: View {
                                     .fill(selectedGenres.contains(genre) ? AivoTheme.Primary.orangeDark : Color.gray.opacity(0.3))
                             )
                         }
+                    }
+                    
+                    Button(action: {
+                        showMultiGenreScreen = true
+                    }) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "ellipsis")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                                .frame(width: 60, height: 60)
+                            
+                            Text("More")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 88, height: 88)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.clear)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
+                        )
                     }
                 }
                 .padding(.horizontal, 4)
@@ -392,7 +435,9 @@ struct GenerateSongTabView: View {
     
     // MARK: - Create Button
     private var createButton: some View {
-        Button(action: {}) {
+        Button(action: {
+            showGenerateSongScreen = true
+        }) {
             HStack(spacing: 8) {
                 Text(selectedInputType == .description ? "Create with Description" : "Create with Lyrics")
                     .font(.system(size: 16, weight: .semibold))
@@ -433,7 +478,7 @@ struct GenerateSongTabView: View {
         if selectedGenres.contains(genre) {
             selectedGenres.removeAll { $0 == genre }
         } else {
-            if selectedGenres.count >= 3 {
+            if selectedGenres.count >= 5 {
                 selectedGenres.removeFirst()
             }
             selectedGenres.append(genre)

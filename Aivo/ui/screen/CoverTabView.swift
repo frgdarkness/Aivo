@@ -1,77 +1,101 @@
 import SwiftUI
 
 // MARK: - Cover Tab View
+import SwiftUI
+
+// MARK: - Cover Tab View
 struct CoverTabView: View {
     @State private var selectedSong = ""
     @State private var selectedVoiceType: VoiceType = .otherVoice
     @State private var selectedArtist: Artist? = nil
-    
+
+    // NEW: nguồn dữ liệu ở phần card-tab
+    enum SourceType { case song, youtube }
+    @State private var selectedSource: SourceType = .song
+
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Song Selection
+                // Song Selection (Card-Tab đơn giản)
                 songSelectionSection
-                
+
                 // Voice Selection
                 voiceSelectionSection
-                
+
                 // Artist Selection
                 artistSelectionSection
-                
+
                 // Generate Button
                 generateButton
-                
+
                 Spacer(minLength: 100) // Space for bottom nav
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
         }
     }
-    
-    // MARK: - Song Selection Section
+
+    // MARK: - Song Selection Section (VStack, card nằm dưới)
     private var songSelectionSection: some View {
-        VStack(spacing: 12) {
-            Button(action: pickSong) {
-                Text("Pick a Song")
-                    .font(.headline)
-                    .fontWeight(.medium)
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(AivoTheme.Primary.orange)
-                    .cornerRadius(12)
-            }
+        VStack(alignment: .leading, spacing: 0) {
+            // HStack: 2 tab
+            HStack(alignment: .bottom, spacing: 0) {
+                        TagLabel(
+                            title: "Pick a Song",
+                            isSelected: selectedSource == .song,
+                            selectedColor: AivoTheme.Primary.orange
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .song }
+                        }
+                        .zIndex(selectedSource == .song ? 1 : 0)
+
+                        TagLabel(
+                            title: "Youtube",
+                            isSelected: selectedSource == .youtube,
+                            selectedColor: AivoTheme.Secondary.goldenSun
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .youtube }
+                        }
+                        .padding(.leading, -8)
+                        .zIndex(selectedSource == .youtube ? 1 : 0)
+                        Spacer()
+                    }
             
-            HStack {
-                TextField("Please pick a song to cover", text: $selectedSong)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.gray.opacity(0.2))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(AivoTheme.Primary.orange, lineWidth: 1)
-                            )
-                    )
-                
-                Button(action: {}) {
-                    Image(systemName: "pencil")
-                        .font(.title3)
+            Rectangle()
+               .fill(AivoTheme.Primary.orange)
+               .frame(width: 40, height: 20)
+               .padding(.top, -10)
+
+            // Card nội dung nằm DƯỚI
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.black.opacity(1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(AivoTheme.Primary.orange, lineWidth: 1)
+                )
+                .overlay(
+                    Text("Select your song")
+                        .font(.headline.weight(.semibold))
                         .foregroundColor(.white)
-                }
-            }
+                )
+                .frame(maxWidth: .infinity, minHeight: 120)
+                .padding(.top, -10) // đẩy sát tab hơn một chút
+            
+            
         }
+        .animation(.easeInOut(duration: 0.25), value: selectedSource)
     }
-    
+
+
+
+
     // MARK: - Voice Selection Section
     private var voiceSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Select Voice")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
             HStack(spacing: 12) {
                 ForEach(VoiceType.allCases, id: \.self) { type in
                     Button(action: { selectedVoiceType = type }) {
@@ -79,7 +103,7 @@ struct CoverTabView: View {
                             Image(systemName: type.icon)
                                 .font(.title3)
                                 .foregroundColor(selectedVoiceType == type ? .black : .white)
-                            
+
                             Text(type.rawValue)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
@@ -96,14 +120,14 @@ struct CoverTabView: View {
             }
         }
     }
-    
+
     // MARK: - Artist Selection Section
     private var artistSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Select Voice")
                 .font(.headline)
                 .foregroundColor(.white)
-            
+
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
                 ForEach(Artist.allCases, id: \.self) { artist in
                     Button(action: { selectedArtist = selectedArtist == artist ? nil : artist }) {
@@ -112,11 +136,11 @@ struct CoverTabView: View {
                                 Circle()
                                     .fill(artist.backgroundColor)
                                     .frame(width: 60, height: 60)
-                                
+
                                 Text(artist.emoji)
                                     .font(.title2)
                             }
-                            
+
                             Text(artist.name)
                                 .font(.caption)
                                 .fontWeight(.medium)
@@ -132,7 +156,7 @@ struct CoverTabView: View {
             }
         }
     }
-    
+
     // MARK: - Generate Button
     private var generateButton: some View {
         Button(action: generateCover) {
@@ -141,7 +165,7 @@ struct CoverTabView: View {
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
-                
+
                 Image(systemName: "mic.fill")
                     .font(.title3)
                     .foregroundColor(.black)
@@ -153,12 +177,10 @@ struct CoverTabView: View {
             .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
         }
     }
-    
+
     // MARK: - Actions
-    private func pickSong() {
-        print("Picking a song...")
-    }
-    
+    private func pickSong() { print("Picking a song...") }
+
     private func generateCover() {
         print("Generating cover with \(selectedVoiceType.rawValue) voice")
         if let artist = selectedArtist {
@@ -166,6 +188,7 @@ struct CoverTabView: View {
         }
     }
 }
+
 
 // MARK: - Supporting Enums
 enum VoiceType: String, CaseIterable {
@@ -227,6 +250,85 @@ enum Artist: String, CaseIterable {
 // MARK: - Preview
 struct CoverTabView_Previews: PreviewProvider {
     static var previews: some View {
-        CoverTabView()
+        ZStack {
+            //AivoSunsetBackground()
+            CoverTabView()
+        }
+        
     }
 }
+
+private struct TabChip: View {
+    let title: String
+    let systemIcon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemIcon)
+                Text(title)
+            }
+            // ↑ font to hơn khi chọn (đẩy layout thật)
+            .font(isSelected ? .subheadline.weight(.semibold)
+                             : .footnote.weight(.semibold))
+            .foregroundColor(isSelected ? .black : .white)
+
+            // ↑ padding lớn hơn khi chọn (kích thước thật, không scale)
+            .padding(.horizontal, isSelected ? 16 : 12)
+            .padding(.vertical,   isSelected ? 9  : 7)
+
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isSelected ? AivoTheme.Primary.orange : Color.gray.opacity(0.25))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct TagLabel: View {
+    let title: String
+    let isSelected: Bool
+    let selectedColor: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(isSelected ? .subheadline.weight(.semibold)
+                                 : .footnote.weight(.semibold))
+                .foregroundColor(.black)
+                //.foregroundColor(isSelected ? .black : .white)
+                .padding(.horizontal, isSelected ? 16 : 12)
+                .padding(.vertical,   isSelected ? 10 : 8)
+                .background(
+                    selectedColor
+                        .clipShape(
+                            RoundedCorner(
+                                radius: 8,
+                                corners: [.topLeft, .topRight] // ✅ chỉ bo cong 2 góc trên
+                            )
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct RoundedCorner: Shape {
+    var radius: CGFloat = 8
+    var corners: UIRectCorner = .allCorners
+
+    func path(in rect: CGRect) -> Path {
+        let path = UIBezierPath(
+            roundedRect: rect,
+            byRoundingCorners: corners,
+            cornerRadii: CGSize(width: radius, height: radius)
+        )
+        return Path(path.cgPath)
+    }
+}
+
+
