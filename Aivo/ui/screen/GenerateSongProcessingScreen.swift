@@ -1,7 +1,7 @@
 import SwiftUI
 
 // MARK: - Generate Song Screen
-struct GenerateSongScreen: View {
+struct GenerateSongProcessingScreen: View {
     @State private var isGenerating = true
     @State private var progress: Double = 0.0
     @State private var animationOffset: CGFloat = 0
@@ -196,6 +196,6 @@ struct GenerateSongScreen: View {
 // MARK: - Preview
 struct GenerateSongScreen_Previews: PreviewProvider {
     static var previews: some View {
-        GenerateSongScreen(onComplete: {})
+        GenerateSongProcessingScreen(onComplete: {})
     }
 }

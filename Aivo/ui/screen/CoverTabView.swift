@@ -38,55 +38,81 @@ struct CoverTabView: View {
     // MARK: - Song Selection Section (VStack, card nằm dưới)
     private var songSelectionSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // HStack: 2 tab
+            // === Tabs ===
             HStack(alignment: .bottom, spacing: 0) {
-                        TagLabel(
-                            title: "Pick a Song",
-                            isSelected: selectedSource == .song,
-                            selectedColor: AivoTheme.Primary.orange
-                        ) {
-                            withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .song }
-                        }
-                        .zIndex(selectedSource == .song ? 1 : 0)
+                TagLabel(
+                    title: "Pick a Song",
+                    isSelected: selectedSource == .song,
+                    selectedColor: AivoTheme.Primary.orange
+                ) {
+                    withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .song }
+                }
+                .zIndex(selectedSource == .song ? 1 : 0)
 
-                        TagLabel(
-                            title: "Youtube",
-                            isSelected: selectedSource == .youtube,
-                            selectedColor: AivoTheme.Secondary.goldenSun
-                        ) {
-                            withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .youtube }
-                        }
-                        .padding(.leading, -8)
-                        .zIndex(selectedSource == .youtube ? 1 : 0)
-                        Spacer()
-                    }
-            
+                TagLabel(
+                    title: "Youtube",
+                    isSelected: selectedSource == .youtube,
+                    selectedColor: AivoTheme.Secondary.goldenSun
+                ) {
+                    withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .youtube }
+                }
+                .padding(.leading, -8)
+                .zIndex(selectedSource == .youtube ? 1 : 0)
+
+                Spacer()
+            }
+
+            // Thanh nhỏ cam phía dưới (giữ nguyên nếu bạn thích)
             Rectangle()
-               .fill(AivoTheme.Primary.orange)
-               .frame(width: 40, height: 20)
-               .padding(.top, -10)
+                .fill(AivoTheme.Primary.orange)
+                .frame(width: 40, height: 20)
+                .padding(.top, -10)
 
-            // Card nội dung nằm DƯỚI
+            // === CARD NỘI DUNG ===
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.black.opacity(1))
+                .fill(Color.black)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(AivoTheme.Primary.orange, lineWidth: 1)
                 )
                 .overlay(
-                    Text("Select your song")
-                        .font(.headline.weight(.semibold))
-                        .foregroundColor(.white)
+                    Group {
+                        if selectedSource == .song {
+                            // 📀 Trường hợp PICK A SONG
+                            Text("Click to select a song")
+                                .font(.headline.weight(.semibold))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        } else {
+                            // 🎥 Trường hợp YOUTUBE
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Copy youtube link to here:")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(.white)
+
+                                TextField("https://www.youtube.com/watch?v=ixkoVwKQaJg", text: $selectedSong)
+                                    .foregroundColor(.white)
+                                    .padding(10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.gray.opacity(0.25))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                                    )
+                            }
+                            .padding(16)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
                 )
                 .frame(maxWidth: .infinity, minHeight: 120)
-                .padding(.top, -10) // đẩy sát tab hơn một chút
-            
-            
+                .padding(.top, -10)
         }
         .animation(.easeInOut(duration: 0.25), value: selectedSource)
     }
-
-
 
 
     // MARK: - Voice Selection Section
@@ -251,7 +277,7 @@ enum Artist: String, CaseIterable {
 struct CoverTabView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
-            //AivoSunsetBackground()
+            AivoSunsetBackground()
             CoverTabView()
         }
         

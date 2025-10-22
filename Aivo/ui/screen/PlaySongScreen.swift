@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 
 // MARK: - Play Song Screen
-struct PlaySongScreen: View {
+struct PlaySongIntroScreen: View {
     let songData: SongCreationData?
     let onIntroCompleted: () -> Void // Callback to SplashScreenView
     
@@ -383,7 +383,7 @@ class AudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
 // MARK: - Preview
 struct PlaySongScreen_Previews: PreviewProvider {
     static var previews: some View {
-        PlaySongScreen(
+        PlaySongIntroScreen(
             songData: SongCreationData(
                 mood: .energetic,
                 genre: .electronic,

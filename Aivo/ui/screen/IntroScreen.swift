@@ -31,7 +31,7 @@ struct IntroScreen: View {
             .padding(.top, 50)
         }
         .fullScreenCover(isPresented: $showPlaySong) {
-            PlaySongScreen(
+            PlaySongIntroScreen(
                 songData: songCreationData,
                 onIntroCompleted: onIntroCompleted
             )
