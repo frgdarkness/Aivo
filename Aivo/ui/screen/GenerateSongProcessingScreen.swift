@@ -1,13 +1,30 @@
 import SwiftUI
 
-// MARK: - Generate Song Screen
+// MARK: - Generate Song Processing Screen
 struct GenerateSongProcessingScreen: View {
+    let requestType: RequestType
+    let youtubeUrl: String?
+    let coverLanguage: String?
+    let coverModelID: String?
+    let onComplete: () -> Void
+    
     @State private var isGenerating = true
     @State private var progress: Double = 0.0
     @State private var animationOffset: CGFloat = 0
+    @State private var resultAudioUrl: String?
+    @State private var showPlaySongScreen = false
+    @State private var showToast = false
+    @State private var toastMessage = ""
     @Environment(\.dismiss) private var dismiss
     
-    let onComplete: () -> Void
+    // Initialize with default values for generateSong
+    init(requestType: RequestType, youtubeUrl: String? = nil, coverLanguage: String? = nil, coverModelID: String? = nil, onComplete: @escaping () -> Void) {
+        self.requestType = requestType
+        self.youtubeUrl = youtubeUrl
+        self.coverLanguage = coverLanguage
+        self.coverModelID = coverModelID
+        self.onComplete = onComplete
+    }
     
     var body: some View {
         ZStack {
@@ -44,6 +61,36 @@ struct GenerateSongProcessingScreen: View {
         .onAppear {
             startGeneration()
         }
+        .fullScreenCover(isPresented: $showPlaySongScreen) {
+            if let audioUrl = resultAudioUrl {
+                PlaySongIntroScreen(
+                    songData: nil,
+                    audioUrl: audioUrl,
+                    onIntroCompleted: {
+                        showPlaySongScreen = false
+                        onComplete()
+                    }
+                )
+            }
+        }
+        .overlay(
+            // Toast Message
+            VStack {
+                Spacer()
+                if showToast {
+                    Text(toastMessage)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 100)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.3), value: showToast)
+                }
+            }
+        )
     }
     
     // MARK: - Header View
@@ -67,7 +114,7 @@ struct GenerateSongProcessingScreen: View {
     // MARK: - Title View
     private var titleView: some View {
         VStack(spacing: 8) {
-            Text("Generate Song")
+            Text(requestType.displayName)
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.white)
             
@@ -178,24 +225,77 @@ struct GenerateSongProcessingScreen: View {
     }
     
     private func startGeneration() {
-        // Simulate generation progress
+        Task {
+            do {
+                let modelsLabService = ModelsLabService.shared
+                
+                switch requestType {
+                case .coverSong:
+                    guard let youtubeUrl = youtubeUrl,
+                          let coverLanguage = coverLanguage,
+                          let coverModelID = coverModelID else {
+                        showToastMessage("Missing required data for cover song")
+                        return
+                    }
+                    
+                    // Call ModelsLabService for voice cover
+                    do {
+                        let resultUrl = try await modelsLabService.processVoiceCover(audioUrl: youtubeUrl, modelID: coverModelID)
+                            
+                        
+                        resultAudioUrl = resultUrl
+                        showToastMessage("Cover song generated successfully!")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            showPlaySongScreen = true
+                        }
+                    } catch {
+                        showToastMessage("Failed to generate cover song: \(error.localizedDescription)")
+                    }
+                    
+                case .generateSong:
+                    // For now, simulate generation for generateSong
+                    // TODO: Implement actual song generation API
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                        showToastMessage("Song generation completed!")
+                        // For demo, use hardcoded audio
+                        resultAudioUrl = Bundle.main.url(forResource: "ai_tokyo", withExtension: "mp3")?.absoluteString
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            showPlaySongScreen = true
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Simulate progress for UI
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             if progress < 1.0 {
                 progress += 0.02
             } else {
                 timer.invalidate()
-                // Complete generation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    onComplete()
-                }
             }
+        }
+    }
+    
+    private func showToastMessage(_ message: String) {
+        toastMessage = message
+        showToast = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            showToast = false
         }
     }
 }
 
 // MARK: - Preview
-struct GenerateSongScreen_Previews: PreviewProvider {
+struct GenerateSongProcessingScreen_Previews: PreviewProvider {
     static var previews: some View {
-        GenerateSongProcessingScreen(onComplete: {})
+        GenerateSongProcessingScreen(
+            requestType: .coverSong,
+            youtubeUrl: "https://www.youtube.com/watch?v=example",
+            coverLanguage: "english",
+            coverModelID: "vegeta",
+            onComplete: {}
+        )
     }
 }

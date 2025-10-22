@@ -31,10 +31,11 @@ struct IntroScreen: View {
             .padding(.top, 50)
         }
         .fullScreenCover(isPresented: $showPlaySong) {
-            PlaySongIntroScreen(
-                songData: songCreationData,
-                onIntroCompleted: onIntroCompleted
-            )
+                PlaySongIntroScreen(
+                    songData: songCreationData,
+                    audioUrl: nil,
+                    onIntroCompleted: onIntroCompleted
+                )
         }
     }
     

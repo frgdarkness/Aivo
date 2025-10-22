@@ -97,8 +97,9 @@ class ModelsLabService: ObservableObject {
     }
     
     // MARK: - Voice Cover API
-    func voiceCover(audioUrl: String, modelID: String) async throws -> VoiceCoverResponse {
-        guard let url = URL(string: "\(baseURL)/voice/cover") else {
+    func voiceCover(audioUrl: String, modelID: String, language: String = "english") async throws -> VoiceCoverResponse {
+        Logger.d("voiceCover(audioUrl: \(audioUrl), modelID: \(modelID), language: \(language))")
+        guard let url = URL(string: "\(baseURL)/voice/voice_cover") else {
             throw ModelsLabError.invalidURL
         }
         
@@ -108,20 +109,23 @@ class ModelsLabService: ObservableObject {
         request.setValue(apiKey, forHTTPHeaderField: "Authorization")
         
         let requestBody: [String: Any] = [
-            "input_sound_clip": audioUrl,
-            "model_id": "vegeta",
+            "init_audio": audioUrl,
+            "model_id": "trump",
             "language": "english",
+            "key": apiKey
         ]
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
+            Logger.e("Error serializing request body: \(error)")
             throw ModelsLabError.invalidRequestBody
         }
         
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
+            Logger.e("Error getting HTTP response")
             throw ModelsLabError.invalidResponse
         }
         
@@ -129,10 +133,17 @@ class ModelsLabService: ObservableObject {
             throw ModelsLabError.httpError(httpResponse.statusCode)
         }
         
+        // Log raw response data for debugging
+        if let responseString = String(data: data, encoding: .utf8) {
+            Logger.d("Raw API Response: \(responseString)")
+        }
+        
         do {
             let voiceCoverResponse = try JSONDecoder().decode(VoiceCoverResponse.self, from: data)
+            Logger.d("Decoded Response: \(voiceCoverResponse)")
             return voiceCoverResponse
         } catch {
+            Logger.e("Error decoding VoiceCoverResponse: \(error)")
             throw ModelsLabError.decodingError(error)
         }
     }
@@ -185,6 +196,17 @@ class ModelsLabService: ObservableObject {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "Authorization")
         
+        let requestBody: [String: Any] = [
+            "key": apiKey
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        } catch {
+            Logger.e("Error serializing request body: \(error)")
+            throw ModelsLabError.invalidRequestBody
+        }
+        
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -195,10 +217,17 @@ class ModelsLabService: ObservableObject {
             throw ModelsLabError.httpError(httpResponse.statusCode)
         }
         
+        // Log raw response data for debugging
+        if let responseString = String(data: data, encoding: .utf8) {
+            Logger.d("Raw Fetch API Response: \(responseString)")
+        }
+        
         do {
             let fetchResponse = try JSONDecoder().decode(VoiceFetchResponse.self, from: data)
+            Logger.d("Decoded Fetch Response: \(fetchResponse)")
             return fetchResponse
         } catch {
+            Logger.e("Error decoding VoiceFetchResponse: \(error)")
             throw ModelsLabError.decodingError(error)
         }
     }

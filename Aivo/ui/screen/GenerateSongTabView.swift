@@ -70,10 +70,13 @@ struct GenerateSongTabView: View {
             )
         }
         .fullScreenCover(isPresented: $showGenerateSongScreen) {
-            GenerateSongProcessingScreen {
-                // On completion, dismiss the screen
-                showGenerateSongScreen = false
-            }
+            GenerateSongProcessingScreen(
+                requestType: .generateSong,
+                onComplete: {
+                    // On completion, dismiss the screen
+                    showGenerateSongScreen = false
+                }
+            )
         }
     }
     

@@ -4,6 +4,7 @@ import AVFoundation
 // MARK: - Play Song Screen
 struct PlaySongIntroScreen: View {
     let songData: SongCreationData?
+    let audioUrl: String? // New parameter for external audio URL
     let onIntroCompleted: () -> Void // Callback to SplashScreenView
     
     @State private var isPlaying = false
@@ -12,6 +13,8 @@ struct PlaySongIntroScreen: View {
     @State private var audioPlayer: AVAudioPlayer?
     @State private var showLyrics = false
     @State private var playbackTimer: Timer?
+    @State private var isDownloading = false
+    @State private var downloadProgress: Double = 0.0
     @Environment(\.dismiss) private var dismiss
     
     @State private var isScrubbing = false
@@ -305,11 +308,61 @@ struct PlaySongIntroScreen: View {
     
     // MARK: - Audio Setup
     private func setupAudioPlayer() {
+        if let audioUrl = audioUrl {
+            // Download and play external audio
+            downloadAndPlayAudio(from: audioUrl)
+        } else {
+            // Play local audio file
+            playLocalAudio()
+        }
+    }
+    
+    private func downloadAndPlayAudio(from urlString: String) {
+        guard let url = URL(string: urlString) else {
+            print("Invalid audio URL")
+            return
+        }
+        
+        isDownloading = true
+        
+        Task {
+            do {
+                let (data, response) = try await URLSession.shared.data(from: url)
+                
+                // Update download progress
+                await MainActor.run {
+                    downloadProgress = 1.0
+                }
+                
+                // Create temporary file
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("temp_audio.mp3")
+                try data.write(to: tempURL)
+                
+                await MainActor.run {
+                    setupAudioPlayerWithURL(tempURL)
+                    isDownloading = false
+                }
+            } catch {
+                print("Error downloading audio: \(error)")
+                await MainActor.run {
+                    isDownloading = false
+                    // Fallback to local audio
+                    playLocalAudio()
+                }
+            }
+        }
+    }
+    
+    private func playLocalAudio() {
         guard let url = Bundle.main.url(forResource: song.audioFileName, withExtension: "mp3") else {
             print("Audio file not found")
             return
         }
         
+        setupAudioPlayerWithURL(url)
+    }
+    
+    private func setupAudioPlayerWithURL(_ url: URL) {
         do {
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = AudioPlayerDelegate { [self] in
@@ -389,6 +442,7 @@ struct PlaySongScreen_Previews: PreviewProvider {
                 genre: .electronic,
                 theme: .myCity
             ),
+            audioUrl: nil,
             onIntroCompleted: {}
         )
     }

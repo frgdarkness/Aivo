@@ -1,5 +1,71 @@
 import Foundation
 
+// MARK: - Request Type
+enum RequestType: String, CaseIterable {
+    case coverSong = "cover_song"
+    case generateSong = "generate_song"
+    
+    var displayName: String {
+        switch self {
+        case .coverSong:
+            return "Cover Song"
+        case .generateSong:
+            return "Generate Song"
+        }
+    }
+}
+
+// MARK: - Cover Language
+enum CoverLanguage: String, CaseIterable {
+    case english = "english"
+    case arabic = "arabic"
+    case brazilianPortuguese = "brazilian portuguese"
+    case chinese = "chinese"
+    case dutch = "dutch"
+    case french = "french"
+    case hindi = "hindi"
+    case hungarian = "hungarian"
+    case italian = "italian"
+    case japanese = "japanese"
+    case korean = "korean"
+    case polish = "polish"
+    case russian = "russian"
+    case turkish = "turkish"
+    
+    var displayName: String {
+        switch self {
+        case .english:
+            return "English"
+        case .arabic:
+            return "Arabic"
+        case .brazilianPortuguese:
+            return "Brazilian Portuguese"
+        case .chinese:
+            return "Chinese"
+        case .dutch:
+            return "Dutch"
+        case .french:
+            return "French"
+        case .hindi:
+            return "Hindi"
+        case .hungarian:
+            return "Hungarian"
+        case .italian:
+            return "Italian"
+        case .japanese:
+            return "Japanese"
+        case .korean:
+            return "Korean"
+        case .polish:
+            return "Polish"
+        case .russian:
+            return "Russian"
+        case .turkish:
+            return "Turkish"
+        }
+    }
+}
+
 // MARK: - Song Creation Enums
 
 enum SongMood: String, CaseIterable {

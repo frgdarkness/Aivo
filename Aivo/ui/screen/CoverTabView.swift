@@ -7,20 +7,21 @@ import SwiftUI
 struct CoverTabView: View {
     @State private var selectedSong = ""
     @State private var selectedVoiceType: VoiceType = .otherVoice
+    @State private var youtubeUrl = ""
+    @State private var selectedLanguage: CoverLanguage = .english
     @State private var selectedArtist: Artist? = nil
-
-    // NEW: nguồn dữ liệu ở phần card-tab
+    @State private var showProcessingScreen = false
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 // Song Selection (Card-Tab đơn giản)
                 songSelectionSection
 
-                // Voice Selection
-                voiceSelectionSection
+                // Language Selection
+                languageSelectionSection
 
                 // Artist Selection
                 artistSelectionSection
@@ -33,9 +34,20 @@ struct CoverTabView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
         }
+        .fullScreenCover(isPresented: $showProcessingScreen) {
+            GenerateSongProcessingScreen(
+                requestType: .coverSong,
+                youtubeUrl: selectedSong,
+                coverLanguage: selectedLanguage.rawValue,
+                coverModelID: selectedArtist?.rawValue ?? "jungkookv7-e",
+                onComplete: {
+                    showProcessingScreen = false
+                }
+            )
+        }
     }
 
-    // MARK: - Song Selection Section (VStack, card nằm dưới)
+    // MARK: - Song Selection Section
     private var songSelectionSection: some View {
         VStack(alignment: .leading, spacing: 0) {
             // === Tabs ===
@@ -111,38 +123,34 @@ struct CoverTabView: View {
                 .frame(maxWidth: .infinity, minHeight: 120)
                 .padding(.top, -10)
         }
-        .animation(.easeInOut(duration: 0.25), value: selectedSource)
     }
 
 
-    // MARK: - Voice Selection Section
-    private var voiceSelectionSection: some View {
+    // MARK: - Language Selection Section
+    private var languageSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Select Voice")
+            Text("Select Language")
                 .font(.headline)
                 .foregroundColor(.white)
 
-            HStack(spacing: 12) {
-                ForEach(VoiceType.allCases, id: \.self) { type in
-                    Button(action: { selectedVoiceType = type }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: type.icon)
-                                .font(.title3)
-                                .foregroundColor(selectedVoiceType == type ? .black : .white)
-
-                            Text(type.rawValue)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(CoverLanguage.allCases, id: \.self) { language in
+                        Button(action: { selectedLanguage = language }) {
+                            Text(language.displayName)
                                 .font(.subheadline)
                                 .fontWeight(.medium)
-                                .foregroundColor(selectedVoiceType == type ? .black : .white)
+                                .foregroundColor(selectedLanguage == language ? .black : .white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(selectedLanguage == language ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                )
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(selectedVoiceType == type ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
-                        )
                     }
                 }
+                .padding(.horizontal, 4)
             }
         }
     }
@@ -185,7 +193,11 @@ struct CoverTabView: View {
 
     // MARK: - Generate Button
     private var generateButton: some View {
-        Button(action: generateCover) {
+        Button(action: {
+            if isGenerateEnabled {
+                showProcessingScreen = true
+            }
+        }) {
             HStack(spacing: 8) {
                 Text("Generate")
                     .font(.headline)
@@ -198,23 +210,30 @@ struct CoverTabView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(AivoTheme.Primary.orange)
+            .background(isGenerateEnabled ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
             .cornerRadius(12)
-            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+            .shadow(color: isGenerateEnabled ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
+        }
+        .disabled(!isGenerateEnabled)
+    }
+    
+    // MARK: - Helper Properties
+    private var isGenerateEnabled: Bool {
+        if selectedSource == .song {
+            return false // Pick a Song chưa implement
+        } else {
+            return !selectedSong.isEmpty // YouTube cần có URL
         }
     }
 
     // MARK: - Actions
-    private func pickSong() { print("Picking a song...") }
-
     private func generateCover() {
-        print("Generating cover with \(selectedVoiceType.rawValue) voice")
+        print("Generating cover with \(selectedLanguage.displayName) language")
         if let artist = selectedArtist {
             print("Selected artist: \(artist.name)")
         }
     }
 }
-
 
 // MARK: - Supporting Enums
 enum VoiceType: String, CaseIterable {
@@ -273,44 +292,29 @@ enum Artist: String, CaseIterable {
     }
 }
 
-// MARK: - Preview
-struct CoverTabView_Previews: PreviewProvider {
-    static var previews: some View {
-        ZStack {
-            AivoSunsetBackground()
-            CoverTabView()
-        }
-        
-    }
-}
-
-private struct TabChip: View {
+// MARK: - TagLabel Component
+struct TagLabel0: View {
     let title: String
-    let systemIcon: String
     let isSelected: Bool
+    let selectedColor: Color
     let action: () -> Void
-
+    
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: systemIcon)
-                Text(title)
-            }
-            // ↑ font to hơn khi chọn (đẩy layout thật)
-            .font(isSelected ? .subheadline.weight(.semibold)
-                             : .footnote.weight(.semibold))
-            .foregroundColor(isSelected ? .black : .white)
-
-            // ↑ padding lớn hơn khi chọn (kích thước thật, không scale)
-            .padding(.horizontal, isSelected ? 16 : 12)
-            .padding(.vertical,   isSelected ? 9  : 7)
-
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(isSelected ? AivoTheme.Primary.orange : Color.gray.opacity(0.25))
-            )
+            Text(title)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(isSelected ? .black : .white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isSelected ? selectedColor : Color.clear)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(isSelected ? Color.clear : Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                )
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -346,7 +350,7 @@ private struct TagLabel: View {
 struct RoundedCorner: Shape {
     var radius: CGFloat = 8
     var corners: UIRectCorner = .allCorners
-
+    
     func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(
             roundedRect: rect,
@@ -358,3 +362,42 @@ struct RoundedCorner: Shape {
 }
 
 
+// MARK: - Preview
+struct CoverTabView_Previews: PreviewProvider {
+    static var previews: some View {
+        ZStack {
+            AivoSunsetBackground()
+            CoverTabView()
+        }
+    }
+}
+
+private struct TabChip: View {
+    let title: String
+    let systemIcon: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: systemIcon)
+                Text(title)
+            }
+            // ↑ font to hơn khi chọn (đẩy layout thật)
+            .font(isSelected ? .subheadline.weight(.semibold)
+                             : .footnote.weight(.semibold))
+            .foregroundColor(isSelected ? .black : .white)
+
+            // ↑ padding lớn hơn khi chọn (kích thước thật, không scale)
+            .padding(.horizontal, isSelected ? 16 : 12)
+            .padding(.vertical,   isSelected ? 9  : 7)
+
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isSelected ? AivoTheme.Primary.orange : Color.gray.opacity(0.25))
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
