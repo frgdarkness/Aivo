@@ -143,55 +143,22 @@ struct LibraryTabView: View {
     private func loadDownloadedSongs() {
         print("📚 [Library] Loading downloaded songs...")
         
-        // Get documents directory
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        
-        // Look for downloaded song files
-        do {
-            let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: [.creationDateKey], options: [])
-            let audioFiles = fileURLs.filter { url in
-                let fileExtension = url.pathExtension.lowercased()
-                return ["mp3", "wav", "m4a"].contains(fileExtension)
-            }.sorted { url1, url2 in
-                // Sort by creation date, newest first
-                let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
-                return date1 > date2
+        Task {
+            do {
+                let sunoDataList = try await SunoDataManager.shared.loadAllSavedSunoData()
+                await MainActor.run {
+                    self.downloadedSongs = sunoDataList
+                    print("📚 [Library] Loaded \(sunoDataList.count) songs into library")
+                    for song in sunoDataList {
+                        print("📚 [Library] - \(song.title) (\(song.modelName))")
+                    }
+                }
+            } catch {
+                print("❌ [Library] Error loading downloaded songs: \(error)")
+                await MainActor.run {
+                    self.downloadedSongs = []
+                }
             }
-            
-            print("📚 [Library] Found \(audioFiles.count) audio files")
-            
-            // Convert to SunoData format (simplified for library display)
-            downloadedSongs = audioFiles.enumerated().map { index, url in
-                let fileName = url.deletingPathExtension().lastPathComponent
-                // Extract song title from filename (remove ID suffix if present)
-                let title = fileName.components(separatedBy: "_").dropLast().joined(separator: " ")
-                
-                return SunoData(
-                    id: "library_\(index)",
-                    audioUrl: url.absoluteString,
-                    sourceAudioUrl: "",
-                    streamAudioUrl: "",
-                    sourceStreamAudioUrl: "",
-                    imageUrl: "",
-                    sourceImageUrl: "",
-                    prompt: "Downloaded Song",
-                    modelName: "Library",
-                    title: title.isEmpty ? fileName : title,
-                    tags: "downloaded",
-                    createTime: Int64(((try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)?.timeIntervalSince1970 ?? Date().timeIntervalSince1970) * 1000),
-                    duration: 180.0 // Default duration, could be extracted from file metadata
-                )
-            }
-            
-            print("📚 [Library] Loaded \(downloadedSongs.count) songs into library")
-            for song in downloadedSongs {
-                print("📚 [Library] - \(song.title)")
-            }
-            
-        } catch {
-            print("❌ [Library] Error loading downloaded songs: \(error)")
-            downloadedSongs = []
         }
     }
 }
@@ -273,12 +240,18 @@ struct DownloadedSongRowView: View {
                 let coverSize: CGFloat = 60
 
                 ZStack {
-                    // Ảnh placeholder cho library
-                    Image("demo_cover")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: coverSize, height: coverSize)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    // Cover image from saved SunoData
+                    AsyncImage(url: URL(string: song.imageUrl)) { image in
+                        image
+                            .resizable()
+                            .scaledToFill()
+                    } placeholder: {
+                        Image("demo_cover")
+                            .resizable()
+                            .scaledToFill()
+                    }
+                    .frame(width: coverSize, height: coverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .frame(width: coverSize, height: coverSize)
                 .padding(.leading, 12)
@@ -290,14 +263,20 @@ struct DownloadedSongRowView: View {
                         .foregroundColor(.white)
                         .lineLimit(1).truncationMode(.tail)
 
-                    HStack(spacing: 14) {
+                    HStack(spacing: 12) {
                         Label(formatDuration(song.duration), systemImage: "clock.fill")
                             .labelStyle(.titleAndIcon)
                             .font(.caption)
                             .foregroundColor(.gray)
                             .lineLimit(1)
 
-                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                        Label(song.modelName, systemImage: "music.note")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+
+                        Label("Saved", systemImage: "checkmark.circle.fill")
                             .labelStyle(.titleAndIcon)
                             .font(.caption)
                             .foregroundColor(.green)

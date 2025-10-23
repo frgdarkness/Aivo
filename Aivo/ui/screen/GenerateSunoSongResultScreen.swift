@@ -86,17 +86,6 @@ struct GenerateSunoSongResultScreen: View {
             
             Spacer()
             
-            // Save to Files
-            Button {
-                currentFileURL = downloadedFileURLs[currentSong.id]
-                showExportSheet = true
-            } label: {
-                Image(systemName: "externaldrive.badge.plus")
-                    .font(.title3)
-                    .foregroundColor(.white.opacity(downloadedFileURLs[currentSong.id] == nil ? 0.4 : 1))
-            }
-            .disabled(downloadedFileURLs[currentSong.id] == nil)
-            
             Button(action: {
                 onClose()
                 dismiss()
@@ -197,6 +186,12 @@ struct GenerateSunoSongResultScreen: View {
                                onSave: {
                                    if let fileURL = downloadedFileURLs[song.id] {
                                        saveToDevice(fileURL: fileURL, song: song)
+                                   }
+                               },
+                               onExport: {
+                                   if let fileURL = downloadedFileURLs[song.id] {
+                                       currentFileURL = fileURL
+                                       showExportSheet = true
                                    }
                                }
                            )
@@ -324,9 +319,19 @@ struct GenerateSunoSongResultScreen: View {
                 self.downloadingSongs.remove(song.id)
                 self.downloadProgress = 1.0
                 self.downloadedFileURLs[song.id] = fileURL
-                self.savedToDevice.insert(song.id) // Mark as saved to device
                 
-                print("💾 [SunoResult] Song saved to device: \(fileURL.path)")
+                // Save full SunoData to local storage
+                Task {
+                    do {
+                        let savedURL = try await SunoDataManager.shared.saveSunoData(song)
+                        await MainActor.run {
+                            self.savedToDevice.insert(song.id)
+                            print("💾 [SunoResult] Full SunoData saved to device: \(savedURL.path)")
+                        }
+                    } catch {
+                        print("❌ [SunoResult] Error saving SunoData: \(error)")
+                    }
+                }
                 
                 // If this is the current song, setup audio player
                 if song.id == self.currentSong.id {
@@ -461,6 +466,7 @@ struct SunoSongRowView: View {
     let isSavedToDevice: Bool
     let onTap: () -> Void
     let onSave: () -> Void
+    let onExport: () -> Void
 
     var body: some View {
         // Card nền
@@ -539,21 +545,38 @@ struct SunoSongRowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading) // <- chiếm hết
                 .layoutPriority(1) // ưu tiên không bị bóp
 
-                // BUTTON: sát mép phải card
-                Button {
-                    if isSavedToDevice {
-                        onSave()
+                // BUTTONS: sát mép phải card
+                HStack(spacing: 8) {
+                    // Export button
+                    Button {
+                        onExport()
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle().fill(Color.blue.opacity(0.8))
+                            )
                     }
-                } label: {
-                    Image(systemName: isSavedToDevice ? "checkmark.circle.fill" : "externaldrive.badge.plus")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
-                        .background(
-                            Circle().fill(isSavedToDevice ? .green : AivoTheme.Primary.orange)
-                        )
+                    .disabled(!isDownloaded)
+                    
+                    // Save button
+                    Button {
+                        if isSavedToDevice {
+                            onSave()
+                        }
+                    } label: {
+                        Image(systemName: isSavedToDevice ? "checkmark.circle.fill" : "externaldrive.badge.plus")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle().fill(isSavedToDevice ? .green : AivoTheme.Primary.orange)
+                            )
+                    }
+                    .disabled(!isDownloaded)
                 }
-                .disabled(!isDownloaded)
                 .padding(.trailing, 12) // sát mép phải card
             }
             .frame(height: 76) // chiều cao hàng nhất quán

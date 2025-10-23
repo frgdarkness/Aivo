@@ -41,7 +41,9 @@ struct GenerateSongProcessingScreen: View {
                     statusView
                     
                     // Progress Bar
-                    progressView
+                    //progressView
+                    
+                    Spacer()
                     
                     // Cancel Button
                     cancelButton
