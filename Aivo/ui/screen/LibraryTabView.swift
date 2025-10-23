@@ -148,17 +148,26 @@ struct LibraryTabView: View {
         
         // Look for downloaded song files
         do {
-            let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: nil)
+            let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: [.creationDateKey], options: [])
             let audioFiles = fileURLs.filter { url in
                 let fileExtension = url.pathExtension.lowercased()
                 return ["mp3", "wav", "m4a"].contains(fileExtension)
+            }.sorted { url1, url2 in
+                // Sort by creation date, newest first
+                let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date.distantPast
+                return date1 > date2
             }
             
             print("📚 [Library] Found \(audioFiles.count) audio files")
             
             // Convert to SunoData format (simplified for library display)
             downloadedSongs = audioFiles.enumerated().map { index, url in
-                SunoData(
+                let fileName = url.deletingPathExtension().lastPathComponent
+                // Extract song title from filename (remove ID suffix if present)
+                let title = fileName.components(separatedBy: "_").dropLast().joined(separator: " ")
+                
+                return SunoData(
                     id: "library_\(index)",
                     audioUrl: url.absoluteString,
                     sourceAudioUrl: "",
@@ -168,14 +177,17 @@ struct LibraryTabView: View {
                     sourceImageUrl: "",
                     prompt: "Downloaded Song",
                     modelName: "Library",
-                    title: url.deletingPathExtension().lastPathComponent,
+                    title: title.isEmpty ? fileName : title,
                     tags: "downloaded",
-                    createTime: Int64(Date().timeIntervalSince1970 * 1000),
+                    createTime: Int64(((try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)?.timeIntervalSince1970 ?? Date().timeIntervalSince1970) * 1000),
                     duration: 180.0 // Default duration, could be extracted from file metadata
                 )
             }
             
             print("📚 [Library] Loaded \(downloadedSongs.count) songs into library")
+            for song in downloadedSongs {
+                print("📚 [Library] - \(song.title)")
+            }
             
         } catch {
             print("❌ [Library] Error loading downloaded songs: \(error)")
@@ -317,8 +329,18 @@ struct DownloadedSongRowView: View {
     
     private func playDownloadedSong(_ song: SunoData) {
         print("🎵 [Library] Playing downloaded song: \(song.title)")
+        print("🎵 [Library] Audio URL: \(song.audioUrl)")
+        
+        // Convert string URL back to URL
+        guard let url = URL(string: song.audioUrl) else {
+            print("❌ [Library] Invalid URL for song: \(song.title)")
+            return
+        }
+        
         // TODO: Implement audio playback for library songs
         // This could open a player screen or play directly
+        // For now, just log the action
+        print("🎵 [Library] Would play song from: \(url.path)")
     }
     
     private func formatDuration(_ duration: Double) -> String {

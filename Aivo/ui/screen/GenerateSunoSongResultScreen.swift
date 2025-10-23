@@ -22,6 +22,7 @@ struct GenerateSunoSongResultScreen: View {
     // Download states for each song
     @State private var downloadedFileURLs: [String: URL] = [:]
     @State private var downloadingSongs: Set<String> = []
+    @State private var savedToDevice: Set<String> = []
     
     // Export/Share
     @State private var showExportSheet = false
@@ -186,10 +187,16 @@ struct GenerateSunoSongResultScreen: View {
                                isSelected: index == selectedSongIndex,
                                isDownloaded: downloadedFileURLs[song.id] != nil,
                                isDownloading: downloadingSongs.contains(song.id),
+                               isSavedToDevice: savedToDevice.contains(song.id),
                                onTap: {
                                    if downloadedFileURLs[song.id] != nil {
                                        selectedSongIndex = index
                                        loadSelectedSong()
+                                   }
+                               },
+                               onSave: {
+                                   if let fileURL = downloadedFileURLs[song.id] {
+                                       saveToDevice(fileURL: fileURL, song: song)
                                    }
                                }
                            )
@@ -299,12 +306,14 @@ struct GenerateSunoSongResultScreen: View {
         downloadProgress = 0
         
         let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
-        let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent("suno_song_\(song.id).\(ext)")
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let fileName = "\(song.title.replacingOccurrences(of: " ", with: "_"))_\(song.id).\(ext)"
+        let localURL = documentsPath.appendingPathComponent(fileName)
         
-        print("📥 [SunoResult] Download destination: \(tmpURL.path)")
+        print("📥 [SunoResult] Download destination: \(localURL.path)")
         
         let downloader = ProgressiveDownloader(
-            destinationURL: tmpURL,
+            destinationURL: localURL,
             onProgress: { prog in
                 withAnimation(.linear(duration: 0.06)) {
                     self.downloadProgress = prog
@@ -315,6 +324,9 @@ struct GenerateSunoSongResultScreen: View {
                 self.downloadingSongs.remove(song.id)
                 self.downloadProgress = 1.0
                 self.downloadedFileURLs[song.id] = fileURL
+                self.savedToDevice.insert(song.id) // Mark as saved to device
+                
+                print("💾 [SunoResult] Song saved to device: \(fileURL.path)")
                 
                 // If this is the current song, setup audio player
                 if song.id == self.currentSong.id {
@@ -424,6 +436,13 @@ struct GenerateSunoSongResultScreen: View {
         return String(format: "%d:%02d", minutes, seconds)
     }
     
+    private func saveToDevice(fileURL: URL, song: SunoData) {
+        print("💾 [SunoResult] Saving song to device: \(song.title)")
+        // Song is already saved to Documents directory during download
+        // This method is for future use if we need additional save functionality
+        savedToDevice.insert(song.id)
+    }
+    
     private func formatDuration(_ duration: Double) -> String {
         let minutes = Int(duration) / 60
         let seconds = Int(duration) % 60
@@ -439,7 +458,9 @@ struct SunoSongRowView: View {
     let isSelected: Bool
     let isDownloaded: Bool
     let isDownloading: Bool
+    let isSavedToDevice: Bool
     let onTap: () -> Void
+    let onSave: () -> Void
 
     var body: some View {
         // Card nền
@@ -520,14 +541,16 @@ struct SunoSongRowView: View {
 
                 // BUTTON: sát mép phải card
                 Button {
-                    if isDownloaded { onTap() }
+                    if isSavedToDevice {
+                        onSave()
+                    }
                 } label: {
-                    Image(systemName: isSelected ? "pause.fill" : "play.fill")
+                    Image(systemName: isSavedToDevice ? "checkmark.circle.fill" : "externaldrive.badge.plus")
                         .font(.title2)
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
                         .background(
-                            Circle().fill(isDownloaded ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                            Circle().fill(isSavedToDevice ? .green : AivoTheme.Primary.orange)
                         )
                 }
                 .disabled(!isDownloaded)

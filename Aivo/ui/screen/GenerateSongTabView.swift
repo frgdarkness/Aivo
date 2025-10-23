@@ -16,6 +16,7 @@ struct GenerateSongTabView: View {
     @State private var songName = ""
     @State private var isVocalEnabled = false
     @State private var selectedVocalGender: LocalVocalGender = .random
+    @State private var isInstrumental = false
     @State private var showToast = false
     @State private var toastMessage = ""
     
@@ -425,7 +426,24 @@ struct GenerateSongTabView: View {
                                     )
                             }
                             
-                            // Vocal Gender - Always visible, no toggle
+                            // Instrumental Toggle
+                            HStack {
+                                Text("Instrumental")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                Spacer()
+                                
+                                Toggle("", isOn: $isInstrumental)
+                                    .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
+                                    .onChange(of: isInstrumental) { newValue in
+                                        if newValue {
+                                            selectedVocalGender = .random
+                                        }
+                                    }
+                            }
+                            
+                            // Vocal Gender - Disabled when instrumental
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Vocal Gender")
                                     .font(.system(size: 14, weight: .medium))
@@ -434,7 +452,9 @@ struct GenerateSongTabView: View {
                                 HStack(spacing: 6) {
                                     ForEach(LocalVocalGender.allCases, id: \.self) { gender in
                                         Button(action: {
-                                            selectedVocalGender = gender
+                                            if !isInstrumental {
+                                                selectedVocalGender = gender
+                                            }
                                         }) {
                                             Text(gender.rawValue)
                                                 .font(.system(size: 14, weight: .medium))
@@ -446,6 +466,8 @@ struct GenerateSongTabView: View {
                                                         .fill(selectedVocalGender == gender ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
                                                 )
                                         }
+                                        .disabled(isInstrumental)
+                                        .opacity(isInstrumental ? 0.5 : 1.0)
                                     }
                                 }
                             }
@@ -517,12 +539,25 @@ struct GenerateSongTabView: View {
                 let prompt = buildPrompt()
                 print("🎵 [GenerateSong] Generated prompt: \(prompt)")
                 
+                // Determine vocal gender for API
+                let vocalGender: VocalGender
+                if isInstrumental {
+                    vocalGender = .male // Default for instrumental, will be overridden by instrumental=true
+                } else if selectedVocalGender == .random {
+                    vocalGender = Bool.random() ? .male : .female
+                } else {
+                    vocalGender = selectedVocalGender == .male ? .male : .female
+                }
+                
                 print("🎵 [GenerateSong] Calling SunoAiMusicService.generateCustomMusic...")
+                print("🎵 [GenerateSong] Vocal gender: \(vocalGender.rawValue)")
+                print("🎵 [GenerateSong] Instrumental: \(isInstrumental)")
+                
                 let generatedSongs = try await sunoService.generateCustomMusic(
                     prompt: prompt,
                     style: selectedGenres.first?.displayName ?? "Pop",
                     title: songName.isEmpty ? "Untitled Song" : songName,
-                    instrumental: selectedVocalGender == .random,
+                    instrumental: isInstrumental,
                     model: .V5
                 )
                 
