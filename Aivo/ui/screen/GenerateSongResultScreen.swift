@@ -70,17 +70,7 @@ struct GenerateSongResultScreen: View {
             
             Spacer()
             
-            // NEW: Share
-            Button {
-                showShareSheet = true
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.title3)
-                    .foregroundColor(.white.opacity(downloadedFileURL == nil ? 0.4 : 1))
-            }
-            .disabled(downloadedFileURL == nil)
-            
-            // NEW: Save to Files
+            // Save to Files
             Button {
                 showExportSheet = true
             } label: {
@@ -329,50 +319,6 @@ class GenerateSongAudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
         onFinish()
     }
 }
-
-// MARK: - UIKit wrappers for SwiftUI
-
-/// Save to Files (UIDocumentPicker, iOS 14+)
-struct DocumentExporter: UIViewControllerRepresentable {
-    let fileURL: URL
-    
-    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let vc = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
-        vc.allowsMultipleSelection = false
-        vc.shouldShowFileExtensions = true
-        return vc
-    }
-    
-    func persistToDocuments(_ src: URL, fileName: String) -> URL? {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let dst = docs.appendingPathComponent(fileName)
-        do {
-            if FileManager.default.fileExists(atPath: dst.path) { try FileManager.default.removeItem(at: dst) }
-            try FileManager.default.copyItem(at: src, to: dst)
-            return dst
-        } catch {
-            print("Persist error:", error); return nil
-        }
-    }
-    
-    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-}
-
-/// Share Sheet (UIActivityViewController)
-struct ActivityView: UIViewControllerRepresentable {
-    let items: [Any]
-    let activities: [UIActivity]? = nil
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        let vc = UIActivityViewController(activityItems: items, applicationActivities: activities)
-        return vc
-    }
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-}
-
-// MARK: - ProgressiveDownloader giữ nguyên code bạn
-// (đặt ProgressiveDownloader của bạn bên dưới như đã gửi)
-
 
 // MARK: - Preview
 struct GenerateSongResultScreen_Previews: PreviewProvider {

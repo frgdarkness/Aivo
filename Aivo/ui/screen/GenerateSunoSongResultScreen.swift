@@ -44,6 +44,7 @@ struct GenerateSunoSongResultScreen: View {
                 coverImageView
                 songTitleView
                 
+                Spacer()
                 // Songs List
                 songsListView
                 
@@ -56,7 +57,7 @@ struct GenerateSunoSongResultScreen: View {
             for (index, song) in sunoDataList.enumerated() {
                 print("🎵 [SunoResult] Song \(index + 1): \(song.title) - \(song.duration)s")
             }
-            startDownloadCurrentSong()
+            startDownloadAllSongs()
         }
         .onDisappear {
             stopAudio()
@@ -83,17 +84,6 @@ struct GenerateSunoSongResultScreen: View {
                 .foregroundColor(.white)
             
             Spacer()
-            
-            // Share
-            Button {
-                currentFileURL = downloadedFileURLs[currentSong.id]
-                showShareSheet = true
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(.title3)
-                    .foregroundColor(.white.opacity(downloadedFileURLs[currentSong.id] == nil ? 0.4 : 1))
-            }
-            .disabled(downloadedFileURLs[currentSong.id] == nil)
             
             // Save to Files
             Button {
@@ -187,23 +177,23 @@ struct GenerateSunoSongResultScreen: View {
                 .padding(.horizontal, 20)
             }
             
-            // Songs scroll view
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(Array(sunoDataList.enumerated()), id: \.element.id) { index, song in
-                        SongCardView(
-                            song: song,
-                            isSelected: index == selectedSongIndex,
-                            isDownloaded: downloadedFileURLs[song.id] != nil,
-                            isDownloading: downloadingSongs.contains(song.id),
-                            onTap: {
-                                if downloadedFileURLs[song.id] != nil {
-                                    selectedSongIndex = index
-                                    loadSelectedSong()
-                                }
-                            }
-                        )
-                    }
+            // Songs vertical list
+            ScrollView {
+                LazyVStack(spacing: 6) {
+                       ForEach(Array(sunoDataList.enumerated()), id: \.element.id) { index, song in
+                           SunoSongRowView(
+                               song: song,
+                               isSelected: index == selectedSongIndex,
+                               isDownloaded: downloadedFileURLs[song.id] != nil,
+                               isDownloading: downloadingSongs.contains(song.id),
+                               onTap: {
+                                   if downloadedFileURLs[song.id] != nil {
+                                       selectedSongIndex = index
+                                       loadSelectedSong()
+                                   }
+                               }
+                           )
+                       }
                 }
                 .padding(.horizontal, 20)
             }
@@ -285,6 +275,13 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     // MARK: - Helper Methods
+    private func startDownloadAllSongs() {
+        print("📥 [SunoResult] Starting download for all \(sunoDataList.count) songs")
+        for song in sunoDataList {
+            downloadSong(song)
+        }
+    }
+    
     private func startDownloadCurrentSong() {
         downloadSong(currentSong)
     }
@@ -335,7 +332,16 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     private func loadSelectedSong() {
-        guard let fileURL = downloadedFileURLs[currentSong.id] else { return }
+        guard let fileURL = downloadedFileURLs[currentSong.id] else { 
+            print("⚠️ [SunoResult] Song not downloaded yet: \(currentSong.title)")
+            return 
+        }
+        
+        // Stop current audio before loading new song
+        print("🎵 [SunoResult] Stopping current audio before loading new song")
+        stopAudio()
+        
+        print("🎵 [SunoResult] Loading selected song: \(currentSong.title)")
         setupAudioPlayerWithURL(fileURL)
     }
     
@@ -403,10 +409,13 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     private func stopAudio() {
+        print("🎵 [SunoResult] Stopping audio completely")
         audioPlayer?.stop()
         audioPlayer = nil
         isPlaying = false
+        currentTime = 0
         playbackTimer?.invalidate()
+        playbackTimer = nil
     }
     
     private func formatTime(_ time: TimeInterval) -> String {
@@ -422,224 +431,155 @@ struct GenerateSunoSongResultScreen: View {
     }
 }
 
-// MARK: - Song Card View
-struct SongCardView: View {
+// MARK: - Song Row View
+import SwiftUI
+
+struct SunoSongRowView: View {
     let song: SunoData
     let isSelected: Bool
     let isDownloaded: Bool
     let isDownloading: Bool
     let onTap: () -> Void
-    
+
     var body: some View {
-        VStack(spacing: 8) {
-            // Song cover
-            AsyncImage(url: URL(string: song.imageUrl)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Image("demo_cover")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            }
-            .frame(width: 80, height: 80)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isSelected ? AivoTheme.Primary.orange : Color.clear,
-                        lineWidth: 2
-                    )
-            )
-            .overlay(
-                // Download progress
-                Group {
+        // Card nền
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(isSelected ? AivoTheme.Primary.orange : .clear, lineWidth: 2)
+                )
+
+            // Nội dung: ảnh (trái sát), info (giữa), nút (phải sát)
+            HStack(spacing: 12) {
+                let coverSize: CGFloat = 60
+
+                ZStack {
+                    // Ảnh
+                    AsyncImage(url: URL(string: song.imageUrl)) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Image("demo_cover").resizable().scaledToFill()
+                    }
+                    .frame(width: coverSize, height: coverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                // Khóa frame để overlay bám đúng khung ảnh
+                .frame(width: coverSize, height: coverSize)
+                .overlay { // lớp che mờ khi đang tải
                     if isDownloading {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.black.opacity(0.6))
-                            .overlay(
-                                Image(systemName: "arrow.down.circle")
-                                    .font(.title2)
-                                    .foregroundColor(.white)
-                            )
-                    } else if isDownloaded {
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.clear)
-                            .overlay(
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.green)
-                                    .background(Color.white)
-                                    .clipShape(Circle())
-                            )
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.black.opacity(0.55))
                     }
                 }
-            )
-            
-            // Song title
-            Text(song.title)
-                .font(.caption)
-                .fontWeight(.medium)
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .frame(width: 80)
-        }
-        .onTapGesture {
-            if isDownloaded {
-                onTap()
+                // Icon download luôn ở CENTER
+                .overlay(alignment: .center) {
+                    if isDownloading {
+                        Image(systemName: "arrow.down.circle")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                    }
+                }
+                // Badge "đã tải" ở góc (chỉ hiện khi không còn tải)
+                .overlay(alignment: .center) {
+                    if !isDownloading && isDownloaded {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.subheadline)
+                            .foregroundColor(.green)
+                            .background(Color.white)
+                            .clipShape(Circle())
+                            .padding(4)
+                    }
+                }
+                .padding(.leading, 12)
+
+                // INFO: chiếm toàn bộ phần còn lại
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(song.title)
+                        .font(.headline).fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(1).truncationMode(.tail)
+
+                    HStack(spacing: 14) {
+                        Label(formatDuration(song.duration), systemImage: "clock.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+
+                        Label(song.modelName, systemImage: "music.note")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading) // <- chiếm hết
+                .layoutPriority(1) // ưu tiên không bị bóp
+
+                // BUTTON: sát mép phải card
+                Button {
+                    if isDownloaded { onTap() }
+                } label: {
+                    Image(systemName: isSelected ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                        .background(
+                            Circle().fill(isDownloaded ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                        )
+                }
+                .disabled(!isDownloaded)
+                .padding(.trailing, 12) // sát mép phải card
             }
+            .frame(height: 76) // chiều cao hàng nhất quán
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
+        .onTapGesture { if isDownloaded { onTap() } }
         .opacity(isDownloaded ? 1.0 : 0.6)
+        .padding(.vertical, 4)           // chỉ padding dọc
+        // .padding(.horizontal, 12)      // nếu muốn card cách hai mép List; nếu cần “sát” list, bỏ dòng này
+
+        // Nếu dùng trong List và muốn sát 2 mép của cell:
+        // .listRowInsets(EdgeInsets())        // bỏ inset mặc định của List
+        // .listRowSeparator(.hidden)          // tùy chọn: ẩn separator
+    }
+
+    private func formatDuration(_ duration: Double) -> String {
+        let m = Int(duration) / 60
+        let s = Int(duration) % 60
+        return String(format: "%d:%02d", m, s)
     }
 }
 
-//// MARK: - Delegate
-//class GenerateSongAudioPlayerDelegate: NSObject, AVAudioPlayerDelegate {
-//    let onFinish: () -> Void
-//    init(onFinish: @escaping () -> Void) { self.onFinish = onFinish }
-//    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-//        onFinish()
-//    }
-//}
-//
-//// MARK: - UIKit wrappers for SwiftUI
-//
-///// Save to Files (UIDocumentPicker, iOS 14+)
-//struct DocumentExporter: UIViewControllerRepresentable {
-//    let fileURL: URL
-//    
-//    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-//        let vc = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
-//        vc.allowsMultipleSelection = false
-//        vc.shouldShowFileExtensions = true
-//        return vc
-//    }
-//    
-//    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
-//}
-//
-///// Share Sheet (UIActivityViewController)
-//struct ActivityView: UIViewControllerRepresentable {
-//    let items: [Any]
-//    let activities: [UIActivity]? = nil
-//    
-//    func makeUIViewController(context: Context) -> UIActivityViewController {
-//        let vc = UIActivityViewController(activityItems: items, applicationActivities: activities)
-//        return vc
-//    }
-//    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
-//}
-//
-//// MARK: - ProgressiveDownloader
-//final class ProgressiveDownloader: NSObject, URLSessionDataDelegate {
-//    private let destinationURL: URL
-//    private let onProgress: (Double) -> Void
-//    private let onComplete: (URL) -> Void
-//    private let onError: (Error) -> Void
-//
-//    private var session: URLSession!
-//    private var task: URLSessionDataTask?
-//    private var expected: Int64 = 0
-//    private var received: Int64 = 0
-//    private var handle: FileHandle?
-//
-//    init(destinationURL: URL,
-//         onProgress: @escaping (Double) -> Void,
-//         onComplete: @escaping (URL) -> Void,
-//         onError: @escaping (Error) -> Void) {
-//        self.destinationURL = destinationURL
-//        self.onProgress = onProgress
-//        self.onComplete = onComplete
-//        self.onError = onError
-//        super.init()
-//
-//        let cfg = URLSessionConfiguration.default
-//        cfg.waitsForConnectivity = true
-//        self.session = URLSession(configuration: cfg, delegate: self, delegateQueue: nil)
-//    }
-//
-//    func start(url: URL) {
-//        try? FileManager.default.removeItem(at: destinationURL)
-//        FileManager.default.createFile(atPath: destinationURL.path, contents: nil, attributes: nil)
-//        do {
-//            self.handle = try FileHandle(forWritingTo: destinationURL)
-//        } catch {
-//            onError(error)
-//            return
-//        }
-//
-//        let req = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 60)
-//        let t = session.dataTask(with: req)
-//        self.task = t
-//        t.resume()
-//    }
-//
-//    func cancel() {
-//        task?.cancel()
-//        try? handle?.close()
-//        handle = nil
-//        session.invalidateAndCancel()
-//    }
-//
-//    // MARK: URLSessionDataDelegate
-//    func urlSession(_ session: URLSession,
-//                    dataTask: URLSessionDataTask,
-//                    didReceive response: URLResponse,
-//                    completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-//        expected = response.expectedContentLength
-//        received = 0
-//        DispatchQueue.main.async { self.onProgress(0) }
-//        completionHandler(.allow)
-//    }
-//
-//    func urlSession(_ session: URLSession,
-//                    dataTask: URLSessionDataTask,
-//                    didReceive data: Data) {
-//        do {
-//            try handle?.write(contentsOf: data)
-//            received += Int64(data.count)
-//
-//            if expected > 0 {
-//                let prog = max(0, min(1, Double(received) / Double(expected)))
-//                DispatchQueue.main.async { self.onProgress(prog) }
-//            } else {
-//                DispatchQueue.main.async {
-//                    let current = min(0.9, max(0.0, self.progFromUnknown(self.received)))
-//                    self.onProgress(current)
-//                }
-//            }
-//        } catch {
-//            DispatchQueue.main.async { self.onError(error) }
-//            cancel()
-//        }
-//    }
-//
-//    func urlSession(_ session: URLSession,
-//                    task: URLSessionTask,
-//                    didCompleteWithError error: Error?) {
-//        defer {
-//            try? handle?.close()
-//            handle = nil
-//            session.finishTasksAndInvalidate()
-//        }
-//
-//        if let error = error {
-//            DispatchQueue.main.async { self.onError(error) }
-//            return
-//        }
-//        
-//        DispatchQueue.main.async {
-//            self.onProgress(1.0)
-//            self.onComplete(self.destinationURL)
-//        }
-//    }
-//
-//    private func progFromUnknown(_ bytes: Int64) -> Double {
-//        let cap: Double = 5 * 1024 * 1024
-//        return min(0.9, Double(bytes) / cap)
-//    }
-//}
+// MARK: - UIKit wrappers for SwiftUI
+
+/// Save to Files (UIDocumentPicker, iOS 14+)
+struct DocumentExporter: UIViewControllerRepresentable {
+    let fileURL: URL
+    
+    func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
+        let vc = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
+        vc.allowsMultipleSelection = false
+        vc.shouldShowFileExtensions = true
+        return vc
+    }
+    
+    func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+}
+
+/// Share Sheet (UIActivityViewController)
+struct ActivityView: UIViewControllerRepresentable {
+    let items: [Any]
+    let activities: [UIActivity]? = nil
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        let vc = UIActivityViewController(activityItems: items, applicationActivities: activities)
+        return vc
+    }
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
 
 // MARK: - Preview
 struct GenerateSunoSongResultScreen_Previews: PreviewProvider {

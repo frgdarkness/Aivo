@@ -10,17 +10,21 @@ struct GenerateSongTabView: View {
     @State private var showMultiMoodScreen = false
     @State private var showMultiGenreScreen = false
     @State private var showGenerateSongScreen = false
+    @State private var showSunoResultScreen = false
+    @State private var resultSunoDataList: [SunoData] = []
     @State private var isAdvancedExpanded = false
     @State private var songName = ""
     @State private var isVocalEnabled = false
-    @State private var selectedVocalGender: VocalGender = .random
+    @State private var selectedVocalGender: LocalVocalGender = .random
+    @State private var showToast = false
+    @State private var toastMessage = ""
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
         case lyrics = "Lyrics"
     }
     
-    enum VocalGender: String, CaseIterable {
+    enum LocalVocalGender: String, CaseIterable {
         case male = "Male"
         case female = "Female"
         case random = "Random"
@@ -73,11 +77,36 @@ struct GenerateSongTabView: View {
             GenerateSongProcessingScreen(
                 requestType: .generateSong,
                 onComplete: {
-                    // On completion, dismiss the screen
                     showGenerateSongScreen = false
                 }
             )
         }
+        .fullScreenCover(isPresented: $showSunoResultScreen) {
+            GenerateSunoSongResultScreen(
+                sunoDataList: resultSunoDataList,
+                onClose: {
+                    showSunoResultScreen = false
+                }
+            )
+        }
+        .overlay(
+            // Toast Message
+            VStack {
+                Spacer()
+                if showToast {
+                    Text(toastMessage)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 100)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.3), value: showToast)
+                }
+            }
+        )
     }
     
     // MARK: - Song Input Section
@@ -403,7 +432,7 @@ struct GenerateSongTabView: View {
                                     .foregroundColor(.white)
                                 
                                 HStack(spacing: 6) {
-                                    ForEach(VocalGender.allCases, id: \.self) { gender in
+                                    ForEach(LocalVocalGender.allCases, id: \.self) { gender in
                                         Button(action: {
                                             selectedVocalGender = gender
                                         }) {
@@ -439,7 +468,7 @@ struct GenerateSongTabView: View {
     // MARK: - Create Button
     private var createButton: some View {
         Button(action: {
-            showGenerateSongScreen = true
+            generateSong()
         }) {
             HStack(spacing: 8) {
                 Text(selectedInputType == .description ? "Create with Description" : "Create with Lyrics")
@@ -466,6 +495,95 @@ struct GenerateSongTabView: View {
     }
     
     // MARK: - Helper Methods
+    private func generateSong() {
+        print("🎵 [GenerateSong] Starting song generation...")
+        print("🎵 [GenerateSong] Input type: \(selectedInputType.rawValue)")
+        print("🎵 [GenerateSong] Description: \(songDescription)")
+        print("🎵 [GenerateSong] Lyrics: \(songLyrics)")
+        print("🎵 [GenerateSong] Moods: \(selectedMoods.map { $0.displayName })")
+        print("🎵 [GenerateSong] Genres: \(selectedGenres.map { $0.displayName })")
+        print("🎵 [GenerateSong] Song name: \(songName)")
+        print("🎵 [GenerateSong] Vocal gender: \(selectedVocalGender.rawValue)")
+        
+        // Show processing screen
+        showGenerateSongScreen = true
+        
+        // Start generation in background
+        Task {
+            do {
+                let sunoService = SunoAiMusicService.shared
+                
+                // Build prompt based on input type
+                let prompt = buildPrompt()
+                print("🎵 [GenerateSong] Generated prompt: \(prompt)")
+                
+                print("🎵 [GenerateSong] Calling SunoAiMusicService.generateCustomMusic...")
+                let generatedSongs = try await sunoService.generateCustomMusic(
+                    prompt: prompt,
+                    style: selectedGenres.first?.displayName ?? "Pop",
+                    title: songName.isEmpty ? "Untitled Song" : songName,
+                    instrumental: selectedVocalGender == .random,
+                    model: .V5
+                )
+                
+                print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
+                for (index, song) in generatedSongs.enumerated() {
+                    print("🎵 [GenerateSong] Song \(index + 1): \(song.title)")
+                }
+                
+                await MainActor.run {
+                    // Close processing screen
+                    showGenerateSongScreen = false
+                    
+                    // Set result and show result screen
+                    resultSunoDataList = generatedSongs
+                    showToastMessage("Songs generated successfully!")
+                    print("🎵 [GenerateSong] Showing result screen...")
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        showSunoResultScreen = true
+                    }
+                }
+                
+            } catch {
+                print("❌ [GenerateSong] Error generating songs: \(error)")
+                await MainActor.run {
+                    showGenerateSongScreen = false
+                    showToastMessage("Failed to generate songs: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func buildPrompt() -> String {
+        var prompt = ""
+        
+        if selectedInputType == .description {
+            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
+        } else {
+            prompt = songLyrics.isEmpty ? "beautiful girl in white, pop and ballad" : songLyrics
+        }
+        
+        // Add moods
+        if !selectedMoods.isEmpty {
+            let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+            prompt += ", \(moodText) mood"
+        }
+        
+        // Add genres
+        if !selectedGenres.isEmpty {
+            let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+            prompt += ", \(genreText) style"
+        }
+        
+        // Add song name if provided
+        if !songName.isEmpty {
+            prompt += ", titled \"\(songName)\""
+        }
+        
+        return prompt
+    }
+    
     private func toggleMoodSelection(_ mood: SongMood) {
         if selectedMoods.contains(mood) {
             selectedMoods.removeAll { $0 == mood }
@@ -485,6 +603,15 @@ struct GenerateSongTabView: View {
                 selectedGenres.removeFirst()
             }
             selectedGenres.append(genre)
+        }
+    }
+    
+    private func showToastMessage(_ message: String) {
+        toastMessage = message
+        showToast = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            showToast = false
         }
     }
 }

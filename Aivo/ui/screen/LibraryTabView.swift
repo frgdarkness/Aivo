@@ -3,15 +3,19 @@ import SwiftUI
 // MARK: - Library Tab View
 struct LibraryTabView: View {
     @State private var songs: [LibrarySong] = [] // Empty by default to show empty state
+    @State private var downloadedSongs: [SunoData] = []
     
     var body: some View {
         VStack(spacing: 0) {
             // Content
-            if songs.isEmpty {
+            if downloadedSongs.isEmpty {
                 emptyStateView
             } else {
-                songsListView
+                downloadedSongsListView
             }
+        }
+        .onAppear {
+            loadDownloadedSongs()
         }
     }
     
@@ -117,10 +121,66 @@ struct LibraryTabView: View {
         }
     }
     
+    // MARK: - Downloaded Songs List View
+    private var downloadedSongsListView: some View {
+        ScrollView {
+            LazyVStack(spacing: 6) {
+                ForEach(Array(downloadedSongs.enumerated()), id: \.element.id) { index, song in
+                    DownloadedSongRowView(song: song, index: index)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 100) // Space for bottom nav
+        }
+    }
+    
     // MARK: - Actions
     private func startCreating() {
         print("Starting to create...")
         // This would typically navigate to the home tab or song creation flow
+    }
+    
+    private func loadDownloadedSongs() {
+        print("📚 [Library] Loading downloaded songs...")
+        
+        // Get documents directory
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        // Look for downloaded song files
+        do {
+            let fileURLs = try FileManager.default.contentsOfDirectory(at: documentsPath, includingPropertiesForKeys: nil)
+            let audioFiles = fileURLs.filter { url in
+                let fileExtension = url.pathExtension.lowercased()
+                return ["mp3", "wav", "m4a"].contains(fileExtension)
+            }
+            
+            print("📚 [Library] Found \(audioFiles.count) audio files")
+            
+            // Convert to SunoData format (simplified for library display)
+            downloadedSongs = audioFiles.enumerated().map { index, url in
+                SunoData(
+                    id: "library_\(index)",
+                    audioUrl: url.absoluteString,
+                    sourceAudioUrl: "",
+                    streamAudioUrl: "",
+                    sourceStreamAudioUrl: "",
+                    imageUrl: "",
+                    sourceImageUrl: "",
+                    prompt: "Downloaded Song",
+                    modelName: "Library",
+                    title: url.deletingPathExtension().lastPathComponent,
+                    tags: "downloaded",
+                    createTime: Int64(Date().timeIntervalSince1970 * 1000),
+                    duration: 180.0 // Default duration, could be extracted from file metadata
+                )
+            }
+            
+            print("📚 [Library] Loaded \(downloadedSongs.count) songs into library")
+            
+        } catch {
+            print("❌ [Library] Error loading downloaded songs: \(error)")
+            downloadedSongs = []
+        }
     }
 }
 
@@ -178,6 +238,93 @@ struct LibrarySongRowView: View {
     
     private func playSong(_ song: LibrarySong) {
         print("Playing: \(song.title)")
+    }
+}
+
+// MARK: - Downloaded Song Row View
+struct DownloadedSongRowView: View {
+    let song: SunoData
+    let index: Int
+    
+    var body: some View {
+        // Card nền
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.clear, lineWidth: 2)
+                )
+
+            // Nội dung: ảnh (trái sát), info (giữa), nút (phải sát)
+            HStack(spacing: 12) {
+                let coverSize: CGFloat = 60
+
+                ZStack {
+                    // Ảnh placeholder cho library
+                    Image("demo_cover")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: coverSize, height: coverSize)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+                .frame(width: coverSize, height: coverSize)
+                .padding(.leading, 12)
+
+                // INFO: chiếm toàn bộ phần còn lại
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(song.title)
+                        .font(.headline).fontWeight(.medium)
+                        .foregroundColor(.white)
+                        .lineLimit(1).truncationMode(.tail)
+
+                    HStack(spacing: 14) {
+                        Label(formatDuration(song.duration), systemImage: "clock.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                            .lineLimit(1)
+
+                        Label("Downloaded", systemImage: "checkmark.circle.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.caption)
+                            .foregroundColor(.green)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .layoutPriority(1)
+
+                // BUTTON: sát mép phải card
+                Button {
+                    playDownloadedSong(song)
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                        .background(
+                            Circle().fill(AivoTheme.Primary.orange)
+                        )
+                }
+                .padding(.trailing, 12)
+            }
+            .frame(height: 76)
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .padding(.vertical, 4)
+    }
+    
+    private func playDownloadedSong(_ song: SunoData) {
+        print("🎵 [Library] Playing downloaded song: \(song.title)")
+        // TODO: Implement audio playback for library songs
+        // This could open a player screen or play directly
+    }
+    
+    private func formatDuration(_ duration: Double) -> String {
+        let m = Int(duration) / 60
+        let s = Int(duration) % 60
+        return String(format: "%d:%02d", m, s)
     }
 }
 

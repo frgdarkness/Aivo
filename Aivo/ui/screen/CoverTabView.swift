@@ -11,6 +11,10 @@ struct CoverTabView: View {
     @State private var selectedLanguage: CoverLanguage = .english
     @State private var selectedArtist: Artist? = nil
     @State private var showProcessingScreen = false
+    @State private var showPlaySongScreen = false
+    @State private var resultAudioUrl: String?
+    @State private var showToast = false
+    @State private var toastMessage = ""
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
     
@@ -37,14 +41,40 @@ struct CoverTabView: View {
         .fullScreenCover(isPresented: $showProcessingScreen) {
             GenerateSongProcessingScreen(
                 requestType: .coverSong,
-                youtubeUrl: selectedSong,
-                coverLanguage: selectedLanguage.rawValue,
-                coverModelID: selectedArtist?.rawValue ?? "jungkookv7-e",
                 onComplete: {
                     showProcessingScreen = false
                 }
             )
         }
+        .fullScreenCover(isPresented: $showPlaySongScreen) {
+            if let audioUrl = resultAudioUrl {
+                PlaySongIntroScreen(
+                    songData: nil,
+                    audioUrl: audioUrl,
+                    onIntroCompleted: {
+                        showPlaySongScreen = false
+                    }
+                )
+            }
+        }
+        .overlay(
+            // Toast Message
+            VStack {
+                Spacer()
+                if showToast {
+                    Text(toastMessage)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 100)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .animation(.easeInOut(duration: 0.3), value: showToast)
+                }
+            }
+        )
     }
 
     // MARK: - Song Selection Section
@@ -195,7 +225,7 @@ struct CoverTabView: View {
     private var generateButton: some View {
         Button(action: {
             if isGenerateEnabled {
-                showProcessingScreen = true
+                generateCoverSong()
             }
         }) {
             HStack(spacing: 8) {
@@ -227,10 +257,59 @@ struct CoverTabView: View {
     }
 
     // MARK: - Actions
-    private func generateCover() {
-        print("Generating cover with \(selectedLanguage.displayName) language")
-        if let artist = selectedArtist {
-            print("Selected artist: \(artist.name)")
+    private func generateCoverSong() {
+        print("🎤 [CoverTab] Starting cover song generation...")
+        print("🎤 [CoverTab] YouTube URL: \(selectedSong)")
+        print("🎤 [CoverTab] Language: \(selectedLanguage.displayName)")
+        print("🎤 [CoverTab] Artist: \(selectedArtist?.name ?? "None")")
+        
+        // Show processing screen
+        showProcessingScreen = true
+        
+        // Start generation in background
+        Task {
+            do {
+                let modelsLabService = ModelsLabService.shared
+                let coverModelID = selectedArtist?.rawValue ?? "jungkookv7-e"
+                
+                print("🎤 [CoverTab] Calling ModelsLabService.processVoiceCover...")
+                let resultUrl = try await modelsLabService.processVoiceCover(
+                    audioUrl: selectedSong, 
+                    modelID: coverModelID
+                )
+                
+                print("🎤 [CoverTab] Cover song generated successfully!")
+                print("🎤 [CoverTab] Result URL: \(resultUrl)")
+                
+                await MainActor.run {
+                    // Close processing screen
+                    showProcessingScreen = false
+                    
+                    // Set result and show play screen
+                    resultAudioUrl = resultUrl
+                    showToastMessage("Cover song generated successfully!")
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        showPlaySongScreen = true
+                    }
+                }
+                
+            } catch {
+                print("❌ [CoverTab] Error generating cover song: \(error)")
+                await MainActor.run {
+                    showProcessingScreen = false
+                    showToastMessage("Failed to generate cover song: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func showToastMessage(_ message: String) {
+        toastMessage = message
+        showToast = true
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            showToast = false
         }
     }
 }

@@ -3,9 +3,6 @@ import SwiftUI
 // MARK: - Generate Song Processing Screen
 struct GenerateSongProcessingScreen: View {
     let requestType: RequestType
-    let youtubeUrl: String?
-    let coverLanguage: String?
-    let coverModelID: String?
     let onComplete: () -> Void
     
     @State private var isGenerating = true
@@ -13,20 +10,13 @@ struct GenerateSongProcessingScreen: View {
     @State private var animationOffset: CGFloat = 0
     @State private var isAnimating = false
     @State private var randomSeed: Double = 0
-    @State private var resultAudioUrl: String?
-    @State private var resultSunoDataList: [SunoData] = []
-    @State private var showPlaySongScreen = false
-    @State private var showSunoResultScreen = false
     @State private var showToast = false
     @State private var toastMessage = ""
     @Environment(\.dismiss) private var dismiss
     
-    // Initialize with default values for generateSong
-    init(requestType: RequestType, youtubeUrl: String? = nil, coverLanguage: String? = nil, coverModelID: String? = nil, onComplete: @escaping () -> Void) {
+    // Initialize with request type only
+    init(requestType: RequestType, onComplete: @escaping () -> Void) {
         self.requestType = requestType
-        self.youtubeUrl = youtubeUrl
-        self.coverLanguage = coverLanguage
-        self.coverModelID = coverModelID
         self.onComplete = onComplete
     }
     
@@ -63,28 +53,7 @@ struct GenerateSongProcessingScreen: View {
             }
         }
         .onAppear {
-            startGeneration()
-        }
-        .fullScreenCover(isPresented: $showPlaySongScreen) {
-            if let audioUrl = resultAudioUrl {
-                PlaySongIntroScreen(
-                    songData: nil,
-                    audioUrl: audioUrl,
-                    onIntroCompleted: {
-                        showPlaySongScreen = false
-                        onComplete()
-                    }
-                )
-            }
-        }
-        .fullScreenCover(isPresented: $showSunoResultScreen) {
-            GenerateSunoSongResultScreen(
-                sunoDataList: resultSunoDataList,
-                onClose: {
-                    showSunoResultScreen = false
-                    onComplete()
-                }
-            )
+            startProgressAnimation()
         }
         .overlay(
             // Toast Message
@@ -277,70 +246,8 @@ struct GenerateSongProcessingScreen: View {
         }
     }
     
-    private func startGeneration() {
-        Task {
-            do {
-                let modelsLabService = ModelsLabService.shared
-                
-                switch requestType {
-                case .coverSong:
-                    guard let youtubeUrl = youtubeUrl,
-                          let coverLanguage = coverLanguage,
-                          let coverModelID = coverModelID else {
-                        showToastMessage("Missing required data for cover song")
-                        return
-                    }
-                    
-                    // Call ModelsLabService for voice cover
-                    do {
-                        let resultUrl = try await modelsLabService.processVoiceCover(audioUrl: youtubeUrl, modelID: coverModelID)
-                            
-                        
-                        resultAudioUrl = resultUrl
-                        showToastMessage("Cover song generated successfully!")
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            showPlaySongScreen = true
-                        }
-                    } catch {
-                        showToastMessage("Failed to generate cover song: \(error.localizedDescription)")
-                    }
-                    
-                case .generateSong:
-                    // Call Suno AI Music Service
-                    print("🎵 [GenerateSong] Starting Suno AI music generation...")
-                    do {
-                        let sunoService = SunoAiMusicService.shared
-                        print("🎵 [GenerateSong] Calling SunoAiMusicService.generateSimpleMusic...")
-                        
-                        let generatedSongs = try await sunoService.generateSimpleMusic(
-                            prompt: "beautiful girl in white, pop and ballad",
-                            instrumental: false
-                        )
-                        
-                        print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
-                        for (index, song) in generatedSongs.enumerated() {
-                            print("🎵 [GenerateSong] Song \(index + 1): \(song.title)")
-                        }
-                        
-                        await MainActor.run {
-                            resultSunoDataList = generatedSongs
-                            showToastMessage("Songs generated successfully!")
-                            print("🎵 [GenerateSong] Showing result screen...")
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                showSunoResultScreen = true
-                            }
-                        }
-                    } catch {
-                        print("❌ [GenerateSong] Error generating songs: \(error)")
-                        await MainActor.run {
-                            showToastMessage("Failed to generate songs: \(error.localizedDescription)")
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Simulate progress for UI
+    private func startProgressAnimation() {
+        // Simulate progress for UI only
         Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             if progress < 1.0 {
                 progress += 0.02
@@ -364,10 +271,7 @@ struct GenerateSongProcessingScreen: View {
 struct GenerateSongProcessingScreen_Previews: PreviewProvider {
     static var previews: some View {
         GenerateSongProcessingScreen(
-            requestType: .coverSong,
-            youtubeUrl: "https://www.youtube.com/watch?v=example",
-            coverLanguage: "english",
-            coverModelID: "vegeta",
+            requestType: .generateSong,
             onComplete: {}
         )
     }
