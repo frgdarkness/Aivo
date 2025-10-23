@@ -14,7 +14,9 @@ struct GenerateSongProcessingScreen: View {
     @State private var isAnimating = false
     @State private var randomSeed: Double = 0
     @State private var resultAudioUrl: String?
+    @State private var resultSunoDataList: [SunoData] = []
     @State private var showPlaySongScreen = false
+    @State private var showSunoResultScreen = false
     @State private var showToast = false
     @State private var toastMessage = ""
     @Environment(\.dismiss) private var dismiss
@@ -75,6 +77,15 @@ struct GenerateSongProcessingScreen: View {
                 )
             }
         }
+        .fullScreenCover(isPresented: $showSunoResultScreen) {
+            GenerateSunoSongResultScreen(
+                sunoDataList: resultSunoDataList,
+                onClose: {
+                    showSunoResultScreen = false
+                    onComplete()
+                }
+            )
+        }
         .overlay(
             // Toast Message
             VStack {
@@ -126,35 +137,29 @@ struct GenerateSongProcessingScreen: View {
         }
     }
     
-    // MARK: - Animation View
+    // MARK: - Animation View (pro)
     private var animationView: some View {
         ZStack {
-            // Circular background
             Circle()
-                .stroke(Color.white.opacity(0.2), lineWidth: 2)
-                .frame(width: 200, height: 200)
-            
-            // Sound wave animation
-            HStack(spacing: 3) {
-                ForEach(0..<20, id: \.self) { index in
-                    RoundedRectangle(cornerRadius: 2)
-                        .fill(Color.white)
-                        .frame(width: 4)
-                        .frame(height: waveHeight(for: index))
-                        .animation(
-                            Animation.easeInOut(duration: 0.2)
-                                .repeatForever(autoreverses: true)
-                                .delay(Double(index) * 0.1),
-                            value: animationOffset
-                        )
-                }
-            }
-            .frame(height: 100)
+                .stroke(Color.white.opacity(0.18), lineWidth: 2)
+                .frame(width: 220, height: 220)
+
+            WaveFlowProView(
+                bars: 28,                 // nhiều cột hơn nhìn “pro” hơn
+                width: 170,
+                height: 110,
+                period: 4.2,              // chu kỳ ~4–5s
+                baseHeight: 12,
+                peakHeight: 92,
+                flow: .right,             // flow trái -> phải
+                pulsePerCycle: 2,         // 2 nhịp trong một chu kỳ
+                centerEmphasis: 0.35,     // nhấn mạnh vùng trung tâm
+                roughness: 0.18           // độ “gồ ghề” nhỏ, nhìn thật
+            )
         }
-        .onAppear {
-            startWaveAnimation()
-        }
+        .padding(.top, 8)
     }
+
     
     // MARK: - Status View
     private var statusView: some View {
@@ -301,14 +306,34 @@ struct GenerateSongProcessingScreen: View {
                     }
                     
                 case .generateSong:
-                    // For now, simulate generation for generateSong
-                    // TODO: Implement actual song generation API
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                        showToastMessage("Song generation completed!")
-                        // For demo, use hardcoded audio
-                        resultAudioUrl = Bundle.main.url(forResource: "ai_tokyo", withExtension: "mp3")?.absoluteString
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            showPlaySongScreen = true
+                    // Call Suno AI Music Service
+                    print("🎵 [GenerateSong] Starting Suno AI music generation...")
+                    do {
+                        let sunoService = SunoAiMusicService.shared
+                        print("🎵 [GenerateSong] Calling SunoAiMusicService.generateSimpleMusic...")
+                        
+                        let generatedSongs = try await sunoService.generateSimpleMusic(
+                            prompt: "beautiful girl in white, pop and ballad",
+                            instrumental: false
+                        )
+                        
+                        print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
+                        for (index, song) in generatedSongs.enumerated() {
+                            print("🎵 [GenerateSong] Song \(index + 1): \(song.title)")
+                        }
+                        
+                        await MainActor.run {
+                            resultSunoDataList = generatedSongs
+                            showToastMessage("Songs generated successfully!")
+                            print("🎵 [GenerateSong] Showing result screen...")
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                showSunoResultScreen = true
+                            }
+                        }
+                    } catch {
+                        print("❌ [GenerateSong] Error generating songs: \(error)")
+                        await MainActor.run {
+                            showToastMessage("Failed to generate songs: \(error.localizedDescription)")
                         }
                     }
                 }
