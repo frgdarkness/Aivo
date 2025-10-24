@@ -107,6 +107,43 @@ class SunoDataManager {
         }
     }
     
+    // MARK: - Delete SunoData
+    func deleteSunoData(_ sunoData: SunoData) async throws {
+        print("🗑️ [SunoDataManager] Deleting SunoData: \(sunoData.title)")
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        
+        // Delete metadata file
+        let metadataFileName = "\(sunoData.id).json"
+        let metadataFileURL = sunoDataDirectory.appendingPathComponent(metadataFileName)
+        
+        if FileManager.default.fileExists(atPath: metadataFileURL.path) {
+            try FileManager.default.removeItem(at: metadataFileURL)
+            print("🗑️ [SunoDataManager] Deleted metadata file: \(metadataFileName)")
+        }
+        
+        // Delete audio file
+        let audioFileName = "\(sunoData.id)_audio.mp3"
+        let audioFileURL = sunoDataDirectory.appendingPathComponent(audioFileName)
+        
+        if FileManager.default.fileExists(atPath: audioFileURL.path) {
+            try FileManager.default.removeItem(at: audioFileURL)
+            print("🗑️ [SunoDataManager] Deleted audio file: \(audioFileName)")
+        }
+        
+        // Delete cover image file
+        let coverFileName = "\(sunoData.id)_cover.jpg"
+        let coverFileURL = sunoDataDirectory.appendingPathComponent(coverFileName)
+        
+        if FileManager.default.fileExists(atPath: coverFileURL.path) {
+            try FileManager.default.removeItem(at: coverFileURL)
+            print("🗑️ [SunoDataManager] Deleted cover file: \(coverFileName)")
+        }
+        
+        print("✅ [SunoDataManager] SunoData deleted successfully")
+    }
+    
     // MARK: - Private Methods
     private func downloadAndSaveAudio(_ audioUrl: String, songId: String, to directory: URL) async throws -> URL {
         guard let url = URL(string: audioUrl) else {

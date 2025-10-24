@@ -359,12 +359,11 @@ struct GenerateSunoSongResultScreen: View {
             return 
         }
         
-        // Stop current audio before loading new song
-        print("🎵 [SunoResult] Stopping current audio before loading new song")
-        stopAudio()
-        
         print("🎵 [SunoResult] Loading selected song: \(currentSong.title)")
-        setupAudioPlayerWithURL(fileURL)
+        
+        // Use MusicPlayer to play the song
+        MusicPlayer.shared.loadSong(currentSong, at: selectedSongIndex, in: sunoDataList)
+        print("🎵 [SunoResult] Song loaded into MusicPlayer")
     }
     
     private func setupAudioPlayerWithURL(_ url: URL) {

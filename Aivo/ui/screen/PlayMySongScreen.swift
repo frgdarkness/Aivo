@@ -7,50 +7,29 @@ struct PlayMySongScreen: View {
     let initialIndex: Int
     @Environment(\.dismiss) private var dismiss
     
-    @State private var currentIndex: Int
-    @State private var isPlaying = false
-    @State private var currentTime: TimeInterval = 0
-    @State private var duration: TimeInterval = 0
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var playbackTimer: Timer?
+    @StateObject private var musicPlayer = MusicPlayer.shared
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
     @State private var isFavorite = false
-    @State private var playMode: PlayMode = .sequential
     @State private var showPlaylist = false
     @State private var localSongs: [SunoData] = []
     @State private var isLoading = true
     @State private var showMenu = false
     @State private var showExportSheet = false
     @State private var currentFileURL: URL?
-    
-    enum PlayMode: String, CaseIterable {
-        case shuffle = "shuffle"
-        case sequential = "sequential"
-        case repeatOne = "repeat_one"
-        
-        var icon: String {
-            switch self {
-            case .shuffle: return "shuffle"
-            case .sequential: return "arrow.clockwise"
-            case .repeatOne: return "repeat.1"
-            }
-        }
-    }
+    @State private var showDeleteAlert = false
     
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
         self.initialIndex = initialIndex
-        self._currentIndex = State(initialValue: initialIndex)
     }
     
     private var currentSong: SunoData? {
-        guard currentIndex >= 0 && currentIndex < localSongs.count else { return nil }
-        return localSongs[currentIndex]
+        return musicPlayer.currentSong
     }
     
     private var displaySongs: [SunoData] {
-        return localSongs.isEmpty ? songs : localSongs
+        return musicPlayer.songs.isEmpty ? songs : musicPlayer.songs
     }
     
     var body: some View {
@@ -94,6 +73,26 @@ struct PlayMySongScreen: View {
             } else {
                 // No Song State
                 VStack(spacing: 20) {
+                    // Header with close button
+                    HStack {
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.title2)
+                                .foregroundColor(.white)
+                                .frame(width: 44, height: 44)
+                                .background(Color.white.opacity(0.2))
+                                .clipShape(Circle())
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    
+                    Spacer()
+                    
                     Image(systemName: "music.note")
                         .font(.system(size: 60))
                         .foregroundColor(.white.opacity(0.6))
@@ -101,14 +100,33 @@ struct PlayMySongScreen: View {
                     Text("No songs available")
                         .font(.headline)
                         .foregroundColor(.white)
+                    
+                    Text("Please try again later")
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.7))
+                    
+                    Spacer()
                 }
             }
         }
         .onAppear {
-            loadLocalSongs()
+            print("🎵 [PlayMySong] onAppear - songs.count: \(songs.count), initialIndex: \(initialIndex)")
+            print("🎵 [PlayMySong] onAppear - musicPlayer.currentSong: \(musicPlayer.currentSong?.title ?? "nil")")
+            
+            // Simply load songs for display - MusicPlayer should already be set up by caller
+            loadSongsForDisplay()
+            
+            // Force rotation animation to start if music is playing
+            if musicPlayer.isPlaying {
+                // Trigger animation by toggling the rotation state
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // This will trigger the rotation animation
+                }
+            }
         }
         .onDisappear {
-            stopAudio()
+            // Don't stop music when dismissing - let it continue playing
+            // Music will continue through MusicPlayer and show in PlayingBannerView
         }
         .onTapGesture {
             showMenu = false
@@ -120,6 +138,14 @@ struct PlayMySongScreen: View {
             if let url = currentFileURL {
                 DocumentExporter(fileURL: url)
             }
+        }
+        .alert("Delete Song", isPresented: $showDeleteAlert) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                deleteCurrentSong()
+            }
+        } message: {
+            Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
     }
     
@@ -202,10 +228,30 @@ struct PlayMySongScreen: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                 }
+                
+                Divider()
+                    .background(Color.white.opacity(0.2))
+                
+                Button(action: {
+                    showDeleteAlert = true
+                    showMenu = false
+                }) {
+                    HStack {
+                        Image(systemName: "trash")
+                            .font(.system(size: 16))
+                        Text("Delete Song")
+                            .font(.system(size: 16, weight: .medium))
+                        Spacer()
+                    }
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
             }
+            .frame(width: 120)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(Color.black.opacity(0.9))
+                    .fill(Color.black.opacity(0.7))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.white.opacity(0.2), lineWidth: 1)
@@ -252,12 +298,12 @@ struct PlayMySongScreen: View {
             .frame(width: 280, height: 280)
             .clipShape(Circle())
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            .rotationEffect(.degrees(isPlaying ? 360 : 0))
+            .rotationEffect(.degrees(musicPlayer.isPlaying ? 360 : 0))
             .animation(
-                isPlaying ? 
+                musicPlayer.isPlaying ? 
                 .linear(duration: 10).repeatForever(autoreverses: false) : 
                 .easeInOut(duration: 0.5),
-                value: isPlaying
+                value: musicPlayer.isPlaying
             )
         }
     }
@@ -300,31 +346,30 @@ struct PlayMySongScreen: View {
         VStack(spacing: 8) {
             Slider(
                 value: Binding(
-                    get: { isScrubbing ? scrubTime : currentTime },
+                    get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
                     set: { newVal in
-                        if isScrubbing { scrubTime = newVal } else { currentTime = newVal }
+                        if isScrubbing { scrubTime = newVal } else { musicPlayer.currentTime = newVal }
                     }
                 ),
-                in: 0...max(0.1, duration),
+                in: 0...max(0.1, musicPlayer.duration),
                 onEditingChanged: { editing in
                     if editing {
                         isScrubbing = true
-                        scrubTime = currentTime
+                        scrubTime = musicPlayer.currentTime
                     } else {
                         isScrubbing = false
-                        currentTime = scrubTime
-                        audioPlayer?.currentTime = scrubTime
+                        musicPlayer.seek(to: scrubTime)
                     }
                 }
             )
             .accentColor(AivoTheme.Primary.orange)
             
             HStack {
-                Text(formatTime(isScrubbing ? scrubTime : currentTime))
+                Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))
                     .font(.caption)
                     .foregroundColor(.white)
                 Spacer()
-                Text(formatTime(duration))
+                Text(formatTime(musicPlayer.duration))
                     .font(.caption)
                     .foregroundColor(.white)
             }
@@ -336,16 +381,18 @@ struct PlayMySongScreen: View {
         HStack(spacing: 30) {
             // Play Mode Button
             Button(action: {
-                cyclePlayMode()
+                musicPlayer.changePlayMode()
             }) {
-                Image(systemName: playMode.icon)
+                Image(systemName: musicPlayer.playMode.icon)
                     .font(.title2)
                     .foregroundColor(.white)
                     .frame(width: 44, height: 44)
             }
             
             // Previous Button
-            Button(action: previousSong) {
+            Button(action: {
+                musicPlayer.previousSong()
+            }) {
                 Image(systemName: "backward.end.fill")
                     .font(.title2)
                     .foregroundColor(.white)
@@ -353,8 +400,10 @@ struct PlayMySongScreen: View {
             }
             
             // Play/Pause Button
-            Button(action: togglePlayPause) {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            Button(action: {
+                musicPlayer.togglePlayPause()
+            }) {
+                Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 32))
                     .foregroundColor(.black)
                     .frame(width: 70, height: 70)
@@ -364,7 +413,9 @@ struct PlayMySongScreen: View {
             }
             
             // Next Button
-            Button(action: nextSong) {
+            Button(action: {
+                musicPlayer.nextSong()
+            }) {
                 Image(systemName: "forward.end.fill")
                     .font(.title2)
                     .foregroundColor(.white)
@@ -414,12 +465,10 @@ struct PlayMySongScreen: View {
                         ForEach(Array(displaySongs.enumerated()), id: \.element.id) { index, song in
                             PlaylistSongRowView(
                                 song: song,
-                                isCurrentSong: index == currentIndex,
-                                isPlaying: index == currentIndex && isPlaying,
+                                isCurrentSong: index == musicPlayer.currentIndex,
+                                isPlaying: index == musicPlayer.currentIndex && musicPlayer.isPlaying,
                                 onTap: {
-                                    currentIndex = index
-                                    stopAudio()
-                                    loadSong(at: index)
+                                    musicPlayer.loadSong(song, at: index, in: displaySongs)
                                     showPlaylist = false
                                 }
                             )
@@ -432,134 +481,18 @@ struct PlayMySongScreen: View {
     }
     
     // MARK: - Helper Methods
-    private func loadLocalSongs() {
-        print("🎵 [PlayMySong] Loading local songs...")
+    private func loadSongsForDisplay() {
+        print("🎵 [PlayMySong] Loading songs for display...")
         isLoading = true
         
-        Task {
-            do {
-                let localSongsList = try await SunoDataManager.shared.loadAllSavedSunoData()
-                await MainActor.run {
-                    self.localSongs = localSongsList
-                    self.isLoading = false
-                    print("🎵 [PlayMySong] Loaded \(localSongsList.count) local songs")
-                    
-                    // Setup audio player after loading
-                    if !localSongsList.isEmpty {
-                        setupAudioPlayer()
-                    }
-                }
-            } catch {
-                print("❌ [PlayMySong] Error loading local songs: \(error)")
-                await MainActor.run {
-                    self.localSongs = []
-                    self.isLoading = false
-                    // Fallback to original songs if local loading fails
-                    setupAudioPlayer()
-                }
-            }
-        }
+        // Use the songs passed from caller
+        localSongs = songs
+        isLoading = false
+        
+        print("🎵 [PlayMySong] Loaded \(songs.count) songs for display")
+        print("🎵 [PlayMySong] Current song: \(musicPlayer.currentSong?.title ?? "nil")")
     }
     
-    private func setupAudioPlayer() {
-        loadSong(at: currentIndex)
-    }
-    
-    private func loadSong(at index: Int) {
-        guard index >= 0 && index < displaySongs.count else { return }
-        
-        let song = displaySongs[index]
-        print("🎵 [PlayMySong] Loading song: \(song.title)")
-        print("🎵 [PlayMySong] Audio URL: \(song.audioUrl)")
-        
-        // Try to load from local file first, then fallback to URL
-        let localFilePath = getLocalFilePath(for: song)
-        let audioURL: URL
-        
-        print("🎵 [PlayMySong] Checking for local file at: \(localFilePath.path)")
-        print("🎵 [PlayMySong] File exists: \(FileManager.default.fileExists(atPath: localFilePath.path))")
-        
-        if FileManager.default.fileExists(atPath: localFilePath.path) {
-            print("🎵 [PlayMySong] Using local file: \(localFilePath.path)")
-            audioURL = localFilePath
-        } else {
-            print("🎵 [PlayMySong] Local file not found, using remote URL")
-            print("🎵 [PlayMySong] Remote URL: \(song.audioUrl)")
-            guard let url = URL(string: song.audioUrl) else { 
-                print("❌ [PlayMySong] Invalid audio URL: \(song.audioUrl)")
-                return 
-            }
-            audioURL = url
-        }
-        
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            
-            audioPlayer = try AVAudioPlayer(contentsOf: audioURL)
-            audioPlayer?.delegate = PlayMySongAudioDelegate { [self] in
-                print("🎵 [PlayMySong] Audio playback finished")
-                handlePlaybackFinished()
-            }
-            audioPlayer?.prepareToPlay()
-            duration = audioPlayer?.duration ?? 0
-            
-            print("🎵 [PlayMySong] Audio player prepared. Duration: \(duration) seconds")
-            
-            // Auto-play
-            let success = audioPlayer?.play() ?? false
-            isPlaying = success
-            print("🎵 [PlayMySong] Auto-play result: \(success)")
-            
-            startPlaybackTimer()
-        } catch {
-            print("❌ [PlayMySong] Error setting up audio player: \(error)")
-        }
-    }
-    
-    private func getLocalFilePath(for song: SunoData) -> URL {
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let sunoDataPath = documentsPath.appendingPathComponent("SunoData")
-        
-        // Try different possible file names
-        let possibleFileNames = [
-            "\(song.id)_audio.mp3",
-            "\(song.id)_audio.wav", 
-            "\(song.id)_audio.m4a",
-            "\(song.id).mp3",
-            "\(song.id).wav",
-            "\(song.id).m4a"
-        ]
-        
-        for fileName in possibleFileNames {
-            let filePath = sunoDataPath.appendingPathComponent(fileName)
-            if FileManager.default.fileExists(atPath: filePath.path) {
-                print("🎵 [PlayMySong] Found local file: \(fileName)")
-                return filePath
-            }
-        }
-        
-        // Default fallback
-        let audioFileName = "\(song.id)_audio.mp3"
-        return sunoDataPath.appendingPathComponent(audioFileName)
-    }
-    
-    private func handlePlaybackFinished() {
-        print("🎵 [PlayMySong] Playback finished, play mode: \(playMode.rawValue)")
-        switch playMode {
-        case .sequential:
-            nextSong()
-        case .repeatOne:
-            currentTime = 0
-            audioPlayer?.currentTime = 0
-            audioPlayer?.play()
-        case .shuffle:
-            let randomIndex = Int.random(in: 0..<displaySongs.count)
-            currentIndex = randomIndex
-            stopAudio()
-            loadSong(at: randomIndex)
-        }
-    }
     
     private func exportCurrentSong() {
         guard let song = currentSong else { return }
@@ -590,56 +523,31 @@ struct PlayMySongScreen: View {
         }
     }
     
-    private func startPlaybackTimer() {
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            if let player = audioPlayer {
-                currentTime = player.currentTime
+    private func getLocalFilePath(for song: SunoData) -> URL {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let sunoDataPath = documentsPath.appendingPathComponent("SunoData")
+        
+        // Try different possible file names
+        let possibleFileNames = [
+            "\(song.id)_audio.mp3",
+            "\(song.id)_audio.wav", 
+            "\(song.id)_audio.m4a",
+            "\(song.id).mp3",
+            "\(song.id).wav",
+            "\(song.id).m4a"
+        ]
+        
+        for fileName in possibleFileNames {
+            let filePath = sunoDataPath.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                print("🎵 [PlayMySong] Found local file: \(fileName)")
+                return filePath
             }
         }
-    }
-    
-    private func togglePlayPause() {
-        if isPlaying {
-            audioPlayer?.pause()
-            isPlaying = false
-            print("🎵 [PlayMySong] Paused")
-        } else {
-            let success = audioPlayer?.play() ?? false
-            isPlaying = success
-            print("🎵 [PlayMySong] Play result: \(success)")
-        }
-    }
-    
-    private func previousSong() {
-        let newIndex = currentIndex > 0 ? currentIndex - 1 : displaySongs.count - 1
-        currentIndex = newIndex
-        stopAudio()
-        loadSong(at: newIndex)
-    }
-    
-    private func nextSong() {
-        let newIndex = currentIndex < displaySongs.count - 1 ? currentIndex + 1 : 0
-        currentIndex = newIndex
-        stopAudio()
-        loadSong(at: newIndex)
-    }
-    
-    private func cyclePlayMode() {
-        let allModes = PlayMode.allCases
-        if let currentModeIndex = allModes.firstIndex(of: playMode) {
-            let nextIndex = (currentModeIndex + 1) % allModes.count
-            playMode = allModes[nextIndex]
-        }
-    }
-    
-    private func stopAudio() {
-        audioPlayer?.stop()
-        audioPlayer = nil
-        isPlaying = false
-        currentTime = 0
-        duration = 0
-        playbackTimer?.invalidate()
-        playbackTimer = nil
+        
+        // Default fallback
+        let audioFileName = "\(song.id)_audio.mp3"
+        return sunoDataPath.appendingPathComponent(audioFileName)
     }
     
     private func formatTime(_ time: TimeInterval) -> String {
@@ -647,23 +555,53 @@ struct PlayMySongScreen: View {
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
-}
-
-// MARK: - Audio Player Delegate
-class PlayMySongAudioDelegate: NSObject, AVAudioPlayerDelegate {
-    private let onFinish: () -> Void
     
-    init(onFinish: @escaping () -> Void) {
-        self.onFinish = onFinish
-    }
-    
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        print("🎵 [AudioPlayerDelegate] Audio playback finished successfully: \(flag)")
-        onFinish()
-    }
-    
-    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        print("❌ [AudioPlayerDelegate] Audio decode error: \(error?.localizedDescription ?? "Unknown error")")
+    private func deleteCurrentSong() {
+        guard let song = currentSong else { return }
+        
+        print("🗑️ [PlayMySong] Deleting song: \(song.title)")
+        
+        Task {
+            do {
+                // Delete from SunoDataManager
+                try await SunoDataManager.shared.deleteSunoData(song)
+                
+                // Delete local audio file
+                let localFilePath = getLocalFilePath(for: song)
+                if FileManager.default.fileExists(atPath: localFilePath.path) {
+                    try FileManager.default.removeItem(at: localFilePath)
+                    print("🗑️ [PlayMySong] Deleted local file: \(localFilePath.path)")
+                }
+                
+                await MainActor.run {
+                    // Remove from current songs list
+                    if let index = musicPlayer.songs.firstIndex(where: { $0.id == song.id }) {
+                        var updatedSongs = musicPlayer.songs
+                        updatedSongs.remove(at: index)
+                        musicPlayer.songs = updatedSongs
+                        
+                        // If this was the current song, move to next
+                        if index == musicPlayer.currentIndex {
+                            if !updatedSongs.isEmpty {
+                                let nextIndex = min(index, updatedSongs.count - 1)
+                                musicPlayer.loadSong(updatedSongs[nextIndex], at: nextIndex, in: updatedSongs)
+                            } else {
+                                musicPlayer.stop()
+                            }
+                        } else if index < musicPlayer.currentIndex {
+                            musicPlayer.currentIndex -= 1
+                        }
+                    }
+                    
+                    // Update local songs for display
+                    loadSongsForDisplay()
+                }
+                
+                print("✅ [PlayMySong] Song deleted successfully")
+            } catch {
+                print("❌ [PlayMySong] Error deleting song: \(error)")
+            }
+        }
     }
 }
 

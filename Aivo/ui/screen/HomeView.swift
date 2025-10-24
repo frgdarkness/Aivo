@@ -35,6 +35,9 @@ struct HomeView: View {
                     }
                 }
                 
+                // Playing Banner View (if music is playing) - Above bottom nav
+                PlayingBannerView()
+                
                 // Bottom Navigation - Fixed
                 bottomNavigationView
             }

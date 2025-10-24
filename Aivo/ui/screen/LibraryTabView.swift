@@ -137,8 +137,11 @@ struct LibraryTabView: View {
                     DownloadedSongRowView(
                         song: song, 
                         index: index,
+                        downloadedSongs: downloadedSongs,
                         onTap: {
                             selectedSongIndex = index
+                            // Load song into MusicPlayer first
+                            MusicPlayer.shared.loadSong(song, at: index, in: downloadedSongs)
                             showPlayMySongScreen = true
                         }
                     )
@@ -239,6 +242,7 @@ struct LibrarySongRowView: View {
 struct DownloadedSongRowView: View {
     let song: SunoData
     let index: Int
+    let downloadedSongs: [SunoData]
     let onTap: () -> Void
     
     var body: some View {
@@ -327,18 +331,16 @@ struct DownloadedSongRowView: View {
     
     private func playDownloadedSong(_ song: SunoData) {
         print("🎵 [Library] Playing downloaded song: \(song.title)")
-        print("🎵 [Library] Audio URL: \(song.audioUrl)")
         
-        // Convert string URL back to URL
-        guard let url = URL(string: song.audioUrl) else {
-            print("❌ [Library] Invalid URL for song: \(song.title)")
+        // Find the index of the song in the downloadedSongs array
+        guard let index = downloadedSongs.firstIndex(where: { $0.id == song.id }) else {
+            print("❌ [Library] Song not found in downloaded songs")
             return
         }
         
-        // TODO: Implement audio playback for library songs
-        // This could open a player screen or play directly
-        // For now, just log the action
-        print("🎵 [Library] Would play song from: \(url.path)")
+        // Use MusicPlayer to play the song
+        MusicPlayer.shared.loadSong(song, at: index, in: downloadedSongs)
+        print("🎵 [Library] Song loaded into MusicPlayer")
     }
     
     private func formatDuration(_ duration: Double) -> String {
