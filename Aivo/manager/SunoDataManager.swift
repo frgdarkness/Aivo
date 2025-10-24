@@ -117,10 +117,14 @@ class SunoDataManager {
         let fileName = "\(songId)_audio.\(ext)"
         let destinationURL = directory.appendingPathComponent(fileName)
         
+        print("💾 [SunoDataManager] Downloading audio from: \(audioUrl)")
+        print("💾 [SunoDataManager] Saving to: \(destinationURL.path)")
+        
         // Download audio file
         let (data, _) = try await URLSession.shared.data(from: url)
         try data.write(to: destinationURL)
         
+        print("✅ [SunoDataManager] Audio saved successfully: \(destinationURL.path)")
         return destinationURL
     }
     

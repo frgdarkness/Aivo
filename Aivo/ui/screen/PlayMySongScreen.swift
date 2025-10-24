@@ -20,6 +20,9 @@ struct PlayMySongScreen: View {
     @State private var showPlaylist = false
     @State private var localSongs: [SunoData] = []
     @State private var isLoading = true
+    @State private var showMenu = false
+    @State private var showExportSheet = false
+    @State private var currentFileURL: URL?
     
     enum PlayMode: String, CaseIterable {
         case shuffle = "shuffle"
@@ -107,8 +110,16 @@ struct PlayMySongScreen: View {
         .onDisappear {
             stopAudio()
         }
+        .onTapGesture {
+            showMenu = false
+        }
         .sheet(isPresented: $showPlaylist) {
             playlistView
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let url = currentFileURL {
+                DocumentExporter(fileURL: url)
+            }
         }
     }
     
@@ -127,30 +138,85 @@ struct PlayMySongScreen: View {
                     .clipShape(Circle())
             }
             
-            Spacer()
-            
             // Title
             Text("Now Playing")
-                .font(.headline)
+                .font(.system(size: 22))
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
+                .padding(.leading, 6)
             
             Spacer()
             
-            // Favorite Button
-            Button(action: {
-                isFavorite.toggle()
-            }) {
-                Image(systemName: isFavorite ? "heart.fill" : "heart")
-                    .font(.title2)
-                    .foregroundColor(isFavorite ? .red : .white)
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.2))
-                    .clipShape(Circle())
+            // Right side buttons
+            HStack(spacing: 12) {
+                // Favorite Button
+                Button(action: {
+                    isFavorite.toggle()
+                }) {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .font(.title2)
+                        .foregroundColor(isFavorite ? .red : .white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Circle())
+                }
+                
+                // Menu Button
+                Button(action: {
+                    showMenu.toggle()
+                }) {
+                    Image(systemName: "ellipsis")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.2))
+                        .clipShape(Circle())
+                }
             }
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
+        .overlay(alignment: .topTrailing) {
+            if showMenu {
+                menuView
+            }
+        }
+    }
+    
+    // MARK: - Menu View
+    private var menuView: some View {
+        VStack(alignment: .trailing, spacing: 0) {
+            VStack(spacing: 0) {
+                Button(action: {
+                    exportCurrentSong()
+                    showMenu = false
+                }) {
+                    HStack {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(.system(size: 16))
+                        Text("Export to Device")
+                            .font(.system(size: 16, weight: .medium))
+                        Spacer()
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.9))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+            )
+        }
+        .padding(.top, 60)
+        .padding(.trailing, 20)
+        .onTapGesture {
+            showMenu = false
+        }
     }
     
     // MARK: - Album Art View
@@ -251,7 +317,7 @@ struct PlayMySongScreen: View {
                     }
                 }
             )
-            .accentColor(.green)
+            .accentColor(AivoTheme.Primary.orange)
             
             HStack {
                 Text(formatTime(isScrubbing ? scrubTime : currentTime))
@@ -292,9 +358,9 @@ struct PlayMySongScreen: View {
                     .font(.system(size: 32))
                     .foregroundColor(.black)
                     .frame(width: 70, height: 70)
-                    .background(Color.green)
+                    .background(AivoTheme.Primary.orange)
                     .clipShape(Circle())
-                    .shadow(color: .green.opacity(0.3), radius: 10, x: 0, y: 5)
+                    .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 5)
             }
             
             // Next Button
@@ -410,11 +476,15 @@ struct PlayMySongScreen: View {
         let localFilePath = getLocalFilePath(for: song)
         let audioURL: URL
         
+        print("🎵 [PlayMySong] Checking for local file at: \(localFilePath.path)")
+        print("🎵 [PlayMySong] File exists: \(FileManager.default.fileExists(atPath: localFilePath.path))")
+        
         if FileManager.default.fileExists(atPath: localFilePath.path) {
             print("🎵 [PlayMySong] Using local file: \(localFilePath.path)")
             audioURL = localFilePath
         } else {
             print("🎵 [PlayMySong] Local file not found, using remote URL")
+            print("🎵 [PlayMySong] Remote URL: \(song.audioUrl)")
             guard let url = URL(string: song.audioUrl) else { 
                 print("❌ [PlayMySong] Invalid audio URL: \(song.audioUrl)")
                 return 
@@ -450,11 +520,32 @@ struct PlayMySongScreen: View {
     private func getLocalFilePath(for song: SunoData) -> URL {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let sunoDataPath = documentsPath.appendingPathComponent("SunoData")
-        let audioFileName = "\(song.id).mp3"
+        
+        // Try different possible file names
+        let possibleFileNames = [
+            "\(song.id)_audio.mp3",
+            "\(song.id)_audio.wav", 
+            "\(song.id)_audio.m4a",
+            "\(song.id).mp3",
+            "\(song.id).wav",
+            "\(song.id).m4a"
+        ]
+        
+        for fileName in possibleFileNames {
+            let filePath = sunoDataPath.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                print("🎵 [PlayMySong] Found local file: \(fileName)")
+                return filePath
+            }
+        }
+        
+        // Default fallback
+        let audioFileName = "\(song.id)_audio.mp3"
         return sunoDataPath.appendingPathComponent(audioFileName)
     }
     
     private func handlePlaybackFinished() {
+        print("🎵 [PlayMySong] Playback finished, play mode: \(playMode.rawValue)")
         switch playMode {
         case .sequential:
             nextSong()
@@ -470,6 +561,35 @@ struct PlayMySongScreen: View {
         }
     }
     
+    private func exportCurrentSong() {
+        guard let song = currentSong else { return }
+        
+        print("📤 [PlayMySong] Exporting current song: \(song.title)")
+        
+        // Try to find local file first
+        let localFilePath = getLocalFilePath(for: song)
+        
+        if FileManager.default.fileExists(atPath: localFilePath.path) {
+            print("📤 [PlayMySong] Using local file for export: \(localFilePath.path)")
+            currentFileURL = localFilePath
+            showExportSheet = true
+        } else {
+            print("📤 [PlayMySong] Local file not found, trying to download...")
+            // If local file doesn't exist, try to download it
+            Task {
+                do {
+                    let downloadedURL = try await SunoDataManager.shared.saveSunoData(song)
+                    await MainActor.run {
+                        self.currentFileURL = downloadedURL
+                        self.showExportSheet = true
+                    }
+                } catch {
+                    print("❌ [PlayMySong] Error downloading song for export: \(error)")
+                }
+            }
+        }
+    }
+    
     private func startPlaybackTimer() {
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
             if let player = audioPlayer {
@@ -481,10 +601,13 @@ struct PlayMySongScreen: View {
     private func togglePlayPause() {
         if isPlaying {
             audioPlayer?.pause()
+            isPlaying = false
+            print("🎵 [PlayMySong] Paused")
         } else {
-            audioPlayer?.play()
+            let success = audioPlayer?.play() ?? false
+            isPlaying = success
+            print("🎵 [PlayMySong] Play result: \(success)")
         }
-        isPlaying.toggle()
     }
     
     private func previousSong() {
@@ -587,11 +710,11 @@ struct PlaylistSongRowView: View {
                 if isPlaying {
                     Image(systemName: "speaker.wave.2.fill")
                         .font(.title3)
-                        .foregroundColor(.green)
+                        .foregroundColor(AivoTheme.Primary.orange)
                 } else {
                     Image(systemName: "pause.circle.fill")
                         .font(.title3)
-                        .foregroundColor(.green)
+                        .foregroundColor(AivoTheme.Primary.orange)
                 }
             }
         }
@@ -602,7 +725,7 @@ struct PlaylistSongRowView: View {
                 .fill(isCurrentSong ? Color.white.opacity(0.1) : Color.white.opacity(0.05))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(isCurrentSong ? Color.green : Color.clear, lineWidth: 2)
+                        .stroke(isCurrentSong ? AivoTheme.Primary.orange : Color.clear, lineWidth: 2)
                 )
         )
         .onTapGesture {

@@ -302,8 +302,13 @@ struct GenerateSunoSongResultScreen: View {
         
         let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let fileName = "\(song.title.replacingOccurrences(of: " ", with: "_"))_\(song.id).\(ext)"
-        let localURL = documentsPath.appendingPathComponent(fileName)
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        
+        // Create directory if it doesn't exist
+        try? FileManager.default.createDirectory(at: sunoDataDirectory, withIntermediateDirectories: true)
+        
+        let fileName = "\(song.id)_audio.\(ext)"
+        let localURL = sunoDataDirectory.appendingPathComponent(fileName)
         
         print("📥 [SunoResult] Download destination: \(localURL.path)")
         
