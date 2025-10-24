@@ -18,6 +18,7 @@ target 'Aivo' do
   pod 'Google-Mobile-Ads-SDK'
   pod 'Alamofire', '~> 5.9'
   pod 'Kingfisher'
+  pod 'lottie-ios'
   
   # 👉 Facebook SDK
   pod 'FBSDKCoreKit'

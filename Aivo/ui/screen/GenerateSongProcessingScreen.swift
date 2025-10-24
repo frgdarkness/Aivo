@@ -56,6 +56,7 @@ struct GenerateSongProcessingScreen: View {
         }
         .onAppear {
             startProgressAnimation()
+            startWaveAnimation()
         }
         .overlay(
             // Toast Message
@@ -137,6 +138,22 @@ struct GenerateSongProcessingScreen: View {
                 .stroke(Color.white.opacity(0.18), lineWidth: 2)
                 .frame(width: 220, height: 220)
 
+            LottieView(name: "lottie_wave_loop", loopMode: .loop, speed: 2.0)
+                        .frame(width: 200, height: 200)
+                        .clipShape(Circle()) // nếu muốn animation gọn trong hình tròn
+                        .shadow(color: .yellow.opacity(0.4), radius: 10, x: 0, y: 0)
+            Circle()
+                .stroke(
+                    LinearGradient(colors: [.yellow.opacity(0.8), .orange.opacity(0.4)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 3
+                )
+                .frame(width: 220, height: 220)
+            // New Music Wave Animation
+//            MusicWaveAnimationView()
+//                .frame(width: 180, height: 100)
+//                .clipShape(Circle())
+
 //            WaveFlowProView2(
 //                bars: 28,
 //                width: 170,
@@ -144,7 +161,7 @@ struct GenerateSongProcessingScreen: View {
 //                bpm: 128,                 // tốc độ cảm giác nhanh hơn, có nhịp rõ
 //                barsPerCycle: 2,          // 2 ô nhịp/chu kỳ
 //                stepsPerBeat: 4,          // 16-step
-//                swing: 0.12,              // một chút swing cho “groove”
+//                swing: 0.12,              // một chút swing cho "groove"
 //                baseHeight: 12,
 //                peakHeight: 92,
 //                flow: .right,
@@ -243,7 +260,7 @@ struct GenerateSongProcessingScreen: View {
 //                                centerEmphasis: 0.55,     // tập trung giữa
 //                                ampJitter: 0.2,
 //                                widthJitter: 0.16,
-//                                textureAmount: 0.1,       // “rung” nhẹ
+//                                textureAmount: 0.1,       // "rung" nhẹ
 //                                floorLevel: 0.02,
 //                                dynamics: 0.65,
 //                                phraseCenters: [0.23, 0.50, 0.78],   // 3 cụm (trái, giữa, phải)
@@ -251,27 +268,27 @@ struct GenerateSongProcessingScreen: View {
 //                                phraseWidths: [0.06, 0.08, 0.06]     // độ rộng từng cụm
 //                            )
             
-            ScrollingClusterWaveView4(
-                bars: 52,
-                width: 220,
-                height: 140,
-                speed: 1.0,
-                baseHeight: 6,
-                peakHeight: 122,
-                color: .white,
-                mirrorSymmetry: true,
-                centerEmphasis: 0.6,
-                ampJitter: 0.2,
-                widthJitter: 0.14,
-                shortProb: 0.65,
-                shortBarsRange: 5...7,
-                longBarsRange: 8...12,
-                clustersPerInterval: 3,
-                clusterSpacing: 0.7,
-                dynamics: 0.64,
-                floorLevel: 0.02,
-                textureAmount: 0.1
-            )
+//            ScrollingClusterWaveView4(
+//                bars: 52,
+//                width: 220,
+//                height: 140,
+//                speed: 1.0,
+//                baseHeight: 6,
+//                peakHeight: 122,
+//                color: .white,
+//                mirrorSymmetry: true,
+//                centerEmphasis: 0.6,
+//                ampJitter: 0.2,
+//                widthJitter: 0.14,
+//                shortProb: 0.65,
+//                shortBarsRange: 5...7,
+//                longBarsRange: 8...12,
+//                clustersPerInterval: 3,
+//                clusterSpacing: 0.7,
+//                dynamics: 0.64,
+//                floorLevel: 0.02,
+//                textureAmount: 0.1
+//            )
 
         }
         .padding(.top, 8)

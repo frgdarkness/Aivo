@@ -452,22 +452,25 @@ struct GenerateSongTabView: View {
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
                                 
-                                HStack(spacing: 6) {
-                                    ForEach(SunoModel.allCases, id: \.self) { model in
-                                        Button(action: {
-                                            selectedModel = model
-                                        }) {
-                                            Text(model.rawValue)
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(selectedModel == model ? .black : .white)
-                                                .frame(maxWidth: .infinity)
-                                                .padding(.vertical, 12)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
-                                                )
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(SunoModel.allCases, id: \.self) { model in
+                                            Button(action: {
+                                                selectedModel = model
+                                            }) {
+                                                Text(model.rawValue)
+                                                    .font(.system(size: 14, weight: .medium))
+                                                    .foregroundColor(selectedModel == model ? .black : .white)
+                                                    .padding(.horizontal, 20)
+                                                    .padding(.vertical, 12)
+                                                    .background(
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                                    )
+                                            }
                                         }
                                     }
+                                    .padding(.horizontal, 4)
                                 }
                             }
                             
