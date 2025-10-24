@@ -4,6 +4,8 @@ import SwiftUI
 struct LibraryTabView: View {
     @State private var songs: [LibrarySong] = [] // Empty by default to show empty state
     @State private var downloadedSongs: [SunoData] = []
+    @State private var showPlayMySongScreen = false
+    @State private var selectedSongIndex = 0
     
     var body: some View {
         VStack(spacing: 0) {
@@ -16,6 +18,12 @@ struct LibraryTabView: View {
         }
         .onAppear {
             loadDownloadedSongs()
+        }
+        .fullScreenCover(isPresented: $showPlayMySongScreen) {
+            PlayMySongScreen(
+                songs: downloadedSongs,
+                initialIndex: selectedSongIndex
+            )
         }
     }
     
@@ -126,7 +134,14 @@ struct LibraryTabView: View {
         ScrollView {
             LazyVStack(spacing: 6) {
                 ForEach(Array(downloadedSongs.enumerated()), id: \.element.id) { index, song in
-                    DownloadedSongRowView(song: song, index: index)
+                    DownloadedSongRowView(
+                        song: song, 
+                        index: index,
+                        onTap: {
+                            selectedSongIndex = index
+                            showPlayMySongScreen = true
+                        }
+                    )
                 }
             }
             .padding(.horizontal, 20)
@@ -224,6 +239,7 @@ struct LibrarySongRowView: View {
 struct DownloadedSongRowView: View {
     let song: SunoData
     let index: Int
+    let onTap: () -> Void
     
     var body: some View {
         // Card nền
@@ -288,7 +304,7 @@ struct DownloadedSongRowView: View {
 
                 // BUTTON: sát mép phải card
                 Button {
-                    playDownloadedSong(song)
+                    onTap()
                 } label: {
                     Image(systemName: "play.fill")
                         .font(.title2)
@@ -304,6 +320,9 @@ struct DownloadedSongRowView: View {
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.vertical, 4)
+        .onTapGesture {
+            onTap()
+        }
     }
     
     private func playDownloadedSong(_ song: SunoData) {

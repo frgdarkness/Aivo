@@ -109,24 +109,170 @@ struct GenerateSongProcessingScreen: View {
     }
     
     // MARK: - Animation View (pro)
+//    private var animationView: some View {
+//        ZStack {
+//            Circle()
+//                .stroke(Color.white.opacity(0.18), lineWidth: 2)
+//                .frame(width: 220, height: 220)
+//
+//            WaveFlowProView(
+//                bars: 28,                 // nhiều cột hơn nhìn “pro” hơn
+//                width: 170,
+//                height: 110,
+//                period: 4.2,              // chu kỳ ~4–5s
+//                baseHeight: 12,
+//                peakHeight: 92,
+//                flow: .right,             // flow trái -> phải
+//                pulsePerCycle: 2,         // 2 nhịp trong một chu kỳ
+//                centerEmphasis: 0.35,     // nhấn mạnh vùng trung tâm
+//                roughness: 0.18           // độ “gồ ghề” nhỏ, nhìn thật
+//            )
+//        }
+//        .padding(.top, 8)
+//    }
+    
     private var animationView: some View {
         ZStack {
             Circle()
                 .stroke(Color.white.opacity(0.18), lineWidth: 2)
                 .frame(width: 220, height: 220)
 
-            WaveFlowProView(
-                bars: 28,                 // nhiều cột hơn nhìn “pro” hơn
-                width: 170,
-                height: 110,
-                period: 4.2,              // chu kỳ ~4–5s
-                baseHeight: 12,
-                peakHeight: 92,
-                flow: .right,             // flow trái -> phải
-                pulsePerCycle: 2,         // 2 nhịp trong một chu kỳ
-                centerEmphasis: 0.35,     // nhấn mạnh vùng trung tâm
-                roughness: 0.18           // độ “gồ ghề” nhỏ, nhìn thật
+//            WaveFlowProView2(
+//                bars: 28,
+//                width: 170,
+//                height: 110,
+//                bpm: 128,                 // tốc độ cảm giác nhanh hơn, có nhịp rõ
+//                barsPerCycle: 2,          // 2 ô nhịp/chu kỳ
+//                stepsPerBeat: 4,          // 16-step
+//                swing: 0.12,              // một chút swing cho “groove”
+//                baseHeight: 12,
+//                peakHeight: 92,
+//                flow: .right,
+//                centerEmphasis: 0.35,
+//                roughness: 0.12
+//            )
+            
+//            WaveFlowProView3(
+//                bars: 42,
+//                width: 220,
+//                height: 140,
+//                bpm: 128,
+//                barsPerCycle: 2,
+//                stepsPerBeat: 4,
+//                swing: 0.12,
+//                baseHeight: 8,
+//                peakHeight: 110,
+//                flow: .right,
+//                mirrorSymmetry: true,          // giống ảnh mẫu
+//                centerEmphasis: 0.45,
+//                roughness: 0.10,
+//                ampJitter: 0.25,
+//                phaseJitter: 0.6,
+//                widthJitter: 0.20,
+//                groupiness: 0.65
+//            ).padding(.horizontal, 10)
+            
+//            ScrollingWaveView(
+//                    bars: 52,
+//                    width: 220,
+//                    height: 140,
+//                    speed: 0.9,                // nhanh/chậm cuộn
+//                    baseHeight: 6,
+//                    peakHeight: 115,
+//                    mirrorSymmetry: true,
+//                    centerEmphasis: 0.5,
+//                    roughness: 0.6,            // nhiều octave hơn → organic
+//                    ampJitter: 0.22,
+//                    widthJitter: 0.18,
+//                    color: .white
+//                )
+            
+//            ScrollingClusterWaveView(
+//                bars: 52,
+//                width: 220,
+//                height: 140,
+//                speed: 1.0,                 // chạy nhanh/chậm
+//                baseHeight: 6,
+//                peakHeight: 118,
+//                color: .white,
+//                mirrorSymmetry: true,
+//                centerEmphasis: 0.6,
+//                ampJitter: 0.22,
+//                widthJitter: 0.18,
+//                shortProb: 0.65,            // nhiều tiếng ngắn hơn
+//                shortBarsRange: 5...7,
+//                longBarsRange: 10...16,
+//                clustersPerInterval: 3,     // 2–3 cụm/đoạn
+//                clusterSpacing: 0.55,       // khoảng cách giữa các cụm
+//                dynamics: 0.7,
+//                floorLevel: 0.03,
+//                textureAmount: 0.16
+//            ).padding(.horizontal, 20)
+    
+//            ScrollingClusterWaveView2(
+//                bars: 52,
+//                width: 220,
+//                height: 140,
+//                speed: 1.1,
+//                baseHeight: 6,
+//                peakHeight: 120,
+//                color: .white,
+//                mirrorSymmetry: true,
+//                centerEmphasis: 0.6,
+//                ampJitter: 0.22,
+//                widthJitter: 0.18,
+//                shortProb: 0.65,
+//                shortBarsRange: 5...7,
+//                longBarsRange: 10...16,
+//                clustersPerInterval: 3,
+//                clusterSpacing: 0.7,
+//                dynamics: 0.65,
+//                floorLevel: 0.02,
+//                textureAmount: 0.12
+//            )
+            
+//            ScrollingClusterWaveView3(
+//                                bars: 60,                 // nhiều bar mịn hơn
+//                                width: 220,
+//                                height: 140,
+//                                speed: 1.1,               // tốc độ chạy
+//                                baseHeight: 6,
+//                                peakHeight: 120,
+//                                color: .white,
+//                                mirrorSymmetry: true,     // đối xứng 2 bên
+//                                centerEmphasis: 0.55,     // tập trung giữa
+//                                ampJitter: 0.2,
+//                                widthJitter: 0.16,
+//                                textureAmount: 0.1,       // “rung” nhẹ
+//                                floorLevel: 0.02,
+//                                dynamics: 0.65,
+//                                phraseCenters: [0.23, 0.50, 0.78],   // 3 cụm (trái, giữa, phải)
+//                                phraseAmps: [0.75, 1.0, 0.82],       // cụm giữa to nhất
+//                                phraseWidths: [0.06, 0.08, 0.06]     // độ rộng từng cụm
+//                            )
+            
+            ScrollingClusterWaveView4(
+                bars: 52,
+                width: 220,
+                height: 140,
+                speed: 1.0,
+                baseHeight: 6,
+                peakHeight: 122,
+                color: .white,
+                mirrorSymmetry: true,
+                centerEmphasis: 0.6,
+                ampJitter: 0.2,
+                widthJitter: 0.14,
+                shortProb: 0.65,
+                shortBarsRange: 5...7,
+                longBarsRange: 8...12,
+                clustersPerInterval: 3,
+                clusterSpacing: 0.7,
+                dynamics: 0.64,
+                floorLevel: 0.02,
+                textureAmount: 0.1
             )
+
         }
         .padding(.top, 8)
     }

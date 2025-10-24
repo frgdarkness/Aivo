@@ -17,6 +17,7 @@ struct GenerateSongTabView: View {
     @State private var isVocalEnabled = false
     @State private var selectedVocalGender: LocalVocalGender = .random
     @State private var isInstrumental = false
+    @State private var selectedModel: SunoModel = .V5
     @State private var showToast = false
     @State private var toastMessage = ""
     
@@ -102,7 +103,7 @@ struct GenerateSongTabView: View {
                         .padding(.vertical, 12)
                         .background(Color.black.opacity(0.8))
                         .cornerRadius(8)
-                        .padding(.bottom, 100)
+                        .padding(.bottom, 50)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .animation(.easeInOut(duration: 0.3), value: showToast)
                 }
@@ -153,7 +154,9 @@ struct GenerateSongTabView: View {
                     Spacer()
 
                     
-                    Button(action: {}) {
+                    Button(action: {
+                        getInspired()
+                    }) {
                         HStack(spacing: 6) {
                             Image(systemName: "lightbulb.fill")
                                 .font(.caption)
@@ -244,7 +247,7 @@ struct GenerateSongTabView: View {
                         Spacer()
                         HStack {
                             Spacer()
-                            Text("\(selectedInputType == .description ? songDescription.count : songLyrics.count) / \(selectedInputType == .description ? 128 : 1950)")
+                            Text("\(selectedInputType == .description ? songDescription.count : songLyrics.count) / \(selectedInputType == .description ? 500 : 2000)")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.6))
                                 .padding(.trailing, 10)
@@ -443,6 +446,31 @@ struct GenerateSongTabView: View {
                                     }
                             }
                             
+                            // Model Selection
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Model")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 6) {
+                                    ForEach(SunoModel.allCases, id: \.self) { model in
+                                        Button(action: {
+                                            selectedModel = model
+                                        }) {
+                                            Text(model.rawValue)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(selectedModel == model ? .black : .white)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 12)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                                )
+                                        }
+                                    }
+                                }
+                            }
+                            
                             // Vocal Gender - Disabled when instrumental
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Vocal Gender")
@@ -526,6 +554,7 @@ struct GenerateSongTabView: View {
         print("🎵 [GenerateSong] Genres: \(selectedGenres.map { $0.displayName })")
         print("🎵 [GenerateSong] Song name: \(songName)")
         print("🎵 [GenerateSong] Vocal gender: \(selectedVocalGender.rawValue)")
+        print("🎵 [GenerateSong] Model: \(selectedModel.rawValue)")
         
         // Show processing screen
         showGenerateSongScreen = true
@@ -558,7 +587,7 @@ struct GenerateSongTabView: View {
                     style: selectedGenres.first?.displayName ?? "Pop",
                     title: songName.isEmpty ? "Untitled Song" : songName,
                     instrumental: isInstrumental,
-                    model: .V5
+                    model: selectedModel
                 )
                 
                 print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
@@ -593,10 +622,12 @@ struct GenerateSongTabView: View {
     private func buildPrompt() -> String {
         var prompt = ""
         
-        if selectedInputType == .description {
-            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
-        } else {
-            prompt = songLyrics.isEmpty ? "beautiful girl in white, pop and ballad" : songLyrics
+        // Always use description as base
+        prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
+        
+        // Add lyrics if provided
+        if !songLyrics.isEmpty {
+            prompt += "\n\nLyric of song:\n\(songLyrics)"
         }
         
         // Add moods
@@ -638,6 +669,33 @@ struct GenerateSongTabView: View {
                 selectedGenres.removeFirst()
             }
             selectedGenres.append(genre)
+        }
+    }
+    
+    private func getInspired() {
+        print("💡 [GetInspired] Loading sample prompts...")
+        
+        guard let url = Bundle.main.url(forResource: "sample_song_prompt", withExtension: "json") else {
+            print("❌ [GetInspired] Could not find sample_song_prompt.json")
+            showToastMessage("Could not load inspiration prompts")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let prompts = try JSONDecoder().decode([String].self, from: data)
+            
+            if let randomPrompt = prompts.randomElement() {
+                print("💡 [GetInspired] Selected prompt: \(randomPrompt)")
+                songDescription = randomPrompt
+                showToastMessage("Inspiration loaded!")
+            } else {
+                print("❌ [GetInspired] No prompts found in file")
+                showToastMessage("No inspiration prompts available")
+            }
+        } catch {
+            print("❌ [GetInspired] Error loading prompts: \(error)")
+            showToastMessage("Failed to load inspiration prompts")
         }
     }
     
