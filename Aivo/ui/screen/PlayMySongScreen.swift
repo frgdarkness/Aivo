@@ -248,7 +248,7 @@ struct PlayMySongScreen: View {
                     .padding(.vertical, 12)
                 }
             }
-            .frame(width: 120)
+            .frame(width: 220)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color.black.opacity(0.7))

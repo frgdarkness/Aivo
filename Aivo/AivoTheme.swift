@@ -17,6 +17,9 @@ struct AivoTheme {
         static let orangeDark = Color(red: 0.9, green: 0.4, blue: 0.0)   // #E66600 - Dark Orange
         static let orangeAccent = Color(red: 1.0, green: 0.8, blue: 0.3) // #FFCC4D - Accent Orange
         static let orangeBright = Color(red: 1.0, green: 0.6, blue: 0.1) // #FF991A - Bright Orange
+        
+        static let blackOrangeDark = Color(red: 0.10, green: 0.07, blue: 0.03) // #1A1208 - Black Orange
+        static let blackOrange = Color(red: 0.28, green: 0.17, blue: 0.06) // #1A1208 - Black Orange
     }
     
     struct Secondary {

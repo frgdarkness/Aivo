@@ -461,7 +461,7 @@ struct GenerateSongTabView: View {
                                                 Text(model.rawValue)
                                                     .font(.system(size: 14, weight: .medium))
                                                     .foregroundColor(selectedModel == model ? .black : .white)
-                                                    .frame(minWidth: 60) // Min width để các item có cùng kích thước
+                                                    .frame(minWidth: 50) // Min width để các item có cùng kích thước
                                                     .padding(.horizontal, 16)
                                                     .padding(.vertical, 12)
                                                     .background(

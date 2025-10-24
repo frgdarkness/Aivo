@@ -1,12 +1,45 @@
 import SwiftUI
+import AVFoundation
+
+// MARK: - Shape: Only top corners rounded
+struct TopRoundedRectangle: Shape {
+    var radius: CGFloat = 16
+
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let r = min(min(radius, rect.width / 2), rect.height / 2)
+
+        // Bắt đầu từ góc dưới trái
+        p.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        // Lên cạnh trái đến chỗ bo góc
+        p.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
+        // Bo góc trên trái
+        p.addQuadCurve(to: CGPoint(x: rect.minX + r, y: rect.minY),
+                       control: CGPoint(x: rect.minX, y: rect.minY))
+        // Cạnh trên
+        p.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
+        // Bo góc trên phải
+        p.addQuadCurve(to: CGPoint(x: rect.maxX, y: rect.minY + r),
+                       control: CGPoint(x: rect.maxX, y: rect.minY))
+        // Xuống cạnh phải về đáy
+        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        // Đóng path (cạnh dưới phẳng)
+        p.closeSubpath()
+        return p
+    }
+}
 
 // MARK: - Playing Banner View
 struct PlayingBannerView: View {
     @StateObject private var musicPlayer = MusicPlayer.shared
     @State private var showFullPlayer = false
-    
+
+    private let cornerRadius: CGFloat = 16
+
     var body: some View {
         if let currentSong = musicPlayer.currentSong {
+            let shape = TopRoundedRectangle(radius: cornerRadius)
+
             HStack(spacing: 12) {
                 // Album Art
                 AsyncImage(url: URL(string: currentSong.imageUrl)) { image in
@@ -20,27 +53,25 @@ struct PlayingBannerView: View {
                 }
                 .frame(width: 40, height: 40)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-                
+
                 // Song Info
                 VStack(alignment: .leading, spacing: 2) {
                     Text(currentSong.title)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white)
                         .lineLimit(1)
-                    
+
                     Text(currentSong.modelName)
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.8))
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 // Control Buttons
                 HStack(spacing: 8) {
                     // Play/Pause Button
-                    Button(action: {
-                        musicPlayer.togglePlayPause()
-                    }) {
+                    Button(action: { musicPlayer.togglePlayPause() }) {
                         Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
@@ -48,11 +79,9 @@ struct PlayingBannerView: View {
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
                     }
-                    
+
                     // Close Button
-                    Button(action: {
-                        musicPlayer.stop()
-                    }) {
+                    Button(action: { musicPlayer.stop() }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -62,19 +91,17 @@ struct PlayingBannerView: View {
                     }
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.black.opacity(0.9))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(AivoTheme.Primary.orange.opacity(0.6), lineWidth: 1)
-                    )
+                shape
+                    .fill(AivoTheme.Primary.blackOrange.opacity(0.9))
             )
-            .onTapGesture {
-                showFullPlayer = true
-            }
+            .overlay(
+                shape
+                    .stroke(AivoTheme.Primary.orange.opacity(0.8), lineWidth: 1)
+            )
+            .onTapGesture { showFullPlayer = true }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 PlayMySongScreen(
                     songs: musicPlayer.songs,
@@ -89,11 +116,12 @@ struct PlayingBannerView: View {
 struct PlayingBannerView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
-            Color.black
+            Color.black.ignoresSafeArea()
             VStack {
                 Spacer()
                 PlayingBannerView()
             }
         }
+        .preferredColorScheme(.dark)
     }
 }
