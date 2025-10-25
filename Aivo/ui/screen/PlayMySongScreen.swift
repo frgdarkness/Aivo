@@ -39,8 +39,8 @@ struct PlayMySongScreen: View {
 
     var body: some View {
         ZStack {
-            // Background
-            AivoSunsetBackground()
+            // Custom Background với gradient
+            customBackgroundView
 
             // MAIN CONTENT
             Group {
@@ -133,6 +133,10 @@ struct PlayMySongScreen: View {
                 .zIndex(0) // dưới menu
             Spacer()
             songInfoView
+            
+            // Lyric container để control height và đẩy các view khác
+            lyricContainerView
+            
             Spacer()
             playbackControlsView
             Spacer()
@@ -283,6 +287,39 @@ struct PlayMySongScreen: View {
                 .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 40)
+    }
+    
+    // MARK: - Lyric Container
+    private var lyricContainerView: some View {
+        VStack {
+            lyricView
+        }
+        .frame(maxHeight: 200) // Container height để đẩy các view khác
+    }
+    
+    // MARK: - Lyric View
+    private var lyricView: some View {
+        ScrollView {
+            VStack(spacing: 8) {
+                if let lyric = parseLyric(from: currentSong?.prompt) {
+                    Text(lyric)
+                        .font(.body)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(6)
+                        .padding(.horizontal, 20)
+                } else {
+                    Text("Lyric not available")
+                        .font(.body)
+                        .foregroundColor(.white.opacity(0.6))
+                        .italic()
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+            }
+            .padding(.vertical, 16)
+        }
+        .frame(maxHeight: 150) // Lyric view max height 150pt
     }
 
     // MARK: - Playback Controls
@@ -462,6 +499,70 @@ struct PlayMySongScreen: View {
                 }
             } catch { print("❌ Delete error: \(error)") }
         }
+    }
+    
+    // MARK: - Lyric Parsing
+    private func parseLyric(from prompt: String?) -> String? {
+        guard let prompt = prompt, !prompt.isEmpty else { return nil }
+        
+        // Kiểm tra nếu prompt bắt đầu bằng [
+        if prompt.hasPrefix("[") {
+            // Giữ nguyên tất cả tags, chỉ normalize \n
+            let normalizedLyric = prompt
+                //.replacingOccurrences(of: "\n\n+", with: "\n", options: .regularExpression)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            return normalizedLyric.isEmpty ? nil : normalizedLyric
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Custom Background
+    private var customBackgroundView: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Nửa trên: Ảnh cover blur
+                VStack {
+                    AsyncImage(url: getImageURLForSong(currentSong)) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .blur(radius: 20)
+                            .scaleEffect(1.2)
+                    } placeholder: {
+                        Image("demo_cover")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .blur(radius: 20)
+                            .scaleEffect(1.2)
+                    }
+                    .frame(height: geometry.size.height * 0.55)
+                    .clipped()
+                    
+                    Spacer()
+                }
+                
+                // Nửa dưới: Đen từ 80% để nối tiếp
+                VStack {
+                    Spacer()
+                    Color.black.opacity(0.8)
+                        .frame(height: geometry.size.height * 0.45)
+                }
+                
+                // Overlay đen dần từ đỉnh đến cuối
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color.black.opacity(0.05), location: 0.0),    // 5% ở đỉnh
+                        .init(color: Color.black.opacity(1.0), location: 0.5),      // 80% ở giữa
+                        .init(color: Color.black.opacity(1.0), location: 1.0)       // 100% ở cuối
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+        }
+        .ignoresSafeArea()
     }
 }
 
