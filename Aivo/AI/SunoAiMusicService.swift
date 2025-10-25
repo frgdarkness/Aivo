@@ -44,7 +44,7 @@ class SunoAiMusicService: ObservableObject {
             prompt: prompt,
             style: style,
             title: title,
-            customMode: true,
+            customMode: customMode,
             instrumental: instrumental,
             model: model,
             negativeTags: negativeTags,
@@ -314,7 +314,7 @@ extension SunoAiMusicService {
             prompt: prompt,
             style: style,
             title: title,
-            customMode: true,
+            customMode: false,
             instrumental: instrumental,
             model: model
         )

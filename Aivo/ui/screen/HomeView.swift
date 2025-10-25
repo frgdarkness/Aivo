@@ -4,6 +4,41 @@ import SwiftUI
 struct HomeView: View {
     @State private var selectedTab: TabItem = .home
     @State private var showGenerateSongResult = false
+    @State private var showSunoSongResult = false
+    
+    // Hardcoded SunoData for testing
+    private let hardcodedSunoData: [SunoData] = [
+        SunoData(
+            id: "bed102bd-f445-4a14-b5d2-918f0e389d2c",
+            audioUrl: "https://cdn1.suno.ai/bed102bd-f445-4a14-b5d2-918f0e389d2c.mp3",
+            sourceAudioUrl: "https://cdn1.suno.ai/bed102bd-f445-4a14-b5d2-918f0e389d2c.mp3",
+            streamAudioUrl: "https://cdn1.suno.ai/bed102bd-f445-4a14-b5d2-918f0e389d2c.mp3",
+            sourceStreamAudioUrl: "https://cdn1.suno.ai/bed102bd-f445-4a14-b5d2-918f0e389d2c.mp3",
+            imageUrl: "https://cdn2.suno.ai/image_bed102bd-f445-4a14-b5d2-918f0e389d2c.jpeg",
+            sourceImageUrl: "https://cdn2.suno.ai/image_bed102bd-f445-4a14-b5d2-918f0e389d2c.jpeg",
+            prompt: "Create an energetic and uplifting EDM track inspired by the style of Alan Walker. The song should combine emotional melodies with a powerful drop and strong rhythmic bass. The theme is about Love and Life — embracing the present, chasing dreams, and finding light through love.The sound should be modern, catchy, cinematic, with emotional female vocals and a bright, punchy mix that motivates and inspires.",
+            modelName: "chirp-v4",
+            title: "Freedom",
+            tags: "",
+            createTime: 1761204292496,
+            duration: 168.84
+        ),
+        SunoData(
+            id: "97d4adf6-8c34-442a-84b1-ecd3b9e5be04",
+            audioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+            sourceAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+            streamAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+            sourceStreamAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+            imageUrl: "https://cdn2.suno.ai/image_97d4adf6-8c34-442a-84b1-ecd3b9e5be04.jpeg",
+            sourceImageUrl: "https://cdn2.suno.ai/image_97d4adf6-8c34-442a-84b1-ecd3b9e5be04.jpeg",
+            prompt: "Create an energetic and uplifting EDM track inspired by the style of Alan Walker. The song should combine emotional melodies with a powerful drop and strong rhythmic bass. The theme is about Love and Life — embracing the present, chasing dreams, and finding light through love.The sound should be modern, catchy, cinematic, with emotional female vocals and a bright, punchy mix that motivates and inspires.",
+            modelName: "chirp-v4",
+            title: "Freedom",
+            tags: "",
+            createTime: 1761204292496,
+            duration: 178.4
+        )
+    ]
     
     var body: some View {
         ZStack {
@@ -78,7 +113,7 @@ struct HomeView: View {
             
             // Settings
             Button(action: {
-                showGenerateSongResult = true
+                showSunoSongResult = true
             }) {
                 Image(systemName: "gearshape.fill")
                     .font(.title2)
@@ -126,6 +161,14 @@ struct HomeView: View {
                 audioUrl: "https://cdn1.suno.ai/53d93a26-3bed-4f54-b9fc-47433f424884.mp3",
                 onClose: {
                     showGenerateSongResult = false
+                }
+            )
+        }
+        .fullScreenCover(isPresented: $showSunoSongResult) {
+            GenerateSunoSongResultScreen(
+                sunoDataList: hardcodedSunoData,
+                onClose: {
+                    showSunoSongResult = false
                 }
             )
         }

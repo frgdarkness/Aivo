@@ -24,11 +24,16 @@ class SunoDataManager {
         // Download and save cover image
         let coverURL = try await downloadAndSaveCover(sunoData.imageUrl, songId: sunoData.id, to: sunoDataDirectory)
         
-        // Create metadata file
+        // Create metadata file - KEEP ORIGINAL URLs
         let metadata = SunoDataMetadata(
             id: sunoData.id,
-            audioUrl: audioURL.absoluteString,
-            coverUrl: coverURL.absoluteString,
+            audioUrl: sunoData.audioUrl, // Keep original URL
+            sourceAudioUrl: sunoData.sourceAudioUrl,
+            streamAudioUrl: sunoData.streamAudioUrl,
+            sourceStreamAudioUrl: sunoData.sourceStreamAudioUrl,
+            imageUrl: sunoData.imageUrl, // Keep original URL
+            sourceImageUrl: sunoData.sourceImageUrl,
+            coverUrl: coverURL.absoluteString, // Local cover path
             title: sunoData.title,
             modelName: sunoData.modelName,
             duration: sunoData.duration,
@@ -38,7 +43,7 @@ class SunoDataManager {
             savedAt: Int64(Date().timeIntervalSince1970 * 1000)
         )
         
-        let metadataURL = sunoDataDirectory.appendingPathComponent("\(sunoData.id)_metadata.json")
+        let metadataURL = sunoDataDirectory.appendingPathComponent("\(sunoData.id).json")
         let metadataData = try JSONEncoder().encode(metadata)
         try metadataData.write(to: metadataURL)
         
@@ -76,16 +81,16 @@ class SunoDataManager {
                     let sunoData = SunoData(
                         id: metadata.id,
                         audioUrl: metadata.audioUrl,
-                        sourceAudioUrl: metadata.audioUrl,
-                        streamAudioUrl: metadata.audioUrl,
-                        sourceStreamAudioUrl: metadata.audioUrl,
-                        imageUrl: metadata.coverUrl,
-                        sourceImageUrl: metadata.coverUrl,
+                        sourceAudioUrl: metadata.sourceAudioUrl,
+                        streamAudioUrl: metadata.streamAudioUrl,
+                        sourceStreamAudioUrl: metadata.sourceStreamAudioUrl,
+                        imageUrl: metadata.imageUrl,
+                        sourceImageUrl: metadata.sourceImageUrl,
                         prompt: metadata.prompt,
                         modelName: metadata.modelName,
                         title: metadata.title,
                         tags: metadata.tags,
-                        createTime: metadata.savedAt,
+                        createTime: metadata.createTime,
                         duration: metadata.duration
                     )
                     
@@ -144,6 +149,55 @@ class SunoDataManager {
         print("✅ [SunoDataManager] SunoData deleted successfully")
     }
     
+    // MARK: - Helper Methods
+    func getLocalAudioPath(for songId: String) -> URL? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        
+        // Try different possible file names
+        let possibleFileNames = [
+            "\(songId)_audio.mp3",
+            "\(songId)_audio.wav", 
+            "\(songId)_audio.m4a",
+            "\(songId).mp3",
+            "\(songId).wav",
+            "\(songId).m4a"
+        ]
+        
+        for fileName in possibleFileNames {
+            let filePath = sunoDataDirectory.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                return filePath
+            }
+        }
+        
+        return nil
+    }
+    
+    func getLocalCoverPath(for songId: String) -> URL? {
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        
+        // Try different possible file names
+        let possibleFileNames = [
+            "\(songId)_cover.jpg",
+            "\(songId)_cover.jpeg",
+            "\(songId)_cover.png",
+            "\(songId).jpg",
+            "\(songId).jpeg",
+            "\(songId).png"
+        ]
+        
+        for fileName in possibleFileNames {
+            let filePath = sunoDataDirectory.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                return filePath
+            }
+        }
+        
+        return nil
+    }
+    
     // MARK: - Private Methods
     private func downloadAndSaveAudio(_ audioUrl: String, songId: String, to directory: URL) async throws -> URL {
         guard let url = URL(string: audioUrl) else {
@@ -186,7 +240,12 @@ class SunoDataManager {
 struct SunoDataMetadata: Codable {
     let id: String
     let audioUrl: String
-    let coverUrl: String
+    let sourceAudioUrl: String
+    let streamAudioUrl: String
+    let sourceStreamAudioUrl: String
+    let imageUrl: String
+    let sourceImageUrl: String
+    let coverUrl: String // Local cover path
     let title: String
     let modelName: String
     let duration: Double

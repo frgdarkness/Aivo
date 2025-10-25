@@ -243,7 +243,7 @@ struct PlayMySongScreen: View {
     // MARK: - Album Art
     private var albumArtView: some View {
         ZStack {
-            AsyncImage(url: URL(string: currentSong?.imageUrl ?? "")) { image in
+            AsyncImage(url: getImageURLForSong(currentSong)) { image in
                 image.resizable().aspectRatio(contentMode: .fill)
                     .blur(radius: 20).scaleEffect(1.2)
             } placeholder: {
@@ -253,7 +253,7 @@ struct PlayMySongScreen: View {
             .frame(width: 300, height: 300)
             .clipped()
 
-            AsyncImage(url: URL(string: currentSong?.imageUrl ?? "")) { image in
+            AsyncImage(url: getImageURLForSong(currentSong)) { image in
                 image.resizable().aspectRatio(contentMode: .fill)
             } placeholder: {
                 Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
@@ -506,4 +506,17 @@ struct PlaylistSongRowView: View {
         )
         .onTapGesture { onTap() }
     }
+}
+
+// MARK: - Helper Functions
+func getImageURLForSong(_ song: SunoData?) -> URL? {
+    guard let song = song else { return nil }
+    
+    // Check if local cover exists first
+    if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
+        return localCoverPath
+    }
+    
+    // Fallback to source URL
+    return URL(string: song.sourceImageUrl)
 }

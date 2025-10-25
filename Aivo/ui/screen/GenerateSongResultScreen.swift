@@ -2,6 +2,14 @@ import SwiftUI
 import AVFoundation
 import UniformTypeIdentifiers
 
+// MARK: - Download Status Enum
+enum DownloadStatus {
+    case pending
+    case downloading(progress: Double)
+    case completed
+    case failed
+}
+
 // MARK: - Generate Song Result Screen
 struct GenerateSongResultScreen: View {
     let audioUrl: String
@@ -17,6 +25,8 @@ struct GenerateSongResultScreen: View {
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
     @State private var downloadTask: Task<Void, Never>?
+    @State private var currentDownloadIndex: Int = 0
+    @State private var downloadStatuses: [String: DownloadStatus] = [:]
     
     // NEW: giữ URL sau khi tải xong để Export/Share
     @State private var downloadedFileURL: URL?
@@ -41,7 +51,8 @@ struct GenerateSongResultScreen: View {
             }
         }
         .onAppear {
-            startDownload()
+            initializeDownloadStatuses()
+            startSequentialDownload()
         }
         .onDisappear {
             stopAudio()
@@ -212,35 +223,54 @@ struct GenerateSongResultScreen: View {
     
     @State private var downloader: ProgressiveDownloader?
     
-    // MARK: - Download with Live Progress
-    private func startDownload() {
+    // MARK: - Initialize Download Statuses
+    private func initializeDownloadStatuses() {
+        // Initialize all songs as pending
+        downloadStatuses = [audioUrl: .pending]
+    }
+    
+    // MARK: - Sequential Download
+    private func startSequentialDownload() {
         guard let url = URL(string: audioUrl) else { return }
-        isDownloading = true
-        downloadProgress = 0
-
+        
+        downloadTask = Task {
+            await downloadSingleSong(url: url)
+        }
+    }
+    
+    private func downloadSingleSong(url: URL) async {
+        // Update status to downloading
+        await MainActor.run {
+            downloadStatuses[url.absoluteString] = .downloading(progress: 0.0)
+            isDownloading = true
+            downloadProgress = 0.0
+        }
+        
         let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
         let tmpURL = FileManager.default.temporaryDirectory.appendingPathComponent("generated_song.\(ext)")
-
-        let d = ProgressiveDownloader(
-            destinationURL: tmpURL,
-            onProgress: { prog in
-                withAnimation(.linear(duration: 0.06)) {
-                    self.downloadProgress = prog
-                }
-            },
-            onComplete: { fileURL in
-                self.isDownloading = false
-                self.downloadProgress = 1.0
-                self.downloadedFileURL = fileURL      // NEW: giữ URL để Export/Share
-                self.setupAudioPlayerWithURL(fileURL)
-            },
-            onError: { error in
-                print("Download error: \(error)")
-                self.isDownloading = false
+        
+        do {
+            // Clean up old file
+            try? FileManager.default.removeItem(at: tmpURL)
+            FileManager.default.createFile(atPath: tmpURL.path, contents: nil, attributes: nil)
+            
+            let data = try await URLSession.shared.data(from: url)
+            try data.0.write(to: tmpURL)
+            
+            await MainActor.run {
+                downloadStatuses[url.absoluteString] = .completed
+                isDownloading = false
+                downloadProgress = 1.0
+                downloadedFileURL = tmpURL
+                setupAudioPlayerWithURL(tmpURL)
             }
-        )
-        self.downloader = d
-        d.start(url: url)
+        } catch {
+            await MainActor.run {
+                downloadStatuses[url.absoluteString] = .failed
+                isDownloading = false
+                print("Download error: \(error)")
+            }
+        }
     }
     
     // MARK: - Audio Setup & Controls

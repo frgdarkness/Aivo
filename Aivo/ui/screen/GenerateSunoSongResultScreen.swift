@@ -8,16 +8,11 @@ struct GenerateSunoSongResultScreen: View {
     let onClose: () -> Void
     
     @State private var selectedSongIndex: Int = 0
-    @State private var isPlaying = false
-    @State private var currentTime: TimeInterval = 0
-    @State private var duration: TimeInterval = 0
-    @State private var audioPlayer: AVAudioPlayer?
-    @State private var playbackTimer: Timer?
-    @State private var isDownloading = false
-    @State private var downloadProgress: Double = 0.0
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
     @State private var downloadTask: Task<Void, Never>?
+    
+    @StateObject private var musicPlayer = MusicPlayer.shared
     
     // Download states for each song
     @State private var downloadedFileURLs: [String: URL] = [:]
@@ -61,8 +56,6 @@ struct GenerateSunoSongResultScreen: View {
             startDownloadAllSongs()
         }
         .onDisappear {
-            stopAudio()
-            playbackTimer?.invalidate()
             downloadTask?.cancel()
         }
         .sheet(isPresented: $showExportSheet) {
@@ -125,10 +118,10 @@ struct GenerateSunoSongResultScreen: View {
                     .frame(width: 280, height: 280)
                     .overlay(
                         VStack {
-                            Text("\(Int(downloadProgress * 100))%")
-                                .font(.system(size: 32, weight: .bold))
-                                .foregroundColor(.white)
                             Text("Downloading...")
+                                .font(.system(size: 24, weight: .bold))
+                                .foregroundColor(.white)
+                            Text("\(downloadingSongs.count) songs")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -208,20 +201,19 @@ struct GenerateSunoSongResultScreen: View {
         VStack(spacing: 8) {
             Slider(
                 value: Binding(
-                    get: { isScrubbing ? scrubTime : currentTime },
+                    get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
                     set: { newVal in
-                        if isScrubbing { scrubTime = newVal } else { currentTime = newVal }
+                        if isScrubbing { scrubTime = newVal } else { musicPlayer.currentTime = newVal }
                     }
                 ),
-                in: 0...max(0.1, duration),
+                in: 0...max(0.1, musicPlayer.duration),
                 onEditingChanged: { editing in
                     if editing {
                         isScrubbing = true
-                        scrubTime = currentTime
+                        scrubTime = musicPlayer.currentTime
                     } else {
                         isScrubbing = false
-                        currentTime = scrubTime
-                        audioPlayer?.currentTime = scrubTime
+                        musicPlayer.seek(to: scrubTime)
                     }
                 }
             )
@@ -229,11 +221,11 @@ struct GenerateSunoSongResultScreen: View {
             .padding(.horizontal, 20)
             
             HStack {
-                Text(formatTime(isScrubbing ? scrubTime : currentTime))
+                Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
                 Spacer()
-                Text(formatTime(duration))
+                Text(formatTime(musicPlayer.duration))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
             }
@@ -254,8 +246,8 @@ struct GenerateSunoSongResultScreen: View {
                     .clipShape(Circle())
             }
             
-            Button(action: togglePlayPause) {
-                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+            Button(action: musicPlayer.togglePlayPause) {
+                Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 32))
                     .foregroundColor(.black)
                     .frame(width: 70, height: 70)
@@ -288,6 +280,17 @@ struct GenerateSunoSongResultScreen: View {
         downloadSong(currentSong)
     }
     
+    // MARK: - Helper Methods
+    private func getImageURL(for song: SunoData) -> URL? {
+        // Check if local cover exists first
+        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
+            return localCoverPath
+        }
+        
+        // Fallback to source URL
+        return URL(string: song.sourceImageUrl)
+    }
+    
     private func downloadSong(_ song: SunoData) {
         print("📥 [SunoResult] Starting download for song: \(song.title)")
         print("📥 [SunoResult] Audio URL: \(song.audioUrl)")
@@ -298,7 +301,6 @@ struct GenerateSunoSongResultScreen: View {
         }
         
         downloadingSongs.insert(song.id)
-        downloadProgress = 0
         
         let ext = url.pathExtension.isEmpty ? "mp3" : url.pathExtension.lowercased()
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
@@ -315,14 +317,11 @@ struct GenerateSunoSongResultScreen: View {
         let downloader = ProgressiveDownloader(
             destinationURL: localURL,
             onProgress: { prog in
-                withAnimation(.linear(duration: 0.06)) {
-                    self.downloadProgress = prog
-                }
+                // Progress tracking removed - just show downloading status
             },
             onComplete: { fileURL in
                 print("✅ [SunoResult] Download completed for song: \(song.title)")
                 self.downloadingSongs.remove(song.id)
-                self.downloadProgress = 1.0
                 self.downloadedFileURLs[song.id] = fileURL
                 
                 // Save full SunoData to local storage
@@ -338,11 +337,12 @@ struct GenerateSunoSongResultScreen: View {
                     }
                 }
                 
-                // If this is the current song, setup audio player
-                if song.id == self.currentSong.id {
-                    print("🎵 [SunoResult] Setting up audio player for current song")
-                    self.setupAudioPlayerWithURL(fileURL)
+                // Song downloaded successfully - auto-play first song
+                if song.id == self.sunoDataList.first?.id {
+                    print("🎵 [SunoResult] Auto-playing first song: \(song.title)")
+                    self.musicPlayer.loadSong(song, at: 0, in: self.sunoDataList)
                 }
+                print("🎵 [SunoResult] Song ready for playback: \(song.title)")
             },
             onError: { error in
                 print("❌ [SunoResult] Download error for song \(song.title): \(error)")
@@ -354,7 +354,7 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     private func loadSelectedSong() {
-        guard let fileURL = downloadedFileURLs[currentSong.id] else { 
+        guard downloadedFileURLs[currentSong.id] != nil else { 
             print("⚠️ [SunoResult] Song not downloaded yet: \(currentSong.title)")
             return 
         }
@@ -362,82 +362,21 @@ struct GenerateSunoSongResultScreen: View {
         print("🎵 [SunoResult] Loading selected song: \(currentSong.title)")
         
         // Use MusicPlayer to play the song
-        MusicPlayer.shared.loadSong(currentSong, at: selectedSongIndex, in: sunoDataList)
+        musicPlayer.loadSong(currentSong, at: selectedSongIndex, in: sunoDataList)
         print("🎵 [SunoResult] Song loaded into MusicPlayer")
     }
     
-    private func setupAudioPlayerWithURL(_ url: URL) {
-        print("🎵 [SunoResult] Setting up audio player with URL: \(url.path)")
-        
-        do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            print("🎵 [SunoResult] Audio session configured successfully")
-            
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
-            audioPlayer?.delegate = GenerateSongAudioPlayerDelegate { [self] in
-                print("🎵 [SunoResult] Audio playback finished")
-                isPlaying = false
-                currentTime = 0
-                playbackTimer?.invalidate()
-            }
-            audioPlayer?.prepareToPlay()
-            duration = audioPlayer?.duration ?? 0
-            
-            print("🎵 [SunoResult] Audio player prepared. Duration: \(duration) seconds")
-            
-            let success = audioPlayer?.play() ?? false
-            isPlaying = success
-            print("🎵 [SunoResult] Auto-play result: \(success)")
-            
-            if !success {
-                print("🎵 [SunoResult] Auto-play failed, retrying in 0.5 seconds...")
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    let retry = self.audioPlayer?.play() ?? false
-                    print("🎵 [SunoResult] Retry result: \(retry)")
-                    self.isPlaying = retry
-                }
-            }
-            startPlaybackTimer()
-        } catch {
-            print("❌ [SunoResult] Error setting up audio player: \(error)")
-        }
-    }
-    
-    private func startPlaybackTimer() {
-        playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            if let player = audioPlayer {
-                currentTime = player.currentTime
-            }
-        }
-    }
-    
-    private func togglePlayPause() {
-        if isPlaying { audioPlayer?.pause() } else { audioPlayer?.play() }
-        isPlaying.toggle()
-    }
     
     private func rewind10s() {
-        let newTime = max(0, currentTime - 10)
-        audioPlayer?.currentTime = newTime
-        currentTime = newTime
+        let newTime = max(0, musicPlayer.currentTime - 10)
+        musicPlayer.seek(to: newTime)
     }
     
     private func forward10s() {
-        let newTime = min(duration, currentTime + 10)
-        audioPlayer?.currentTime = newTime
-        currentTime = newTime
+        let newTime = min(musicPlayer.duration, musicPlayer.currentTime + 10)
+        musicPlayer.seek(to: newTime)
     }
     
-    private func stopAudio() {
-        print("🎵 [SunoResult] Stopping audio completely")
-        audioPlayer?.stop()
-        audioPlayer = nil
-        isPlaying = false
-        currentTime = 0
-        playbackTimer?.invalidate()
-        playbackTimer = nil
-    }
     
     private func formatTime(_ time: TimeInterval) -> String {
         let minutes = Int(time) / 60
@@ -487,8 +426,8 @@ struct SunoSongRowView: View {
                 let coverSize: CGFloat = 60
 
                 ZStack {
-                    // Ảnh
-                    AsyncImage(url: URL(string: song.imageUrl)) { image in
+                    // Ảnh - Check local first, then use source URL
+                    AsyncImage(url: getImageURL(for: song)) { image in
                         image.resizable().scaledToFill()
                     } placeholder: {
                         Image("demo_cover").resizable().scaledToFill()
@@ -502,25 +441,6 @@ struct SunoSongRowView: View {
                     if isDownloading {
                         RoundedRectangle(cornerRadius: 8)
                             .fill(Color.black.opacity(0.55))
-                    }
-                }
-                // Icon download luôn ở CENTER
-                .overlay(alignment: .center) {
-                    if isDownloading {
-                        Image(systemName: "arrow.down.circle")
-                            .font(.title2)
-                            .foregroundColor(.white)
-                    }
-                }
-                // Badge "đã tải" ở góc (chỉ hiện khi không còn tải)
-                .overlay(alignment: .center) {
-                    if !isDownloading && isDownloaded {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.subheadline)
-                            .foregroundColor(.green)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .padding(4)
                     }
                 }
                 .padding(.leading, 12)
@@ -551,7 +471,23 @@ struct SunoSongRowView: View {
 
                 // BUTTONS: sát mép phải card
                 HStack(spacing: 8) {
-                    // Export button
+                    // Save button (trái)
+                    Button {
+//                        if isSavedToDevice {
+//                            onSave()
+//                        }
+                    } label: {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(
+                                Circle().fill(isSavedToDevice ? .green : Color.gray.opacity(0.8))
+                            )
+                    }
+                    .disabled(!isDownloaded)
+                    
+                    // Export button (phải)
                     Button {
                         onExport()
                     } label: {
@@ -561,22 +497,6 @@ struct SunoSongRowView: View {
                             .frame(width: 36, height: 36)
                             .background(
                                 Circle().fill(Color.blue.opacity(0.8))
-                            )
-                    }
-                    .disabled(!isDownloaded)
-                    
-                    // Save button
-                    Button {
-                        if isSavedToDevice {
-                            onSave()
-                        }
-                    } label: {
-                        Image(systemName: isSavedToDevice ? "checkmark.circle.fill" : "externaldrive.badge.plus")
-                            .font(.title3)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(
-                                Circle().fill(isSavedToDevice ? .green : AivoTheme.Primary.orange)
                             )
                     }
                     .disabled(!isDownloaded)

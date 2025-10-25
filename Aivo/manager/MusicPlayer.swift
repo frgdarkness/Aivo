@@ -43,8 +43,8 @@ class MusicPlayer: NSObject, ObservableObject {
     
     /// Load a song and start playing
     func loadSong(_ song: SunoData, at index: Int, in songs: [SunoData]) {
-        print("🎵 [MusicPlayer] Loading song: \(song.title)")
-        
+        Logger.d("🎵 [MusicPlayer] Loading song: \(song.title)")
+        Logger.d("songInfo: \(song)")
         // Stop current playback first (but don't clear currentSong yet)
         audioPlayer?.stop()
         audioPlayer = nil
@@ -63,12 +63,12 @@ class MusicPlayer: NSObject, ObservableObject {
         let audioURL: URL
         
         if FileManager.default.fileExists(atPath: localFilePath.path) {
-            print("🎵 [MusicPlayer] Using local file: \(localFilePath.path)")
+            Logger.d("🎵 [MusicPlayer] Using local file: \(localFilePath.path)")
             audioURL = localFilePath
         } else {
-            print("🎵 [MusicPlayer] Local file not found, using remote URL")
+            Logger.d("🎵 [MusicPlayer] Local file not found, using remote URL")
             guard let url = URL(string: song.audioUrl) else {
-                print("❌ [MusicPlayer] Invalid audio URL: \(song.audioUrl)")
+                Logger.e("❌ [MusicPlayer] Invalid audio URL: \(song.audioUrl)")
                 return
             }
             audioURL = url
@@ -83,7 +83,7 @@ class MusicPlayer: NSObject, ObservableObject {
         
         let success = player.play()
         isPlaying = success
-        print("🎵 [MusicPlayer] Play result: \(success)")
+        Logger.d("🎵 [MusicPlayer] Play result: \(success)")
         
         if success {
             startPlaybackTimer()
@@ -94,7 +94,7 @@ class MusicPlayer: NSObject, ObservableObject {
     func pause() {
         audioPlayer?.pause()
         isPlaying = false
-        print("🎵 [MusicPlayer] Paused")
+        Logger.d("🎵 [MusicPlayer] Paused")
         
         stopPlaybackTimer()
     }
@@ -110,7 +110,7 @@ class MusicPlayer: NSObject, ObservableObject {
         songs = []
         currentIndex = 0
         stopPlaybackTimer()
-        print("🎵 [MusicPlayer] Stopped and cleared")
+        Logger.d("🎵 [MusicPlayer] Stopped and cleared")
     }
     
     /// Toggle play/pause
@@ -166,7 +166,7 @@ class MusicPlayer: NSObject, ObservableObject {
         if let currentModeIndex = allModes.firstIndex(of: playMode) {
             let nextIndex = (currentModeIndex + 1) % allModes.count
             playMode = allModes[nextIndex]
-            print("🎵 [MusicPlayer] Play mode changed to: \(playMode.rawValue)")
+            Logger.d("🎵 [MusicPlayer] Play mode changed to: \(playMode.rawValue)")
         }
     }
     
@@ -176,7 +176,7 @@ class MusicPlayer: NSObject, ObservableObject {
         currentSong = nil
         currentIndex = 0
         songs = []
-        print("🎵 [MusicPlayer] Playlist cleared")
+        Logger.d("🎵 [MusicPlayer] Playlist cleared")
     }
     
     // MARK: - Private Methods
@@ -185,9 +185,9 @@ class MusicPlayer: NSObject, ObservableObject {
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
             try AVAudioSession.sharedInstance().setActive(true)
-            print("🎵 [MusicPlayer] Audio session configured")
+            Logger.d("🎵 [MusicPlayer] Audio session configured")
         } catch {
-            print("❌ [MusicPlayer] Error setting up audio session: \(error)")
+            Logger.e("❌ [MusicPlayer] Error setting up audio session: \(error)")
         }
     }
     
@@ -201,13 +201,13 @@ class MusicPlayer: NSObject, ObservableObject {
             audioPlayer?.prepareToPlay()
             duration = audioPlayer?.duration ?? 0
             
-            print("🎵 [MusicPlayer] Audio player prepared. Duration: \(duration) seconds")
+            Logger.d("🎵 [MusicPlayer] Audio player prepared. Duration: \(duration) seconds")
             
             // Auto-play
             play()
             
         } catch {
-            print("❌ [MusicPlayer] Error setting up audio player: \(error)")
+            Logger.e("❌ [MusicPlayer] Error setting up audio player: \(error)")
         }
     }
     
@@ -226,7 +226,7 @@ class MusicPlayer: NSObject, ObservableObject {
     }
     
     private func handlePlaybackFinished() {
-        print("🎵 [MusicPlayer] Playback finished, play mode: \(playMode.rawValue)")
+        Logger.d("🎵 [MusicPlayer] Playback finished, play mode: \(playMode.rawValue)")
         
         switch playMode {
         case .sequential:
@@ -257,7 +257,7 @@ class MusicPlayer: NSObject, ObservableObject {
         for fileName in possibleFileNames {
             let filePath = sunoDataPath.appendingPathComponent(fileName)
             if FileManager.default.fileExists(atPath: filePath.path) {
-                print("🎵 [MusicPlayer] Found local file: \(fileName)")
+                Logger.d("🎵 [MusicPlayer] Found local file: \(fileName)")
                 return filePath
             }
         }
@@ -277,11 +277,11 @@ class MusicPlayerAudioDelegate: NSObject, AVAudioPlayerDelegate {
     }
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        print("🎵 [MusicPlayerDelegate] Audio playback finished successfully: \(flag)")
+        Logger.d("🎵 [MusicPlayerDelegate] Audio playback finished successfully: \(flag)")
         onFinish()
     }
     
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        print("❌ [MusicPlayerDelegate] Audio decode error: \(error?.localizedDescription ?? "Unknown error")")
+        Logger.e("❌ [MusicPlayerDelegate] Audio decode error: \(error?.localizedDescription ?? "Unknown error")")
     }
 }

@@ -260,8 +260,8 @@ struct DownloadedSongRowView: View {
                 let coverSize: CGFloat = 60
 
                 ZStack {
-                    // Cover image from saved SunoData
-                    AsyncImage(url: URL(string: song.imageUrl)) { image in
+                    // Cover image - Check local first, then use source URL
+                    AsyncImage(url: getImageURL(for: song)) { image in
                         image
                             .resizable()
                             .scaledToFill()
@@ -358,6 +358,17 @@ struct LibrarySong: Identifiable {
     let createdDate: Date
     let albumArtIcon: String
     let albumArtColor: Color
+}
+
+// MARK: - Helper Functions
+func getImageURL(for song: SunoData) -> URL? {
+    // Check if local cover exists first
+    if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
+        return localCoverPath
+    }
+    
+    // Fallback to source URL
+    return URL(string: song.sourceImageUrl)
 }
 
 // MARK: - Preview
