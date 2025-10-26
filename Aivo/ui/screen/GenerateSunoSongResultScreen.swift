@@ -49,9 +49,9 @@ struct GenerateSunoSongResultScreen: View {
             }
         }
         .onAppear {
-            print("🎵 [SunoResult] Screen appeared with \(sunoDataList.count) songs")
+            Logger.d("🎵 [SunoResult] Screen appeared with \(sunoDataList.count) songs")
             for (index, song) in sunoDataList.enumerated() {
-                print("🎵 [SunoResult] Song \(index + 1): \(song.title) - \(song.duration)s")
+                Logger.d("🎵 [SunoResult] Song \(index + 1): \(song.title) - \(song.duration)s")
             }
             startDownloadAllSongs()
         }
@@ -270,7 +270,7 @@ struct GenerateSunoSongResultScreen: View {
     
     // MARK: - Helper Methods
     private func startDownloadAllSongs() {
-        print("📥 [SunoResult] Starting download for all \(sunoDataList.count) songs")
+        Logger.d("📥 [SunoResult] Starting download for all \(sunoDataList.count) songs")
         for song in sunoDataList {
             downloadSong(song)
         }
@@ -292,12 +292,12 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     private func downloadSong(_ song: SunoData) {
-        print("📥 [SunoResult] Starting download for song: \(song.title)")
-        print("📥 [SunoResult] Audio URL: \(song.audioUrl)")
+        Logger.d("📥 [SunoResult] Starting download for song: \(song.title)")
+        Logger.d("📥 [SunoResult] Audio URL: \(song.audioUrl)")
         
         guard let url = URL(string: song.audioUrl) else { 
-            print("❌ [SunoResult] Invalid URL for song: \(song.title)")
-            return 
+            Logger.e("❌ [SunoResult] Invalid URL for song: \(song.title)")
+            return
         }
         
         downloadingSongs.insert(song.id)
@@ -312,7 +312,7 @@ struct GenerateSunoSongResultScreen: View {
         let fileName = "\(song.id)_audio.\(ext)"
         let localURL = sunoDataDirectory.appendingPathComponent(fileName)
         
-        print("📥 [SunoResult] Download destination: \(localURL.path)")
+        Logger.d("📥 [SunoResult] Download destination: \(localURL.path)")
         
         let downloader = ProgressiveDownloader(
             destinationURL: localURL,
@@ -320,7 +320,33 @@ struct GenerateSunoSongResultScreen: View {
                 // Progress tracking removed - just show downloading status
             },
             onComplete: { fileURL in
-                print("✅ [SunoResult] Download completed for song: \(song.title)")
+                Logger.d("✅ [SunoResult] Download completed for song: \(song.title)")
+                
+                // Validate file size before proceeding
+                let fileManager = FileManager.default
+                do {
+                    let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
+                    if let fileSize = attributes[.size] as? Int64 {
+                        Logger.d("📊 [SunoResult] Downloaded file size: \(fileSize) bytes")
+                        
+                        // Check if file size is suspiciously small (< 100KB)
+                        if fileSize < 100 * 1024 {
+                            Logger.e("❌ [SunoResult] Downloaded file too small (\(fileSize) bytes), likely corrupted")
+                            Logger.w("⚠️ [SunoResult] Retrying download for song: \(song.title)")
+                            
+                            // Retry download
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                self.downloadSong(song)
+                            }
+                            return
+                        }
+                        
+                        Logger.d("✅ [SunoResult] File size validation passed: \(fileSize) bytes")
+                    }
+                } catch {
+                    Logger.e("❌ [SunoResult] Error getting file attributes: \(error)")
+                }
+                
                 self.downloadingSongs.remove(song.id)
                 self.downloadedFileURLs[song.id] = fileURL
                 
@@ -330,23 +356,29 @@ struct GenerateSunoSongResultScreen: View {
                         let savedURL = try await SunoDataManager.shared.saveSunoData(song)
                         await MainActor.run {
                             self.savedToDevice.insert(song.id)
-                            print("💾 [SunoResult] Full SunoData saved to device: \(savedURL.path)")
+                            Logger.d("💾 [SunoResult] Full SunoData saved to device: \(savedURL.path)")
                         }
                     } catch {
-                        print("❌ [SunoResult] Error saving SunoData: \(error)")
+                        Logger.e("❌ [SunoResult] Error saving SunoData: \(error)")
                     }
                 }
                 
                 // Song downloaded successfully - auto-play first song
                 if song.id == self.sunoDataList.first?.id {
-                    print("🎵 [SunoResult] Auto-playing first song: \(song.title)")
+                    Logger.d("🎵 [SunoResult] Auto-playing first song: \(song.title)")
                     self.musicPlayer.loadSong(song, at: 0, in: self.sunoDataList)
                 }
-                print("🎵 [SunoResult] Song ready for playback: \(song.title)")
+                Logger.d("🎵 [SunoResult] Song ready for playback: \(song.title)")
             },
             onError: { error in
-                print("❌ [SunoResult] Download error for song \(song.title): \(error)")
+                Logger.e("❌ [SunoResult] Download error for song \(song.title): \(error)")
                 self.downloadingSongs.remove(song.id)
+                
+                // Retry download on error (with limit)
+                Logger.w("⚠️ [SunoResult] Retrying download for song: \(song.title)")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.downloadSong(song)
+                }
             }
         )
         
@@ -355,15 +387,15 @@ struct GenerateSunoSongResultScreen: View {
     
     private func loadSelectedSong() {
         guard downloadedFileURLs[currentSong.id] != nil else { 
-            print("⚠️ [SunoResult] Song not downloaded yet: \(currentSong.title)")
+            Logger.d("⚠️ [SunoResult] Song not downloaded yet: \(currentSong.title)")
             return 
         }
         
-        print("🎵 [SunoResult] Loading selected song: \(currentSong.title)")
+        Logger.d("🎵 [SunoResult] Loading selected song: \(currentSong.title)")
         
         // Use MusicPlayer to play the song
         musicPlayer.loadSong(currentSong, at: selectedSongIndex, in: sunoDataList)
-        print("🎵 [SunoResult] Song loaded into MusicPlayer")
+        Logger.d("🎵 [SunoResult] Song loaded into MusicPlayer")
     }
     
     
@@ -385,7 +417,7 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     private func saveToDevice(fileURL: URL, song: SunoData) {
-        print("💾 [SunoResult] Saving song to device: \(song.title)")
+        Logger.d("💾 [SunoResult] Saving song to device: \(song.title)")
         // Song is already saved to Documents directory during download
         // This method is for future use if we need additional save functionality
         savedToDevice.insert(song.id)

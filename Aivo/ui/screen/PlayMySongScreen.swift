@@ -246,33 +246,21 @@ struct PlayMySongScreen: View {
 
     // MARK: - Album Art
     private var albumArtView: some View {
-        ZStack {
-            AsyncImage(url: getImageURLForSong(currentSong)) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-                    .blur(radius: 20).scaleEffect(1.2)
-            } placeholder: {
-                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
-                    .blur(radius: 20).scaleEffect(1.2)
-            }
-            .frame(width: 300, height: 300)
-            .clipped()
-
-            AsyncImage(url: getImageURLForSong(currentSong)) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
-            }
-            .frame(width: 280, height: 280)
-            .clipShape(Circle())
-            .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-            .rotationEffect(.degrees(rotationAngle))
-            .animation(
-                musicPlayer.isPlaying
-                ? .linear(duration: 8).repeatForever(autoreverses: false)
-                : .easeInOut(duration: 0.3),
-                value: rotationAngle
-            )
+        AsyncImage(url: getImageURLForSong(currentSong)) { image in
+            image.resizable().aspectRatio(contentMode: .fill)
+        } placeholder: {
+            Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
         }
+        .frame(width: 280, height: 280)
+        .clipShape(Circle())
+        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
+        .rotationEffect(.degrees(rotationAngle))
+        .animation(
+            musicPlayer.isPlaying
+            ? .linear(duration: 8).repeatForever(autoreverses: false)
+            : .easeInOut(duration: 0.3),
+            value: rotationAngle
+        )
     }
 
     // MARK: - Song Info
@@ -320,6 +308,19 @@ struct PlayMySongScreen: View {
             .padding(.vertical, 16)
         }
         .frame(maxHeight: 150) // Lyric view max height 150pt
+        .mask(
+            // Gradient mask: trên/dưới nhạt, giữa đậm
+            LinearGradient(
+                gradient: Gradient(stops: [
+                    .init(color: .clear, location: 0.0),      // Trên: trong suốt
+                    .init(color: .black, location: 0.2),      // Chuyển đậm dần
+                    .init(color: .black, location: 0.8),      // Giữa: đậm
+                    .init(color: .clear, location: 1.0)       // Dưới: trong suốt
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+        )
     }
 
     // MARK: - Playback Controls

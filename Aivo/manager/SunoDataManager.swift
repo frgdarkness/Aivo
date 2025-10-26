@@ -21,8 +21,16 @@ class SunoDataManager {
         // Download and save audio file
         let audioURL = try await downloadAndSaveAudio(sunoData.audioUrl, songId: sunoData.id, to: sunoDataDirectory)
         
-        // Download and save cover image
-        let coverURL = try await downloadAndSaveCover(sunoData.imageUrl, songId: sunoData.id, to: sunoDataDirectory)
+        // Download and save cover image (only if imageUrl is not empty)
+        let coverURL: URL
+        if !sunoData.imageUrl.isEmpty {
+            coverURL = try await downloadAndSaveCover(sunoData.imageUrl, songId: sunoData.id, to: sunoDataDirectory)
+        } else {
+            // Create a placeholder cover URL for cover songs
+            let placeholderFileName = "\(sunoData.id)_cover.jpg"
+            coverURL = sunoDataDirectory.appendingPathComponent(placeholderFileName)
+            print("💾 [SunoDataManager] No cover image URL provided, using placeholder")
+        }
         
         // Create metadata file - KEEP ORIGINAL URLs
         let metadata = SunoDataMetadata(

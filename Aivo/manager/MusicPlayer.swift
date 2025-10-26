@@ -192,15 +192,48 @@ class MusicPlayer: NSObject, ObservableObject {
     }
     
     private func setupAudioPlayer(with url: URL) {
+        Logger.d("🎵 [MusicPlayer] Setting up audio player with URL: \(url.path)")
+        
+        // Check if file exists and get file info
+        let fileManager = FileManager.default
+        if fileManager.fileExists(atPath: url.path) {
+            Logger.d("🎵 [MusicPlayer] File exists at path")
+            
+            // Get file size
+            do {
+                let attributes = try fileManager.attributesOfItem(atPath: url.path)
+                if let fileSize = attributes[.size] as? Int64 {
+                    Logger.d("🎵 [MusicPlayer] File size: \(fileSize) bytes")
+                }
+            } catch {
+                Logger.e("❌ [MusicPlayer] Error getting file attributes: \(error)")
+            }
+            
+            // Check file extension
+            let fileExtension = url.pathExtension.lowercased()
+            Logger.d("🎵 [MusicPlayer] File extension: \(fileExtension)")
+            
+        } else {
+            Logger.e("❌ [MusicPlayer] File does not exist at path: \(url.path)")
+            return
+        }
+        
         do {
+            Logger.d("🎵 [MusicPlayer] Creating AVAudioPlayer...")
             audioPlayer = try AVAudioPlayer(contentsOf: url)
+            
+            Logger.d("🎵 [MusicPlayer] AVAudioPlayer created successfully")
+            
             audioDelegate = MusicPlayerAudioDelegate { [weak self] in
                 self?.handlePlaybackFinished()
             }
             audioPlayer?.delegate = audioDelegate
-            audioPlayer?.prepareToPlay()
-            duration = audioPlayer?.duration ?? 0
             
+            Logger.d("🎵 [MusicPlayer] Preparing to play...")
+            let prepareResult = audioPlayer?.prepareToPlay() ?? false
+            Logger.d("🎵 [MusicPlayer] Prepare to play result: \(prepareResult)")
+            
+            duration = audioPlayer?.duration ?? 0
             Logger.d("🎵 [MusicPlayer] Audio player prepared. Duration: \(duration) seconds")
             
             // Auto-play
@@ -208,6 +241,83 @@ class MusicPlayer: NSObject, ObservableObject {
             
         } catch {
             Logger.e("❌ [MusicPlayer] Error setting up audio player: \(error)")
+            Logger.e("❌ [MusicPlayer] Error domain: \(error._domain)")
+            Logger.e("❌ [MusicPlayer] Error code: \(error._code)")
+            Logger.e("❌ [MusicPlayer] Error description: \(error.localizedDescription)")
+            
+            // Try to get more specific error info
+            if let nsError = error as NSError? {
+                Logger.e("❌ [MusicPlayer] NSError domain: \(nsError.domain)")
+                Logger.e("❌ [MusicPlayer] NSError code: \(nsError.code)")
+                Logger.e("❌ [MusicPlayer] NSError userInfo: \(nsError.userInfo)")
+            }
+            
+            // If local file fails, try remote URL as fallback
+            if let song = currentSong, !song.audioUrl.isEmpty {
+                Logger.w("⚠️ [MusicPlayer] Local file failed, trying remote URL as fallback")
+                Logger.d("🎵 [MusicPlayer] Remote URL: \(song.audioUrl)")
+                
+                guard let remoteURL = URL(string: song.audioUrl) else {
+                    Logger.e("❌ [MusicPlayer] Invalid remote URL: \(song.audioUrl)")
+                    return
+                }
+                
+                // Try remote URL
+                setupAudioPlayerWithRemoteURL(remoteURL)
+            }
+        }
+    }
+    
+    private func setupAudioPlayerWithRemoteURL(_ url: URL) {
+        Logger.d("🎵 [MusicPlayer] Setting up audio player with remote URL: \(url.absoluteString)")
+        
+        Task {
+            do {
+                Logger.d("🎵 [MusicPlayer] Downloading remote audio file...")
+                let (data, response) = try await URLSession.shared.data(from: url)
+                
+                Logger.d("🎵 [MusicPlayer] Remote file downloaded successfully")
+                Logger.d("🎵 [MusicPlayer] Data size: \(data.count) bytes")
+                
+                // Create temporary file
+                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("temp_audio_\(UUID().uuidString).wav")
+                try data.write(to: tempURL)
+                
+                Logger.d("🎵 [MusicPlayer] Temporary file created: \(tempURL.path)")
+                
+                await MainActor.run {
+                    do {
+                        Logger.d("🎵 [MusicPlayer] Creating AVAudioPlayer with temporary file...")
+                        self.audioPlayer = try AVAudioPlayer(contentsOf: tempURL)
+                        
+                        Logger.d("🎵 [MusicPlayer] AVAudioPlayer created successfully with remote file")
+                        
+                        self.audioDelegate = MusicPlayerAudioDelegate { [weak self] in
+                            self?.handlePlaybackFinished()
+                        }
+                        self.audioPlayer?.delegate = self.audioDelegate
+                        
+                        Logger.d("🎵 [MusicPlayer] Preparing to play remote file...")
+                        let prepareResult = self.audioPlayer?.prepareToPlay() ?? false
+                        Logger.d("🎵 [MusicPlayer] Prepare to play result: \(prepareResult)")
+                        
+                        self.duration = self.audioPlayer?.duration ?? 0
+                        Logger.d("🎵 [MusicPlayer] Remote audio player prepared. Duration: \(self.duration) seconds")
+                        
+                        // Auto-play
+                        self.play()
+                        
+                    } catch {
+                        Logger.e("❌ [MusicPlayer] Error setting up audio player with remote file: \(error)")
+                        Logger.e("❌ [MusicPlayer] Remote error domain: \(error._domain)")
+                        Logger.e("❌ [MusicPlayer] Remote error code: \(error._code)")
+                        Logger.e("❌ [MusicPlayer] Remote error description: \(error.localizedDescription)")
+                    }
+                }
+                
+            } catch {
+                Logger.e("❌ [MusicPlayer] Error downloading remote audio file: \(error)")
+            }
         }
     }
     

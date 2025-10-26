@@ -6,6 +6,7 @@ import SwiftUI
 // MARK: - Cover Tab View
 struct CoverTabView: View {
     @State private var selectedSong = ""
+    @State private var songName = ""  // Add song name state
     @State private var selectedVoiceType: VoiceType = .otherVoice
     @State private var youtubeUrl = ""
     @State private var selectedLanguage: CoverLanguage = .english
@@ -13,6 +14,7 @@ struct CoverTabView: View {
     @State private var showProcessingScreen = false
     @State private var showPlaySongScreen = false
     @State private var resultAudioUrl: String?
+    @State private var cachedSunoData: SunoData?
     @State private var showToast = false
     @State private var toastMessage = ""
     enum SourceType { case song, youtube }
@@ -23,6 +25,9 @@ struct CoverTabView: View {
             VStack(spacing: 24) {
                 // Song Selection (Card-Tab đơn giản)
                 songSelectionSection
+
+                // Song Name Input
+                songNameSection
 
                 // Language Selection
                 languageSelectionSection
@@ -47,11 +52,10 @@ struct CoverTabView: View {
             )
         }
         .fullScreenCover(isPresented: $showPlaySongScreen) {
-            if let audioUrl = resultAudioUrl {
-                PlaySongIntroScreen(
-                    songData: nil,
-                    audioUrl: audioUrl,
-                    onIntroCompleted: {
+            if let sunoData = cachedSunoData {
+                GenerateSunoSongResultScreen(
+                    sunoDataList: [sunoData],
+                    onClose: {
                         showPlaySongScreen = false
                     }
                 )
@@ -87,7 +91,8 @@ struct CoverTabView: View {
                     isSelected: selectedSource == .song,
                     selectedColor: AivoTheme.Primary.orange
                 ) {
-                    withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .song }
+                    selectedSource = .song
+                    //withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .song }
                 }
                 .zIndex(selectedSource == .song ? 1 : 0)
 
@@ -96,7 +101,8 @@ struct CoverTabView: View {
                     isSelected: selectedSource == .youtube,
                     selectedColor: AivoTheme.Secondary.goldenSun
                 ) {
-                    withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .youtube }
+                    selectedSource = .youtube
+                    //withAnimation(.easeInOut(duration: 0.25)) { selectedSource = .youtube }
                 }
                 .padding(.leading, -8)
                 .zIndex(selectedSource == .youtube ? 1 : 0)
@@ -155,6 +161,27 @@ struct CoverTabView: View {
         }
     }
 
+    // MARK: - Song Name Section
+    private var songNameSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Song Name (Optional)")
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            TextField("", text: $songName)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.black.opacity(0.3))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                        )
+                )
+        }
+    }
 
     // MARK: - Language Selection Section
     private var languageSelectionSection: some View {
@@ -258,10 +285,11 @@ struct CoverTabView: View {
 
     // MARK: - Actions
     private func generateCoverSong() {
-        print("🎤 [CoverTab] Starting cover song generation...")
-        print("🎤 [CoverTab] YouTube URL: \(selectedSong)")
-        print("🎤 [CoverTab] Language: \(selectedLanguage.displayName)")
-        print("🎤 [CoverTab] Artist: \(selectedArtist?.name ?? "None")")
+        Logger.i("🎤 [CoverTab] Starting cover song generation...")
+        Logger.d("🎤 [CoverTab] YouTube URL: \(selectedSong)")
+        Logger.d("🎤 [CoverTab] Song Name: \(songName)")
+        Logger.d("🎤 [CoverTab] Language: \(selectedLanguage.displayName)")
+        Logger.d("🎤 [CoverTab] Artist: \(selectedArtist?.name ?? "None")")
         
         // Show processing screen
         showProcessingScreen = true
@@ -269,33 +297,67 @@ struct CoverTabView: View {
         // Start generation in background
         Task {
             do {
-                let modelsLabService = ModelsLabService.shared
-                let coverModelID = selectedArtist?.rawValue ?? "jungkookv7-e"
+                // Step 1: Process YouTube URL and extract metadata
+                Logger.i("🔗 [CoverTab] Processing YouTube URL...")
+                let (normalizedURL, extractedSongName, extractedArtist) = await YouTubeUtils.processYouTubeURL(selectedSong)
                 
-                print("🎤 [CoverTab] Calling ModelsLabService.processVoiceCover...")
-                let resultUrl = try await modelsLabService.processVoiceCover(
-                    audioUrl: selectedSong, 
+                // Use extracted song name if user didn't provide one
+                let finalSongName = songName.isEmpty ? (extractedSongName ?? "Cover Song") : songName
+                
+                await MainActor.run {
+                    // Update song name if extracted from YouTube
+                    if songName.isEmpty && extractedSongName != nil {
+                        songName = extractedSongName!
+                        Logger.i("🎵 [CoverTab] Updated song name from YouTube: \(songName)")
+                    }
+                }
+                
+                guard let audioUrl = normalizedURL else {
+                    Logger.e("❌ [CoverTab] Failed to normalize YouTube URL")
+                    await MainActor.run {
+                        showProcessingScreen = false
+                        showToastMessage("Invalid YouTube URL")
+                    }
+                    return
+                }
+                
+                // Step 2: Generate cover using ModelsLab
+                let modelsLabService = ModelsLabService.shared
+                let coverModelID = selectedArtist?.rawValue ?? "arianagrande"
+                
+                Logger.i("🎤 [CoverTab] Calling ModelsLabService.processVoiceCover...")
+                Logger.d("🎤 [CoverTab] Audio URL: \(audioUrl)")
+                Logger.d("🎤 [CoverTab] Model ID: \(coverModelID)")
+                
+                let resultUrl = await modelsLabService.processVoiceCover(
+                    audioUrl: audioUrl, 
                     modelID: coverModelID
                 )
                 
-                print("🎤 [CoverTab] Cover song generated successfully!")
-                print("🎤 [CoverTab] Result URL: \(resultUrl)")
+                Logger.i("🎤 [CoverTab] Cover song generated successfully!")
+                Logger.d("🎤 [CoverTab] Result URL: \(resultUrl ?? "nil")")
                 
                 await MainActor.run {
                     // Close processing screen
                     showProcessingScreen = false
                     
-                    // Set result and show play screen
-                    resultAudioUrl = resultUrl
-                    showToastMessage("Cover song generated successfully!")
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                        showPlaySongScreen = true
+                    if let resultUrl = resultUrl {
+                        // Create and cache SunoData
+                        cachedSunoData = createSunoDataFromCoverResult(audioUrl: resultUrl)
+                        //resultAudioUrl = resultUrl
+                        showToastMessage("Cover song generated successfully!")
+                        
+                        Logger.i("🎵 [CoverTab] Opening GenerateSunoSongResultScreen with cover result")
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                            showPlaySongScreen = true
+                        }
+                    } else {
+                        showToastMessage("Failed to generate cover song")
                     }
                 }
                 
             } catch {
-                print("❌ [CoverTab] Error generating cover song: \(error)")
+                Logger.e("❌ [CoverTab] Error generating cover song: \(error)")
                 await MainActor.run {
                     showProcessingScreen = false
                     showToastMessage("Failed to generate cover song: \(error.localizedDescription)")
@@ -311,6 +373,47 @@ struct CoverTabView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             showToast = false
         }
+    }
+    
+    // MARK: - Helper Methods
+    private func createSunoDataFromCoverResult(audioUrl: String) -> SunoData {
+        Logger.i("🎵 [CoverTab] Creating SunoData from cover result")
+        Logger.d("🎵 [CoverTab] Audio URL: \(audioUrl)")
+        Logger.d("🎵 [CoverTab] Song Name: \(songName)")
+        Logger.d("🎵 [CoverTab] Selected Artist: \(selectedArtist?.name ?? "None")")
+        
+        // Generate unique ID
+        let uniqueId = "cover_\(UUID().uuidString.prefix(8))"
+        
+        // Create title: song title + " cover"
+        let finalTitle = songName.isEmpty ? "Cover Song" : "\(songName) cover"
+        
+        // Create model name: artist + " cover"
+        let artistName = selectedArtist?.name ?? "Unknown Artist"
+        let finalModelName = "\(artistName) cover"
+        
+        Logger.d("🎵 [CoverTab] Generated ID: \(uniqueId)")
+        Logger.d("🎵 [CoverTab] Generated Title: \(finalTitle)")
+        Logger.d("🎵 [CoverTab] Generated Model Name: \(finalModelName)")
+        
+        let sunoData = SunoData(
+            id: uniqueId,
+            audioUrl: audioUrl,
+            sourceAudioUrl: audioUrl,
+            streamAudioUrl: "",
+            sourceStreamAudioUrl: "",
+            imageUrl: "",
+            sourceImageUrl: "",
+            prompt: "Voice cover of \(songName.isEmpty ? "song" : songName)",
+            modelName: finalModelName,
+            title: finalTitle,
+            tags: "cover,voice,ai",
+            createTime: Int64(Int(Date().timeIntervalSince1970)),
+            duration: 0 // Will be updated by MusicPlayer
+        )
+        
+        Logger.i("✅ [CoverTab] SunoData created successfully: \(sunoData)")
+        return sunoData
     }
 }
 

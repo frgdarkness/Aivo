@@ -456,9 +456,39 @@ final class ProgressiveDownloader: NSObject, URLSessionDataDelegate {
         }
 
         if let error = error {
+            Logger.e("❌ [ProgressiveDownloader] Download error: \(error)")
             DispatchQueue.main.async { self.onError(error) }
             return
         }
+        
+        // Validate downloaded file size
+        let fileManager = FileManager.default
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: destinationURL.path)
+            if let fileSize = attributes[.size] as? Int64 {
+                Logger.d("📥 [ProgressiveDownloader] Downloaded file size: \(fileSize) bytes")
+                
+                // Check if file size is suspiciously small (< 100KB)
+                if fileSize < 100 * 1024 {
+                    let errorMsg = "Downloaded file too small (\(fileSize) bytes). Expected: \(expected > 0 ? String(expected) : "unknown") bytes. Received: \(received) bytes"
+                    Logger.e("❌ [ProgressiveDownloader] \(errorMsg)")
+                    
+                    // Create custom error
+                    let fileSizeError = NSError(
+                        domain: "ProgressiveDownloader",
+                        code: 1001,
+                        userInfo: [NSLocalizedDescriptionKey: errorMsg]
+                    )
+                    DispatchQueue.main.async { self.onError(fileSizeError) }
+                    return
+                }
+                
+                Logger.d("✅ [ProgressiveDownloader] File size validation passed: \(fileSize) bytes")
+            }
+        } catch {
+            Logger.e("❌ [ProgressiveDownloader] Error getting file attributes: \(error)")
+        }
+        
         // Đảm bảo 100% khi kết thúc
         DispatchQueue.main.async {
             self.onProgress(1.0)
