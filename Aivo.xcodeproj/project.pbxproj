@@ -54,29 +54,11 @@
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
-/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-		E5C8FF9E2EAEFF6B00DE433B /* Exceptions for "Aivo" folder in "Compile Sources" phase from "Aivo" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = E55DC5AB2EA3BF4C00801CB1 /* Sources */;
-			membershipExceptions = (
-			);
-		};
-		COVER51NGM0D3LSRSRC /* Exceptions for "Aivo" folder in "Resources" phase from "Aivo" target */ = {
-			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
-			buildPhase = E55DC5AD2EA3BF4C00801CB1 /* Resources */;
-			membershipExceptions = (
-				Resource/cover_song_models.json,
-			);
-		};
-/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E55DC5B12EA3BF4C00801CB1 /* Aivo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				E55DC5E62EA3C1C800801CB1 /* Exceptions for "Aivo" folder in "Aivo" target */,
-				E5C8FF9E2EAEFF6B00DE433B /* Exceptions for "Aivo" folder in "Compile Sources" phase from "Aivo" target */,
-				COVER51NGM0D3LSRSRC /* Exceptions for "Aivo" folder in "Resources" phase from "Aivo" target */,
 			);
 			path = Aivo;
 			sourceTree = "<group>";

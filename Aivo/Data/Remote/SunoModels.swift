@@ -95,6 +95,60 @@ enum SunoStatus: String, Codable {
     case SENSITIVE_WORD_ERROR = "SENSITIVE_WORD_ERROR"
 }
 
+// MARK: - Lyrics Models
+struct SunoLyricsResponse: Codable {
+    let code: Int
+    let msg: String
+    let data: SunoLyricsData?
+}
+
+struct SunoLyricsData: Codable {
+    let taskId: String
+}
+
+struct SunoLyricsDetailsResponse: Codable {
+    let code: Int
+    let msg: String
+    let data: SunoLyricsDetails?
+}
+
+struct SunoLyricsDetails: Codable {
+    let taskId: String
+    let param: String
+    let response: SunoLyricsTaskResponse?
+    let status: SunoLyricsStatus
+    let type: String?
+    let errorCode: String?
+    let errorMessage: String?
+}
+
+struct SunoLyricsTaskResponse: Codable {
+    let taskId: String
+    let data: [SunoLyricsDataResult]
+}
+
+struct SunoLyricsDataResult: Codable {
+    let text: String
+    let title: String
+    let status: String
+    let errorMessage: String?
+}
+
+struct LyricsResult: Codable, Identifiable {
+    let id = UUID()
+    let text: String
+    let title: String
+}
+
+enum SunoLyricsStatus: String, Codable {
+    case pending = "PENDING"
+    case success = "SUCCESS"
+    case createTaskFailed = "CREATE_TASK_FAILED"
+    case generateLyricsFailed = "GENERATE_LYRICS_FAILED"
+    case callbackException = "CALLBACK_EXCEPTION"
+    case sensitiveWordError = "SENSITIVE_WORD_ERROR"
+}
+
 // MARK: - Errors
 enum SunoError: LocalizedError {
     case invalidResponse
@@ -103,6 +157,8 @@ enum SunoError: LocalizedError {
     case generationFailed(String)
     case timeoutExceeded
     case invalidAPIKey
+    case invalidURL
+    case requestTimeout
     
     var errorDescription: String? {
         switch self {
@@ -118,6 +174,10 @@ enum SunoError: LocalizedError {
             return "Generation timeout exceeded"
         case .invalidAPIKey:
             return "Invalid API key"
+        case .invalidURL:
+            return "Invalid URL"
+        case .requestTimeout:
+            return "Request timeout"
         }
     }
 }

@@ -319,4 +319,207 @@ extension SunoAiMusicService {
             model: model
         )
     }
+    
+    // MARK: - Generate Lyrics
+    func generateLyrics(prompt: String) async throws -> String {
+        Logger.i("📝 [SunoAI] Starting lyrics generation...")
+        Logger.d("📝 [SunoAI] Prompt: \(prompt)")
+        
+        guard let url = URL(string: "\(baseURL)/lyrics") else {
+            Logger.e("❌ [SunoAI] Invalid lyrics URL")
+            throw SunoError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody: [String: Any] = [
+            "prompt": prompt,
+            "callBackUrl": "https://api.example.com/callback"
+        ]
+        
+        do {
+            let jsonData = try JSONSerialization.data(withJSONObject: requestBody)
+            request.httpBody = jsonData
+            
+            Logger.d("📝 [SunoAI] Request URL: \(url)")
+            Logger.d("📝 [SunoAI] Request body: \(String(data: jsonData, encoding: .utf8) ?? "Unable to convert")")
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            Logger.d("📝 [SunoAI] Response received")
+            Logger.d("📝 [SunoAI] Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert")")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                Logger.e("❌ [SunoAI] Invalid response type")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.d("📝 [SunoAI] HTTP Status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                Logger.e("❌ [SunoAI] HTTP Error: \(httpResponse.statusCode)")
+                throw SunoError.httpError(httpResponse.statusCode)
+            }
+            
+            let lyricsResponse = try JSONDecoder().decode(SunoLyricsResponse.self, from: data)
+            Logger.i("📝 [SunoAI] Response code: \(lyricsResponse.code)")
+            Logger.i("📝 [SunoAI] Response msg: \(lyricsResponse.msg)")
+            
+            guard lyricsResponse.code == 200 else {
+                Logger.e("❌ [SunoAI] API Error: \(lyricsResponse.msg)")
+                throw SunoError.apiError(lyricsResponse.msg)
+            }
+            
+            guard let data = lyricsResponse.data else {
+                Logger.e("❌ [SunoAI] No data in response")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.i("✅ [SunoAI] Task ID: \(data.taskId)")
+            return data.taskId
+            
+        } catch {
+            Logger.e("❌ [SunoAI] Generate lyrics error: \(error)")
+            throw error
+        }
+    }
+    
+    // MARK: - Get Lyrics Generation Details
+    func getLyricsGenerationDetails(taskId: String) async throws -> SunoLyricsDetails {
+        Logger.i("🔍 [SunoAI] Getting lyrics generation details for task: \(taskId)")
+        
+        guard let url = URL(string: "\(baseURL)/lyrics/record-info?taskId=\(taskId)") else {
+            Logger.e("❌ [SunoAI] Invalid lyrics details URL")
+            throw SunoError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        Logger.d("🔍 [SunoAI] Request URL: \(url)")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            Logger.d("🔍 [SunoAI] Response received")
+            Logger.d("🔍 [SunoAI] Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert")")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                Logger.e("❌ [SunoAI] Invalid response type")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.d("🔍 [SunoAI] HTTP Status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                Logger.e("❌ [SunoAI] HTTP Error: \(httpResponse.statusCode)")
+                throw SunoError.httpError(httpResponse.statusCode)
+            }
+            
+            let detailsResponse = try JSONDecoder().decode(SunoLyricsDetailsResponse.self, from: data)
+            Logger.i("🔍 [SunoAI] Response code: \(detailsResponse.code)")
+            Logger.i("🔍 [SunoAI] Response msg: \(detailsResponse.msg)")
+            
+            guard detailsResponse.code == 200 else {
+                Logger.e("❌ [SunoAI] API Error: \(detailsResponse.msg)")
+                throw SunoError.apiError(detailsResponse.msg)
+            }
+            
+            guard let data = detailsResponse.data else {
+                Logger.e("❌ [SunoAI] No data in response")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.i("✅ [SunoAI] Lyrics details retrieved: \(data.status.rawValue)")
+            return data
+            
+        } catch {
+            Logger.e("❌ [SunoAI] Error getting lyrics details: \(error)")
+            throw error
+        }
+    }
+    
+    // MARK: - Complete Lyrics Generation Flow
+    func generateLyricsWithRetry(prompt: String) async throws -> [LyricsResult] {
+        Logger.i("🎵 [SunoAI] Starting complete lyrics generation flow")
+        
+        // Step 1: Generate lyrics
+        let taskId = try await generateLyrics(prompt: prompt)
+        Logger.i("✅ [SunoAI] Lyrics generation task created: \(taskId)")
+        
+        // Step 2: Poll for results
+        let maxRetries = 60 // 5 minutes max (60 * 5s)
+        let retryInterval: TimeInterval = 5.0
+        
+        for attempt in 1...maxRetries {
+            Logger.d("🔄 [SunoAI] Fetching lyrics attempt \(attempt)/\(maxRetries)")
+            
+            do {
+                let details = try await getLyricsGenerationDetails(taskId: taskId)
+                Logger.d("📊 [SunoAI] Status: \(details.status.rawValue)")
+                
+                switch details.status {
+                case .success:
+                    Logger.i("✅ [SunoAI] Lyrics generated successfully!")
+                    
+                    // Parse lyrics results from response
+                    guard let responseData = details.response else {
+                        Logger.e("❌ [SunoAI] No response data")
+                        throw SunoError.invalidResponse
+                    }
+                    
+                    Logger.d("📝 [SunoAI] Response data count: \(responseData.data.count)")
+                    
+                    let lyrics = responseData.data.compactMap { lyricsData -> LyricsResult? in
+                        Logger.d("📝 [SunoAI] Parsing lyrics - Title: \(lyricsData.title), Status: \(lyricsData.status)")
+                        
+                        // Only include completed lyrics
+                        guard lyricsData.status == "complete" else {
+                            Logger.w("⚠️ [SunoAI] Skipping lyrics with status: \(lyricsData.status)")
+                            return nil
+                        }
+                        
+                        return LyricsResult(
+                            text: lyricsData.text,
+                            title: lyricsData.title
+                        )
+                    }
+                    
+                    Logger.i("✅ [SunoAI] Got \(lyrics.count) completed lyrics variations")
+                    return lyrics
+                    
+                case .pending:
+                    Logger.d("⏳ [SunoAI] Still generating...")
+                    if attempt < maxRetries {
+                        try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
+                    } else {
+                        Logger.e("❌ [SunoAI] Max retries reached")
+                        throw SunoError.requestTimeout
+                    }
+                    
+                case .createTaskFailed, .generateLyricsFailed, .callbackException, .sensitiveWordError:
+                    Logger.e("❌ [SunoAI] Generation failed: \(details.status.rawValue)")
+                    throw SunoError.generationFailed(details.status.rawValue)
+                }
+                
+//            } catch let error as SunoError where error == .requestTimeout {
+//                Logger.e("❌ [SunoAI] Request timeout")
+//                throw error
+            } catch {
+                Logger.e("❌ [SunoAI] Error: \(error)")
+                if attempt < maxRetries {
+                    try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
+                } else {
+                    throw error
+                }
+            }
+        }
+        
+        Logger.e("❌ [SunoAI] Max retries exceeded")
+        throw SunoError.requestTimeout
+    }
 }

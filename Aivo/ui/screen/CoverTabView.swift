@@ -112,7 +112,13 @@ struct CoverTabView: View {
             onSelectSong: { selectedSong, audioFileURL in
                 selectedSongForCover = selectedSong
                 selectedAudioFileURL = audioFileURL
+                
+                // Auto-fill song name if empty
+                songName = selectedSong.title + " (cover)"
+                
+                
                 Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
+                Logger.i("🎵 [CoverTab] Auto-filled song name: \(songName)")
                 if let fileURL = audioFileURL {
                     Logger.d("📁 [CoverTab] Audio file URL: \(fileURL.path)")
                 }
@@ -241,22 +247,34 @@ struct CoverTabView: View {
     // MARK: - Song Name Section
     private var songNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Song Name (Optional)")
+            Text("New Song Name (Optional)")
                 .font(.headline)
                 .foregroundColor(.white)
             
-            TextField("", text: $songName)
-                .font(.system(size: 16))
-                .foregroundColor(.white)
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.black.opacity(0.3))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
-                        )
-                )
+            HStack(spacing: 8) {
+                TextField("", text: $songName)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                    .padding(16)
+                    
+                
+                if !songName.isEmpty {
+                    Button(action: {
+                        songName = ""
+                    }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 18))
+                            .foregroundColor(.red.opacity(0.8))
+                    }.padding(.trailing, 12)
+                }
+            }.background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                    )
+            )
         }
     }
 
@@ -309,7 +327,8 @@ struct CoverTabView: View {
                                         .frame(width: 70, height: 70)
                                 }
                                 .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 120, height: 120)))
-                                .cacheMemoryOnly()
+                                //.cacheMemoryOnly()
+                                .loadDiskFileSynchronously()         // đọc từ disk đồng bộ -> hiện ngay, ít flicker
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 70, height: 70)
@@ -349,11 +368,11 @@ struct CoverTabView: View {
                 Text("Generate")
                     .font(.headline)
                     .fontWeight(.bold)
-                    .foregroundColor(.black)
+                    .foregroundColor(isGenerateEnabled ? .black : Color.black.opacity(0.3))
 
                 Image(systemName: "mic.fill")
                     .font(.title3)
-                    .foregroundColor(.black)
+                    .foregroundColor(isGenerateEnabled ? .black : Color.black.opacity(0.3))
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
@@ -545,10 +564,10 @@ struct CoverTabView: View {
                         isVerifyingYouTube = false
                         
                         // Auto-fill song name if empty
-                        if songName.isEmpty {
-                            songName = finalSongName
-                            Logger.i("🎵 [CoverTab] Auto-filled song name: \(songName)")
-                        }
+                        
+                        songName = finalSongName + " (cover)"
+                        Logger.i("🎵 [CoverTab] Auto-filled song name: \(songName)")
+                        
                     }
                     
                 } catch {

@@ -20,6 +20,8 @@ struct GenerateSongTabView: View {
     @State private var selectedModel: SunoModel = .V5
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var showGenerateLyricsScreen = false
+    @State private var generatedLyrics: String = ""
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -91,6 +93,15 @@ struct GenerateSongTabView: View {
                 }
             )
         }
+        .fullScreenCover(isPresented: $showGenerateLyricsScreen) {
+            GenerateLyricsScreen(lyricsText: $generatedLyrics)
+        }
+        .onChange(of: generatedLyrics) { newValue in
+            if !newValue.isEmpty {
+                songLyrics = newValue
+                Logger.i("📝 [GenerateSong] Filled lyrics from generated result")
+            }
+        }
         .overlay(
             // Toast Message
             VStack {
@@ -155,13 +166,17 @@ struct GenerateSongTabView: View {
 
                     
                     Button(action: {
-                        getInspired()
+                        if selectedInputType == .lyrics {
+                            showGenerateLyricsScreen = true
+                        } else {
+                            getInspired()
+                        }
                     }) {
                         HStack(spacing: 6) {
                             Image(systemName: "lightbulb.fill")
                                 .font(.caption)
                                 .foregroundColor(.yellow)
-                            Text("Get Inspired")
+                            Text(selectedInputType == .lyrics ? "Generate Lyrics" : "Get Inspired")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
