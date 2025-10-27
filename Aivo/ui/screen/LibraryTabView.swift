@@ -364,7 +364,7 @@ struct DownloadedSongRowView: View {
                         
                         // Favorite indicator
                         if isFavorite {
-                            Label("Favorite", systemImage: "heart.fill")
+                            Label("", systemImage: "heart.fill")
                                 .labelStyle(.titleAndIcon)
                                 .font(.caption)
                                 .foregroundColor(.red)

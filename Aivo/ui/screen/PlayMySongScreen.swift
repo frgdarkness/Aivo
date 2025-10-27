@@ -545,16 +545,21 @@ struct PlayMySongScreen: View {
     private func parseLyric(from prompt: String?) -> String? {
         guard let prompt = prompt, !prompt.isEmpty else { return nil }
         
-        // Kiểm tra nếu prompt bắt đầu bằng [
-        if prompt.hasPrefix("[") {
-            // Giữ nguyên tất cả tags, chỉ normalize \n
-            let normalizedLyric = prompt
-                //.replacingOccurrences(of: "\n\n+", with: "\n", options: .regularExpression)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            
-            return normalizedLyric.isEmpty ? nil : normalizedLyric
+        let trimmedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Case 1: Nếu prompt bắt đầu bằng [ thì giữ nguyên
+        if trimmedPrompt.hasPrefix("[") {
+            return trimmedPrompt
         }
         
+        // Case 2: Kiểm tra trong prompt có ký tự [ không
+        if let firstBracketIndex = trimmedPrompt.firstIndex(of: "[") {
+            // Cắt chuỗi từ ký tự [ đầu tiên đến hết
+            let lyricFromBracket = String(trimmedPrompt[firstBracketIndex...])
+            return lyricFromBracket
+        }
+        
+        // Case 3: Không có [ trong prompt → return nil
         return nil
     }
     

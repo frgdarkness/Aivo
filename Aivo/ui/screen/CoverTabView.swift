@@ -314,12 +314,12 @@ struct CoverTabView: View {
                 .font(.headline)
                 .foregroundColor(.white)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 6) {
                 ForEach(availableModels) { model in
                     Button(action: { 
                         selectedModel = selectedModel?.id == model.id ? nil : model 
                     }) {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             // Use Kingfisher for optimized image loading with caching
                             KFImage(URL(string: model.thumbUrl))
                                 .placeholder {
@@ -331,7 +331,7 @@ struct CoverTabView: View {
                                 .loadDiskFileSynchronously()         // đọc từ disk đồng bộ -> hiện ngay, ít flicker
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 70, height: 70)
+                                .frame(width: 80, height: 80)
                                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
                             Text(model.displayName)
@@ -342,7 +342,7 @@ struct CoverTabView: View {
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                         }
-                        .frame(width: 80, height: 100)
+                        .frame(width: 90, height: 110)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.black.opacity(0.3))
@@ -368,16 +368,18 @@ struct CoverTabView: View {
                 Text("Generate")
                     .font(.headline)
                     .fontWeight(.bold)
-                    .foregroundColor(isGenerateEnabled ? .black : Color.black.opacity(0.3))
+                    .foregroundColor(.black)
 
                 Image(systemName: "mic.fill")
                     .font(.title3)
-                    .foregroundColor(isGenerateEnabled ? .black : Color.black.opacity(0.3))
+                    .foregroundColor(.black)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(isGenerateEnabled ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+            .background(AivoTheme.Primary.orange)
             .cornerRadius(12)
+            .disabled(!isGenerateEnabled)
+            .opacity(isGenerateEnabled ? 1.0 : 0.5)
             .shadow(color: isGenerateEnabled ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
         }
         .disabled(!isGenerateEnabled)

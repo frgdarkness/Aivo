@@ -708,53 +708,60 @@ struct GenerateSongTabView: View {
         // If lyrics tab is selected and has lyrics, use only lyrics
         if selectedInputType == .lyrics && !songLyrics.isEmpty {
             // Check if lyrics doesn't start with [
-            if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
-                prompt = "[Verse]\n" + songLyrics
-            } else {
-                prompt = songLyrics
-            }
-            
-            // Add moods
-            if !selectedMoods.isEmpty {
-                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(moodText) mood"
-            }
             
             // Add genres
             if !selectedGenres.isEmpty {
                 let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(genreText) style"
+                prompt += "Create a (\(genreText)) song"
             }
             
-            // Add song name if provided
-            if !songName.isEmpty {
-                prompt += ", titled \"\(songName)\""
+            // Add moods
+            if !selectedMoods.isEmpty {
+                if (selectedGenres.isEmpty) {
+                    prompt += "Create a song"
+                }
+                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+                prompt += " with (\(moodText)) mood"
+            }
+            
+            if !songDescription.isEmpty {
+                prompt += ". " + songDescription
+            }
+            
+            prompt += "\nLyric of song:\n"
+            
+            if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
+                prompt += "[Verse]\n" + songLyrics
+            } else {
+                prompt += songLyrics
             }
         } else {
-            // Description mode: Always use description as base
-            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
+    
+            // Add genres
+            if !selectedGenres.isEmpty {
+                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                prompt += "Create (\(genreText)) song"
+            }
             
-            // Add lyrics if provided
+            // Add moods
+            if !selectedMoods.isEmpty {
+                if (selectedGenres.isEmpty) {
+                    prompt += "Create a song"
+                }
+                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+                prompt += " with (\(moodText)) mood"
+            }
+            
+            prompt += ". " + (songDescription.isEmpty ? "The song about beautiful love" : songDescription)
+
 //            if !songLyrics.isEmpty {
 //                prompt += "\n\nLyric of song:\n\(songLyrics)"
 //            }
             
-            // Add moods
-            if !selectedMoods.isEmpty {
-                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(moodText) mood"
-            }
-            
-            // Add genres
-            if !selectedGenres.isEmpty {
-                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(genreText) style"
-            }
-            
             // Add song name if provided
-            if !songName.isEmpty {
-                prompt += ", titled \"\(songName)\""
-            }
+//            if !songName.isEmpty {
+//                prompt += ", titled \"\(songName)\""
+//            }
         }
         
         return prompt
