@@ -348,6 +348,112 @@ class ModelsLabService: ObservableObject {
         }
     }
     
+    // MARK: - File Upload to tmpfiles.org
+    func uploadFileToTmpFiles(fileData: Data, fileName: String) async throws -> String {
+        Logger.i("📤 Uploading file to tmpfiles.org")
+        Logger.d("📤 File name: \(fileName)")
+        Logger.d("📤 File size: \(fileData.count) bytes")
+        
+        guard let url = URL(string: "https://tmpfiles.org/api/v1/upload") else {
+            Logger.e("❌ Invalid tmpfiles URL")
+            throw ModelsLabError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        // Create multipart form data
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // Add file
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
+        body.append(fileData)
+        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw ModelsLabError.invalidResponse
+            }
+            
+            Logger.d("📈 Upload HTTP Status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                Logger.e("❌ Upload failed with status: \(httpResponse.statusCode)")
+                throw ModelsLabError.httpError(httpResponse.statusCode)
+            }
+            
+            // Parse response
+            if let responseString = String(data: data, encoding: .utf8) {
+                Logger.d("📄 Upload response: \(responseString)")
+                
+                // Extract URL from response
+                // Response format: {"status": "success", "data": {"url": "https://tmpfiles.org/..."}}
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let dataDict = json["data"] as? [String: Any],
+                   let urlString = dataDict["url"] as? String {
+                    
+                    // Normalize URL to direct download format
+                    // http://tmpfiles.org/5359783/file.mp3 -> http://tmpfiles.org/dl/5359783/file.mp3
+                    let normalizedURL = urlString.replacingOccurrences(of: "/tmpfiles.org/", with: "/tmpfiles.org/dl/")
+                    
+                    Logger.i("✅ File uploaded successfully!")
+                    Logger.d("🔗 Original URL: \(urlString)")
+                    Logger.d("🔗 Normalized URL: \(normalizedURL)")
+                    return normalizedURL
+                }
+            }
+            
+            Logger.e("❌ Failed to parse upload response")
+            throw ModelsLabError.invalidResponse
+            
+        } catch {
+            Logger.e("❌ Upload error: \(error)")
+            throw ModelsLabError.networkError(error)
+        }
+    }
+    
+    // MARK: - Convenience Method With File Upload
+    func processVoiceCoverWithFile(fileData: Data, fileName: String, modelID: String) async -> String? {
+        Logger.i("🎵 Starting voice cover process with file upload")
+        Logger.d("🎵 File name: \(fileName)")
+        Logger.d("🎵 File size: \(fileData.count) bytes")
+        Logger.d("🎵 Model ID: \(modelID)")
+        
+        do {
+            // Step 1: Upload file to tmpfiles.org
+            Logger.i("📤 Step 1: Uploading file to tmpfiles.org...")
+            let uploadedUrl = try await uploadFileToTmpFiles(fileData: fileData, fileName: fileName)
+            Logger.i("✅ Step 1 completed! Uploaded URL: \(uploadedUrl)")
+            
+            // Step 2: Process voice cover with uploaded URL
+            Logger.i("📤 Step 2: Processing voice cover with uploaded URL...")
+            let resultUrl = await processVoiceCover(audioUrl: uploadedUrl, modelID: modelID)
+            
+            if let url = resultUrl {
+                Logger.i("🎉 Complete voice cover process with file successful!")
+                Logger.i("🔗 Final result URL: \(url)")
+            } else {
+                Logger.e("❌ Complete voice cover process with file failed")
+            }
+            
+            return resultUrl
+            
+        } catch {
+            Logger.e("❌ Voice cover with file failed: \(error)")
+            Logger.e("🔍 Error details: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
     // MARK: - Convenience Method
     func processVoiceCover(audioUrl: String, modelID: String) async -> String? {
         Logger.i("🎵 Starting complete voice cover process")

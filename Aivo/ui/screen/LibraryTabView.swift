@@ -1,4 +1,5 @@
 import SwiftUI
+import Kingfisher
 
 // MARK: - Library Tab View
 struct LibraryTabView: View {
@@ -260,18 +261,19 @@ struct DownloadedSongRowView: View {
                 let coverSize: CGFloat = 60
 
                 ZStack {
-                    // Cover image - Check local first, then use source URL
-                    AsyncImage(url: getImageURL(for: song)) { image in
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } placeholder: {
-                        Image("demo_cover")
-                            .resizable()
-                            .scaledToFill()
-                    }
-                    .frame(width: coverSize, height: coverSize)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    // Cover image using Kingfisher for optimized loading
+                    KFImage(getImageURL(for: song))
+                        .placeholder {
+                            Image("demo_cover")
+                                .resizable()
+                                .scaledToFill()
+                        }
+                        .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
+                        .cacheMemoryOnly()
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: coverSize, height: coverSize)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
                 .frame(width: coverSize, height: coverSize)
                 .padding(.leading, 12)
@@ -284,18 +286,19 @@ struct DownloadedSongRowView: View {
                         .lineLimit(1).truncationMode(.tail)
 
                     HStack(spacing: 12) {
+                        // Duration
                         Label(formatDuration(song.duration), systemImage: "clock.fill")
                             .labelStyle(.titleAndIcon)
                             .font(.caption)
                             .foregroundColor(.gray)
                             .lineLimit(1)
-
-                        Label(song.modelName, systemImage: "music.note")
-                            .labelStyle(.titleAndIcon)
+                        
+                        // Voice model
+                        Text(song.modelName)
                             .font(.caption)
                             .foregroundColor(.gray)
                             .lineLimit(1)
-
+                        
                         Label("Saved", systemImage: "checkmark.circle.fill")
                             .labelStyle(.titleAndIcon)
                             .font(.caption)

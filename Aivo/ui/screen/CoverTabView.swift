@@ -1,7 +1,5 @@
 import SwiftUI
-
-// MARK: - Cover Tab View
-import SwiftUI
+import Kingfisher
 
 // MARK: - Cover Tab View
 struct CoverTabView: View {
@@ -10,7 +8,8 @@ struct CoverTabView: View {
     @State private var selectedVoiceType: VoiceType = .otherVoice
     @State private var youtubeUrl = ""
     @State private var selectedLanguage: CoverLanguage = .english
-    @State private var selectedArtist: Artist? = nil
+    @State private var selectedModel: CoverSongModel? = nil
+    @State private var availableModels: [CoverSongModel] = []
     @State private var showProcessingScreen = false
     @State private var showPlaySongScreen = false
     @State private var resultAudioUrl: String?
@@ -20,6 +19,10 @@ struct CoverTabView: View {
     @State private var verifiedYouTubeURL: String?
     @State private var isVerifyingYouTube = false
     @State private var youtubeVerificationStatus: VerificationStatus = .none
+    @State private var showSongSelectionDialog = false
+    @State private var selectedSongForCover: SelectedSong? = nil
+    @State private var selectedAudioFileURL: URL? = nil
+    
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
     
@@ -31,6 +34,13 @@ struct CoverTabView: View {
     }
     
     var body: some View {
+        let _ = onAppear {
+            if availableModels.isEmpty {
+                availableModels = CoverSongModel.loadModels()
+            }
+        }
+        
+        return Group {
         ScrollView {
             VStack(spacing: 24) {
                 // Song Selection (Card-Tab đơn giản)
@@ -42,8 +52,8 @@ struct CoverTabView: View {
                 // Language Selection
                 languageSelectionSection
 
-                // Artist Selection
-                artistSelectionSection
+                // Model Selection
+                modelSelectionSection
 
                 // Generate Button
                 generateButton
@@ -91,6 +101,24 @@ struct CoverTabView: View {
                 }
             }
         )
+        .onAppear {
+            if availableModels.isEmpty {
+                availableModels = CoverSongModel.loadModels()
+                Logger.i("📋 [CoverTab] Loaded \(availableModels.count) cover models")
+            }
+        }
+        .songSelectionDialog(
+            isPresented: $showSongSelectionDialog,
+            onSelectSong: { selectedSong, audioFileURL in
+                selectedSongForCover = selectedSong
+                selectedAudioFileURL = audioFileURL
+                Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
+                if let fileURL = audioFileURL {
+                    Logger.d("📁 [CoverTab] Audio file URL: \(fileURL.path)")
+                }
+            }
+        )
+        }
     }
 
     // MARK: - Song Selection Section
@@ -139,11 +167,15 @@ struct CoverTabView: View {
                     Group {
                         if selectedSource == .song {
                             // 📀 Trường hợp PICK A SONG
-                            Text("Click to select a song")
-                                .font(.headline.weight(.semibold))
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            Button(action: {
+                                showSongSelectionDialog = true
+                            }) {
+                                Text(selectedSongForCover?.title ?? "Click to select a song")
+                                    .font(.headline.weight(.semibold))
+                                    .foregroundColor(.white)
+                                    .multilineTextAlignment(.center)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            }
                         } else {
                             // 🎥 Trường hợp YOUTUBE
                             VStack(alignment: .leading, spacing: 12) {
@@ -257,35 +289,48 @@ struct CoverTabView: View {
         }
     }
 
-    // MARK: - Artist Selection Section
-    private var artistSelectionSection: some View {
+    // MARK: - Model Selection Section (Replaces Artist Selection)
+    private var modelSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Select Voice")
+            Text("Select Voice Model")
                 .font(.headline)
                 .foregroundColor(.white)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 16) {
-                ForEach(Artist.allCases, id: \.self) { artist in
-                    Button(action: { selectedArtist = selectedArtist == artist ? nil : artist }) {
+                ForEach(availableModels) { model in
+                    Button(action: { 
+                        selectedModel = selectedModel?.id == model.id ? nil : model 
+                    }) {
                         VStack(spacing: 8) {
-                            ZStack {
-                                Circle()
-                                    .fill(artist.backgroundColor)
-                                    .frame(width: 60, height: 60)
+                            // Use Kingfisher for optimized image loading with caching
+                            KFImage(URL(string: model.thumbUrl))
+                                .placeholder {
+                                    ProgressView()
+                                        .frame(width: 70, height: 70)
+                                }
+                                .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 120, height: 120)))
+                                .cacheMemoryOnly()
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 70, height: 70)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                                Text(artist.emoji)
-                                    .font(.title2)
-                            }
-
-                            Text(artist.name)
+                            Text(model.displayName)
                                 .font(.caption)
                                 .fontWeight(.medium)
                                 .foregroundColor(.white)
                                 .multilineTextAlignment(.center)
+                                .lineLimit(1)
+                                .truncationMode(.tail)
                         }
+                        .frame(width: 80, height: 100)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.black.opacity(0.3))
+                        )
                         .overlay(
-                            Circle()
-                                .stroke(selectedArtist == artist ? AivoTheme.Primary.orange : Color.clear, lineWidth: 3)
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(selectedModel?.id == model.id ? AivoTheme.Primary.orange : Color.clear, lineWidth: 3)
                         )
                     }
                 }
@@ -322,7 +367,7 @@ struct CoverTabView: View {
     // MARK: - Helper Properties
     private var isGenerateEnabled: Bool {
         if selectedSource == .song {
-            return false // Pick a Song chưa implement
+            return selectedSongForCover != nil && selectedModel != nil
         } else {
             // YouTube cần verify thành công
             return youtubeVerificationStatus == .success && verifiedYouTubeURL != nil
@@ -332,10 +377,10 @@ struct CoverTabView: View {
     // MARK: - Actions
     private func generateCoverSong() {
         Logger.i("🎤 [CoverTab] Starting cover song generation...")
-        Logger.d("🎤 [CoverTab] Verified YouTube URL: \(verifiedYouTubeURL ?? "none")")
+        Logger.d("🎤 [CoverTab] Source: \(selectedSource == .song ? "Song" : "YouTube")")
         Logger.d("🎤 [CoverTab] Song Name: \(songName)")
-        Logger.d("🎤 [CoverTab] Language: \(selectedLanguage.displayName)")
-        Logger.d("🎤 [CoverTab] Artist: \(selectedArtist?.name ?? "None")")
+        Logger.d("🎤 [CoverTab] Selected Model: \(selectedModel?.displayName ?? "None")")
+        Logger.d("🎤 [CoverTab] Model ID: \(selectedModel?.modelName ?? "default")")
         
         // Show processing screen
         showProcessingScreen = true
@@ -343,30 +388,91 @@ struct CoverTabView: View {
         // Start generation in background
         Task {
             do {
-                // Use verified URL instead of processing again
-                guard let normalizedURL = verifiedYouTubeURL else {
-                    Logger.e("❌ [CoverTab] No verified URL available")
-                    await MainActor.run {
-                        showProcessingScreen = false
-                        showToastMessage("Please verify YouTube URL first")
-                    }
-                    return
-                }
-                
-                Logger.i("🔗 [CoverTab] Using verified URL: \(normalizedURL)")
-                
-                // Step 2: Generate cover using ModelsLab
                 let modelsLabService = ModelsLabService.shared
-                let coverModelID = selectedArtist?.rawValue ?? "arianagrande"
+                let coverModelID = selectedModel?.modelName ?? "arianagrande"
+                let resultUrl: String?
                 
-                Logger.i("🎤 [CoverTab] Calling ModelsLabService.processVoiceCover...")
-                Logger.d("🎤 [CoverTab] Audio URL: \(normalizedURL)")
-                Logger.d("🎤 [CoverTab] Model ID: \(coverModelID)")
-                
-                let resultUrl = await modelsLabService.processVoiceCover(
-                    audioUrl: normalizedURL, 
-                    modelID: coverModelID
-                )
+                // Handle different sources
+                if selectedSource == .song {
+                    // Pick a Song flow - need to process selected song
+                    guard let selectedSong = selectedSongForCover else {
+                        Logger.e("❌ [CoverTab] No song selected")
+                        await MainActor.run {
+                            showProcessingScreen = false
+                            showToastMessage("Please select a song")
+                        }
+                        return
+                    }
+                    
+                    Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
+                    
+                    // Check if song has audio file from device picker
+                    if let deviceFileURL = selectedAudioFileURL {
+                        Logger.d("📁 [CoverTab] Using audio file from device picker")
+                        do {
+                            _ = deviceFileURL.startAccessingSecurityScopedResource()
+                            defer { deviceFileURL.stopAccessingSecurityScopedResource() }
+                            
+                            let fileData = try Data(contentsOf: deviceFileURL)
+                            let fileName = deviceFileURL.lastPathComponent
+                            
+                            resultUrl = await modelsLabService.processVoiceCoverWithFile(
+                                fileData: fileData,
+                                fileName: fileName,
+                                modelID: coverModelID
+                            )
+                        } catch {
+                            Logger.e("❌ [CoverTab] Error reading file from device: \(error)")
+                            await MainActor.run {
+                                showProcessingScreen = false
+                                showToastMessage("Error reading audio file")
+                            }
+                            return
+                        }
+                    // Check if song has local audio file
+                    } else if let localURL = getLocalAudioURL(for: selectedSong) {
+                        Logger.d("📁 [CoverTab] Using local audio file")
+                        let fileData = try Data(contentsOf: localURL)
+                        let fileName = "\(selectedSong.title).mp3"
+                        
+                        resultUrl = await modelsLabService.processVoiceCoverWithFile(
+                            fileData: fileData,
+                            fileName: fileName,
+                            modelID: coverModelID
+                        )
+                    } else if let audioUrl = selectedSong.audioUrl {
+                        Logger.d("🔗 [CoverTab] Using remote audio URL")
+                        resultUrl = await modelsLabService.processVoiceCover(
+                            audioUrl: audioUrl,
+                            modelID: coverModelID
+                        )
+                    } else {
+                        Logger.e("❌ [CoverTab] No audio URL or file available")
+                        await MainActor.run {
+                            showProcessingScreen = false
+                            showToastMessage("Song has no audio available")
+                        }
+                        return
+                    }
+                    
+                } else {
+                    // YouTube flow
+                    guard let normalizedURL = verifiedYouTubeURL else {
+                        Logger.e("❌ [CoverTab] No verified URL available")
+                        await MainActor.run {
+                            showProcessingScreen = false
+                            showToastMessage("Please verify YouTube URL first")
+                        }
+                        return
+                    }
+                    
+                    Logger.i("🔗 [CoverTab] Using verified URL: \(normalizedURL)")
+                    
+                    resultUrl = await modelsLabService.processVoiceCover(
+                        audioUrl: normalizedURL,
+                        modelID: coverModelID
+                    )
+                }
                 
                 Logger.i("🎤 [CoverTab] Cover song generated successfully!")
                 Logger.d("🎤 [CoverTab] Result URL: \(resultUrl ?? "nil")")
@@ -471,7 +577,7 @@ struct CoverTabView: View {
         
         selectedSong = ""
         songName = ""
-        selectedArtist = nil
+        selectedModel = nil
         resultAudioUrl = nil
         cachedSunoData = nil
         verifiedYouTubeURL = nil
@@ -481,11 +587,38 @@ struct CoverTabView: View {
         Logger.i("✅ [CoverTab] Form data cleared")
     }
     
+    private func getLocalAudioURL(for song: SelectedSong) -> URL? {
+        // Try to find local audio file in SunoData directory
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        
+        // Try different possible file names
+        let possibleFileNames = [
+            "\(song.id)_audio.mp3",
+            "\(song.id)_audio.wav",
+            "\(song.id)_audio.m4a",
+            "\(song.id).mp3",
+            "\(song.id).wav",
+            "\(song.id).m4a"
+        ]
+        
+        for fileName in possibleFileNames {
+            let filePath = sunoDataDirectory.appendingPathComponent(fileName)
+            if FileManager.default.fileExists(atPath: filePath.path) {
+                Logger.d("📁 [CoverTab] Found local audio file: \(filePath.path)")
+                return filePath
+            }
+        }
+        
+        Logger.w("⚠️ [CoverTab] No local audio file found for song: \(song.title)")
+        return nil
+    }
+    
     private func createSunoDataFromCoverResult(audioUrl: String) -> SunoData {
         Logger.i("🎵 [CoverTab] Creating SunoData from cover result")
         Logger.d("🎵 [CoverTab] Audio URL: \(audioUrl)")
         Logger.d("🎵 [CoverTab] Song Name: \(songName)")
-        Logger.d("🎵 [CoverTab] Selected Artist: \(selectedArtist?.name ?? "None")")
+        Logger.d("🎵 [CoverTab] Selected Model: \(selectedModel?.displayName ?? "None")")
         
         // Generate unique ID
         let uniqueId = "cover_\(UUID().uuidString.prefix(8))"
@@ -493,9 +626,9 @@ struct CoverTabView: View {
         // Create title: song title + " cover"
         let finalTitle = songName.isEmpty ? "Cover Song" : "\(songName) cover"
         
-        // Create model name: artist + " cover"
-        let artistName = selectedArtist?.name ?? "Unknown Artist"
-        let finalModelName = "\(artistName) cover"
+        // Create model name: model display name + " cover"
+        let modelName = selectedModel?.displayName ?? "Unknown Artist"
+        let finalModelName = "\(modelName) cover"
         
         Logger.d("🎵 [CoverTab] Generated ID: \(uniqueId)")
         Logger.d("🎵 [CoverTab] Generated Title: \(finalTitle)")
