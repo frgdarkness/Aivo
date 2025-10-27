@@ -98,7 +98,24 @@ struct GenerateSongTabView: View {
         }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
-                songLyrics = newValue
+                // Parse format: [Title]\n\nLyrics
+                if newValue.hasPrefix("[") && newValue.contains("]\n\n") {
+                    let components = newValue.components(separatedBy: "]\n\n")
+                    if components.count == 2 {
+                        let title = String(components[0].dropFirst()) // Remove "["
+                        let lyrics = components[1]
+                        
+                        songName = title
+                        songLyrics = lyrics
+                        
+                        Logger.i("📝 [GenerateSong] Parsed title: \(title)")
+                        Logger.i("📝 [GenerateSong] Parsed lyrics length: \(lyrics.count)")
+                    } else {
+                        songLyrics = newValue
+                    }
+                } else {
+                    songLyrics = newValue
+                }
                 Logger.i("📝 [GenerateSong] Filled lyrics from generated result")
             }
         }
@@ -245,6 +262,12 @@ struct GenerateSongTabView: View {
                         .frame(height: editorHeight)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .animation(expandAnim, value: selectedInputType)
+                        .onChange(of: songDescription) { newValue in
+                            // Limit to 500 characters
+                            if newValue.count > 500 {
+                                songDescription = String(newValue.prefix(500))
+                            }
+                        }
                     } else {
                         PaddedTextEditor(text: $songLyrics,
                                          font: .systemFont(ofSize: 14),
@@ -255,6 +278,12 @@ struct GenerateSongTabView: View {
                         .frame(height: editorHeight)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                         .animation(expandAnim, value: selectedInputType)
+                        .onChange(of: songLyrics) { newValue in
+                            // Limit to 3000 characters
+                            if newValue.count > 3000 {
+                                songLyrics = String(newValue.prefix(3000))
+                            }
+                        }
                     }
 
                     // Counter dưới-phải (nằm trong khung, không tràn)
@@ -262,7 +291,7 @@ struct GenerateSongTabView: View {
                         Spacer()
                         HStack {
                             Spacer()
-                            Text("\(selectedInputType == .description ? songDescription.count : songLyrics.count) / \(selectedInputType == .description ? 500 : 2000)")
+                            Text("\(selectedInputType == .description ? songDescription.count : songLyrics.count) / \(selectedInputType == .description ? 500 : 3000)")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.6))
                                 .padding(.trailing, 10)
@@ -430,9 +459,17 @@ struct GenerateSongTabView: View {
                             
                             // Song Name
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Song Name (Optional)")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
+                                HStack {
+                                    Text("Song Name (Optional)")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    Text("\(songName.count) / 80")
+                                        .font(.system(size: 11))
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
                                 
                                 TextField("Name", text: $songName)
                                     .font(.system(size: 14))
@@ -442,6 +479,12 @@ struct GenerateSongTabView: View {
                                         RoundedRectangle(cornerRadius: 8)
                                             .fill(Color.white.opacity(0.1))
                                     )
+                                    .onChange(of: songName) { newValue in
+                                        // Limit to 80 characters
+                                        if newValue.count > 80 {
+                                            songName = String(newValue.prefix(80))
+                                        }
+                                    }
                             }
                             
                             // Instrumental Toggle
@@ -561,6 +604,16 @@ struct GenerateSongTabView: View {
                     .fill(AivoTheme.Primary.orange)
             )
         }
+        .disabled(!isCreateButtonEnabled)
+        .opacity(isCreateButtonEnabled ? 1.0 : 0.5)
+    }
+    
+    private var isCreateButtonEnabled: Bool {
+        if selectedInputType == .description {
+            return !songDescription.isEmpty
+        } else {
+            return !songLyrics.isEmpty
+        }
     }
     
     // MARK: - Helper Methods
@@ -585,7 +638,17 @@ struct GenerateSongTabView: View {
                 
                 // Build prompt based on input type
                 let prompt = buildPrompt()
-                print("🎵 [GenerateSong] Generated prompt: \(prompt)")
+                let promptLength = prompt.count
+                print("🎵 [GenerateSong] Generated prompt (length: \(promptLength)): \(prompt)")
+                
+                // Check if we need custom mode (prompt > 500 characters)
+                let customMode = promptLength > 500
+                print("🎵 [GenerateSong] Custom mode: \(customMode)")
+                
+                // Build style from selected genres (join with comma)
+                let style = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                let finalStyle = style.isEmpty ? "Pop" : style
+                print("🎵 [GenerateSong] Style: \(finalStyle)")
                 
                 // Determine vocal gender for API
                 let vocalGender: VocalGender
@@ -597,14 +660,15 @@ struct GenerateSongTabView: View {
                     vocalGender = selectedVocalGender == .male ? .male : .female
                 }
                 
-                print("🎵 [GenerateSong] Calling SunoAiMusicService.generateCustomMusic...")
+                print("🎵 [GenerateSong] Calling SunoAiMusicService.generateMusicWithRetry...")
                 print("🎵 [GenerateSong] Vocal gender: \(vocalGender.rawValue)")
                 print("🎵 [GenerateSong] Instrumental: \(isInstrumental)")
                 
-                let generatedSongs = try await sunoService.generateCustomMusic(
+                let generatedSongs = try await sunoService.generateMusicWithRetry(
                     prompt: prompt,
-                    style: selectedGenres.first?.displayName ?? "Pop",
-                    title: songName.isEmpty ? "Untitled Song" : songName,
+                    style: finalStyle,
+                    title: songName.isEmpty ? "" : songName,
+                    customMode: customMode,
                     instrumental: isInstrumental,
                     model: selectedModel
                 )
@@ -623,7 +687,7 @@ struct GenerateSongTabView: View {
                     showToastMessage("Songs generated successfully!")
                     print("🎵 [GenerateSong] Showing result screen...")
                     
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         showSunoResultScreen = true
                     }
                 }
@@ -641,29 +705,56 @@ struct GenerateSongTabView: View {
     private func buildPrompt() -> String {
         var prompt = ""
         
-        // Always use description as base
-        prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
-        
-        // Add lyrics if provided
-        if !songLyrics.isEmpty {
-            prompt += "\n\nLyric of song:\n\(songLyrics)"
-        }
-        
-        // Add moods
-        if !selectedMoods.isEmpty {
-            let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-            prompt += ", \(moodText) mood"
-        }
-        
-        // Add genres
-        if !selectedGenres.isEmpty {
-            let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-            prompt += ", \(genreText) style"
-        }
-        
-        // Add song name if provided
-        if !songName.isEmpty {
-            prompt += ", titled \"\(songName)\""
+        // If lyrics tab is selected and has lyrics, use only lyrics
+        if selectedInputType == .lyrics && !songLyrics.isEmpty {
+            // Check if lyrics doesn't start with [
+            if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
+                prompt = "[Verse]\n" + songLyrics
+            } else {
+                prompt = songLyrics
+            }
+            
+            // Add moods
+            if !selectedMoods.isEmpty {
+                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(moodText) mood"
+            }
+            
+            // Add genres
+            if !selectedGenres.isEmpty {
+                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(genreText) style"
+            }
+            
+            // Add song name if provided
+            if !songName.isEmpty {
+                prompt += ", titled \"\(songName)\""
+            }
+        } else {
+            // Description mode: Always use description as base
+            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
+            
+            // Add lyrics if provided
+            if !songLyrics.isEmpty {
+                prompt += "\n\nLyric of song:\n\(songLyrics)"
+            }
+            
+            // Add moods
+            if !selectedMoods.isEmpty {
+                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(moodText) mood"
+            }
+            
+            // Add genres
+            if !selectedGenres.isEmpty {
+                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(genreText) style"
+            }
+            
+            // Add song name if provided
+            if !songName.isEmpty {
+                prompt += ", titled \"\(songName)\""
+            }
         }
         
         return prompt

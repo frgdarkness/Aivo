@@ -101,20 +101,36 @@ struct GenerateLyricsScreen: View {
                             .padding(.vertical, 14)
                     }
                     
-                    TextField("", text: $prompt, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .font(.system(size: 16))
-                        .foregroundColor(.white)
-                        .padding(12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.black.opacity(0.3))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
-                                )
-                        )
-                        .lineLimit(5...10)
+                    ZStack(alignment: .bottomTrailing) {
+                        TextField("", text: $prompt, axis: .vertical)
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .padding(.bottom, 28) // Space for counter
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black.opacity(0.3))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                                    )
+                            )
+                            .lineLimit(5...10)
+                            .onChange(of: prompt) { newValue in
+                                // Limit to 200 characters
+                                if newValue.count > 200 {
+                                    prompt = String(newValue.prefix(200))
+                                }
+                            }
+                        
+                        // Character counter
+                        Text("\(prompt.count) / 200")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.6))
+                            .padding(.trailing, 8)
+                            .padding(.bottom, 8)
+                    }
                 }
             }
             
@@ -244,7 +260,7 @@ struct GenerateLyricsScreen: View {
             
             // Copy Button
             Button(action: {
-                copyLyrics(result.text)
+                copyLyrics(result.text, title: result.title)
             }) {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.on.doc")
@@ -305,9 +321,9 @@ struct GenerateLyricsScreen: View {
         }
     }
     
-    private func copyLyrics(_ text: String) {
+    private func copyLyrics(_ text: String, title: String) {
         UIPasteboard.general.string = text
-        lyricsText = text
+        lyricsText = "[\(title)]\n\n\(text)"
         showToastMessage("Lyrics copied to clipboard!")
     }
     
