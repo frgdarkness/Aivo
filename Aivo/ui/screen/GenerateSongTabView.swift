@@ -735,9 +735,9 @@ struct GenerateSongTabView: View {
             prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
             
             // Add lyrics if provided
-            if !songLyrics.isEmpty {
-                prompt += "\n\nLyric of song:\n\(songLyrics)"
-            }
+//            if !songLyrics.isEmpty {
+//                prompt += "\n\nLyric of song:\n\(songLyrics)"
+//            }
             
             // Add moods
             if !selectedMoods.isEmpty {

@@ -58,6 +58,17 @@ struct GenerateSunoSongResultScreen: View {
         .onDisappear {
             downloadTask?.cancel()
         }
+        .onChange(of: musicPlayer.currentIndex) { newIndex in
+            // Sync selectedSongIndex with MusicPlayer's currentIndex
+            if selectedSongIndex != newIndex {
+                Logger.d("🎵 [SunoResult] Syncing selectedSongIndex: \(selectedSongIndex) -> \(newIndex)")
+                selectedSongIndex = newIndex
+                // Load the new song if it's downloaded
+                if newIndex < sunoDataList.count && downloadedFileURLs[sunoDataList[newIndex].id] != nil {
+                    loadSelectedSong()
+                }
+            }
+        }
         .sheet(isPresented: $showExportSheet) {
             if let url = currentFileURL {
                 DocumentExporter(fileURL: url)
