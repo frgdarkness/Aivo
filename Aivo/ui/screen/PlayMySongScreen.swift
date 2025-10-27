@@ -81,6 +81,10 @@ struct PlayMySongScreen: View {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
         .onAppear { onAppearTasks() }
+        .onDisappear {
+            // Reset animation state immediately when dismissing to prevent lag
+            rotationAngle = 0
+        }
         .onChange(of: musicPlayer.isPlaying) { isPlaying in
             if isPlaying {
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
@@ -273,8 +277,23 @@ struct PlayMySongScreen: View {
             Text(currentSong?.modelName ?? "Unknown Artist")
                 .font(.subheadline).foregroundColor(.white.opacity(0.8))
                 .multilineTextAlignment(.center)
+            
+            // Duration display
+            Text(formatDuration(currentSong?.duration ?? 0))
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 40)
+    }
+    
+    private func formatDuration(_ duration: Double) -> String {
+        if duration <= 0 {
+            return "Duration: N/A"
+        }
+        let minutes = Int(duration) / 60
+        let seconds = Int(duration) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
     
     // MARK: - Lyric Container
@@ -531,12 +550,14 @@ struct PlayMySongScreen: View {
                             .aspectRatio(contentMode: .fill)
                             .blur(radius: 20)
                             .scaleEffect(1.2)
+                            .clipped()  // Clip early to prevent overflow issues
                     } placeholder: {
                         Image("demo_cover")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .blur(radius: 20)
                             .scaleEffect(1.2)
+                            .clipped()
                     }
                     .frame(height: geometry.size.height * 0.55)
                     .clipped()
@@ -562,6 +583,7 @@ struct PlayMySongScreen: View {
                     endPoint: .bottom
                 )
             }
+            .drawingGroup()  // ✅ OPTIMIZATION: Render to single layer to reduce lag
         }
         .ignoresSafeArea()
     }

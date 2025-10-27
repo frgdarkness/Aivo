@@ -64,6 +64,37 @@ class SunoDataManager {
     }
     
     // MARK: - Load All Saved SunoData
+    // MARK: - Update Duration
+    func updateSunoDataDuration(_ songId: String, duration: Double) async throws {
+        Logger.d("💾 [SunoDataManager] Updating duration for song: \(songId)")
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        let metadataURL = sunoDataDirectory.appendingPathComponent("\(songId).json")
+        
+        guard FileManager.default.fileExists(atPath: metadataURL.path) else {
+            Logger.e("❌ [SunoDataManager] Metadata file not found for song: \(songId)")
+            throw SunoDataError.fileNotFound
+        }
+        
+        do {
+            let data = try Data(contentsOf: metadataURL)
+            var metadata = try JSONDecoder().decode(SunoDataMetadata.self, from: data)
+            
+            // Update duration
+            metadata.duration = duration
+            
+            // Save updated metadata
+            let updatedData = try JSONEncoder().encode(metadata)
+            try updatedData.write(to: metadataURL)
+            
+            Logger.d("✅ [SunoDataManager] Duration updated: \(duration) seconds")
+        } catch {
+            Logger.e("❌ [SunoDataManager] Error updating duration: \(error)")
+            throw error
+        }
+    }
+    
     func loadAllSavedSunoData() async throws -> [SunoData] {
         print("📚 [SunoDataManager] Loading all saved SunoData...")
         
@@ -256,7 +287,7 @@ struct SunoDataMetadata: Codable {
     let coverUrl: String // Local cover path
     let title: String
     let modelName: String
-    let duration: Double
+    var duration: Double
     let prompt: String
     let tags: String
     let createTime: Int64

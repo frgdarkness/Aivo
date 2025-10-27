@@ -234,6 +234,33 @@ class MusicPlayer: NSObject, ObservableObject {
             Logger.d("🎵 [MusicPlayer] Prepare to play result: \(prepareResult)")
             
             duration = audioPlayer?.duration ?? 0
+            
+            // Update duration in currentSong if exists
+            if var song = self.currentSong, duration > 0 {
+                // Update local copy
+                var updatedSong = song
+                updatedSong.duration = duration
+                
+                // Update in songs array
+                if let songIndex = self.songs.firstIndex(where: { $0.id == song.id }) {
+                    self.songs[songIndex] = updatedSong
+                }
+                
+                // Update current song
+                self.currentSong = updatedSong
+                
+                // Save to persistent storage
+                Logger.d("🎵 [MusicPlayer] Updating duration in storage: \(duration) seconds")
+                Task {
+                    do {
+                        try await SunoDataManager.shared.updateSunoDataDuration(song.id, duration: duration)
+                        Logger.d("✅ [MusicPlayer] Duration saved to storage")
+                    } catch {
+                        Logger.e("❌ [MusicPlayer] Error saving duration: \(error)")
+                    }
+                }
+            }
+            
             Logger.d("🎵 [MusicPlayer] Audio player prepared. Duration: \(duration) seconds")
             
             // Auto-play

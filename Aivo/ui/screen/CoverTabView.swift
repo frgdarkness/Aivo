@@ -17,8 +17,18 @@ struct CoverTabView: View {
     @State private var cachedSunoData: SunoData?
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var verifiedYouTubeURL: String?
+    @State private var isVerifyingYouTube = false
+    @State private var youtubeVerificationStatus: VerificationStatus = .none
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
+    
+    enum VerificationStatus {
+        case none
+        case verifying
+        case success
+        case failed
+    }
     
     var body: some View {
         ScrollView {
@@ -57,6 +67,8 @@ struct CoverTabView: View {
                     sunoDataList: [sunoData],
                     onClose: {
                         showPlaySongScreen = false
+                        // Clear form data after closing result screen
+                        clearFormData()
                     }
                 )
             }
@@ -135,21 +147,54 @@ struct CoverTabView: View {
                         } else {
                             // 🎥 Trường hợp YOUTUBE
                             VStack(alignment: .leading, spacing: 12) {
-                                Text("Copy youtube link to here:")
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundColor(.white)
+                                HStack {
+                                    Text("Copy youtube link to here:")
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundColor(.white)
+                                    
+                                    Spacer()
+                                    
+                                    // Verification icon
+                                    if youtubeVerificationStatus != .none {
+                                        Image(systemName: youtubeVerificationStatus == .success ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                            .font(.system(size: 18))
+                                            .foregroundColor(youtubeVerificationStatus == .success ? .green : .red)
+                                    }
+                                }
 
-                                TextField("https://www.youtube.com/watch?v=ixkoVwKQaJg", text: $selectedSong)
-                                    .foregroundColor(.white)
-                                    .padding(10)
+                                HStack(spacing: 8) {
+                                    TextField("https://www.youtube.com/watch?v=...", text: $selectedSong)
+                                        .foregroundColor(.white)
+                                        .padding(10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(Color.gray.opacity(0.25))
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(youtubeVerificationStatus == .success ? Color.green.opacity(0.3) : (youtubeVerificationStatus == .failed ? Color.red.opacity(0.3) : AivoTheme.Primary.orange.opacity(0.3)), lineWidth: 1)
+                                        )
+                                        .disabled(youtubeVerificationStatus == .verifying)
+                                    
+                                    Button(action: {
+                                        verifyYouTubeLink()
+                                    }) {
+                                        if isVerifyingYouTube {
+                                            ProgressView()
+                                                .tint(.white)
+                                        } else {
+                                            Text("Verify")
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(.black)
+                                        }
+                                    }
+                                    .frame(width: 60, height: 38)
                                     .background(
                                         RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.gray.opacity(0.25))
+                                            .fill(youtubeVerificationStatus == .success ? Color.green.opacity(0.8) : AivoTheme.Primary.orange)
                                     )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
-                                    )
+                                    .disabled(isVerifyingYouTube)
+                                }
                             }
                             .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -279,14 +324,15 @@ struct CoverTabView: View {
         if selectedSource == .song {
             return false // Pick a Song chưa implement
         } else {
-            return !selectedSong.isEmpty // YouTube cần có URL
+            // YouTube cần verify thành công
+            return youtubeVerificationStatus == .success && verifiedYouTubeURL != nil
         }
     }
 
     // MARK: - Actions
     private func generateCoverSong() {
         Logger.i("🎤 [CoverTab] Starting cover song generation...")
-        Logger.d("🎤 [CoverTab] YouTube URL: \(selectedSong)")
+        Logger.d("🎤 [CoverTab] Verified YouTube URL: \(verifiedYouTubeURL ?? "none")")
         Logger.d("🎤 [CoverTab] Song Name: \(songName)")
         Logger.d("🎤 [CoverTab] Language: \(selectedLanguage.displayName)")
         Logger.d("🎤 [CoverTab] Artist: \(selectedArtist?.name ?? "None")")
@@ -297,40 +343,28 @@ struct CoverTabView: View {
         // Start generation in background
         Task {
             do {
-                // Step 1: Process YouTube URL and extract metadata
-                Logger.i("🔗 [CoverTab] Processing YouTube URL...")
-                let (normalizedURL, extractedSongName, extractedArtist) = await YouTubeUtils.processYouTubeURL(selectedSong)
-                
-                // Use extracted song name if user didn't provide one
-                let finalSongName = songName.isEmpty ? (extractedSongName ?? "Cover Song") : songName
-                
-                await MainActor.run {
-                    // Update song name if extracted from YouTube
-                    if songName.isEmpty && extractedSongName != nil {
-                        songName = extractedSongName!
-                        Logger.i("🎵 [CoverTab] Updated song name from YouTube: \(songName)")
-                    }
-                }
-                
-                guard let audioUrl = normalizedURL else {
-                    Logger.e("❌ [CoverTab] Failed to normalize YouTube URL")
+                // Use verified URL instead of processing again
+                guard let normalizedURL = verifiedYouTubeURL else {
+                    Logger.e("❌ [CoverTab] No verified URL available")
                     await MainActor.run {
                         showProcessingScreen = false
-                        showToastMessage("Invalid YouTube URL")
+                        showToastMessage("Please verify YouTube URL first")
                     }
                     return
                 }
+                
+                Logger.i("🔗 [CoverTab] Using verified URL: \(normalizedURL)")
                 
                 // Step 2: Generate cover using ModelsLab
                 let modelsLabService = ModelsLabService.shared
                 let coverModelID = selectedArtist?.rawValue ?? "arianagrande"
                 
                 Logger.i("🎤 [CoverTab] Calling ModelsLabService.processVoiceCover...")
-                Logger.d("🎤 [CoverTab] Audio URL: \(audioUrl)")
+                Logger.d("🎤 [CoverTab] Audio URL: \(normalizedURL)")
                 Logger.d("🎤 [CoverTab] Model ID: \(coverModelID)")
                 
                 let resultUrl = await modelsLabService.processVoiceCover(
-                    audioUrl: audioUrl, 
+                    audioUrl: normalizedURL, 
                     modelID: coverModelID
                 )
                 
@@ -376,6 +410,77 @@ struct CoverTabView: View {
     }
     
     // MARK: - Helper Methods
+    private func verifyYouTubeLink() {
+        Logger.i("🔍 [CoverTab] Verifying YouTube link: \(selectedSong)")
+        
+        isVerifyingYouTube = true
+        youtubeVerificationStatus = .verifying
+        
+        Task {
+            // Step 1: Normalize URL
+            if let normalizedURL = YouTubeUtils.normalizeYouTubeURL(selectedSong) {
+                Logger.d("✅ [CoverTab] URL normalized successfully: \(normalizedURL)")
+                
+                // Step 2: Fetch metadata to verify link works
+                do {
+                    let (title, channel, _) = try await YouTubeUtils.fetchYouTubeBasicMeta(url: normalizedURL)
+                    
+                    // Step 3: Extract song info
+                    let (artist, song) = YouTubeUtils.splitArtistTitle(from: title)
+                    let finalSongName = song ?? title
+                    
+                    Logger.i("✅ [CoverTab] YouTube link verified successfully")
+                    Logger.d("🎵 [CoverTab] Title: \(title)")
+                    Logger.d("🎵 [CoverTab] Extracted song: \(finalSongName)")
+                    
+                    await MainActor.run {
+                        verifiedYouTubeURL = normalizedURL
+                        youtubeVerificationStatus = .success
+                        isVerifyingYouTube = false
+                        
+                        // Auto-fill song name if empty
+                        if songName.isEmpty {
+                            songName = finalSongName
+                            Logger.i("🎵 [CoverTab] Auto-filled song name: \(songName)")
+                        }
+                    }
+                    
+                } catch {
+                    Logger.e("❌ [CoverTab] Error fetching metadata: \(error)")
+                    await MainActor.run {
+                        youtubeVerificationStatus = .failed
+                        isVerifyingYouTube = false
+                        verifiedYouTubeURL = nil
+                        showToastMessage("Invalid YouTube URL")
+                    }
+                }
+            } else {
+                Logger.e("❌ [CoverTab] Failed to normalize YouTube URL")
+                await MainActor.run {
+                    youtubeVerificationStatus = .failed
+                    isVerifyingYouTube = false
+                    verifiedYouTubeURL = nil
+                    showToastMessage("Invalid YouTube URL")
+                }
+            }
+        }
+    }
+    
+    private func clearFormData() {
+        Logger.i("🧹 [CoverTab] Clearing form data")
+        
+        selectedSong = ""
+        songName = ""
+        selectedArtist = nil
+        resultAudioUrl = nil
+        cachedSunoData = nil
+        verifiedYouTubeURL = nil
+        youtubeVerificationStatus = .none
+        isVerifyingYouTube = false
+        
+        Logger.i("✅ [CoverTab] Form data cleared")
+    }
+    
     private func createSunoDataFromCoverResult(audioUrl: String) -> SunoData {
         Logger.i("🎵 [CoverTab] Creating SunoData from cover result")
         Logger.d("🎵 [CoverTab] Audio URL: \(audioUrl)")

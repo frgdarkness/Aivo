@@ -67,7 +67,7 @@ struct SunoData: Codable, Identifiable {
     let title: String
     let tags: String
     let createTime: Int64
-    let duration: Double
+    var duration: Double
 }
 
 // MARK: - Enums
