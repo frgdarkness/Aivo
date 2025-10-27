@@ -7,11 +7,24 @@ struct LibraryTabView: View {
     @State private var downloadedSongs: [SunoData] = []
     @State private var showPlayMySongScreen = false
     @State private var selectedSongIndex = 0
+    @State private var selectedTab: LibraryTabType = .mySong
+    
+    enum LibraryTabType: String, CaseIterable {
+        case mySong = "My Songs"
+        case favorites = "Favorites"
+    }
     
     var body: some View {
         VStack(spacing: 0) {
+            // Tab Selection
+            if !downloadedSongs.isEmpty {
+                tabSelectionView
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+            }
+            
             // Content
-            if downloadedSongs.isEmpty {
+            if displayedSongs.isEmpty {
                 emptyStateView
             } else {
                 downloadedSongsListView
@@ -22,9 +35,18 @@ struct LibraryTabView: View {
         }
         .fullScreenCover(isPresented: $showPlayMySongScreen) {
             PlayMySongScreen(
-                songs: downloadedSongs,
+                songs: displayedSongs,
                 initialIndex: selectedSongIndex
             )
+        }
+    }
+    
+    // MARK: - Computed Properties
+    private var displayedSongs: [SunoData] {
+        if selectedTab == .favorites {
+            return downloadedSongs.filter { FavoriteManager.shared.isFavorite(songId: $0.id) }
+        } else {
+            return downloadedSongs
         }
     }
     
@@ -81,40 +103,77 @@ struct LibraryTabView: View {
                 
                 // Empty State Text
                 VStack(spacing: 8) {
-                    Text("Library is empty")
+                    Text(selectedTab == .favorites ? "No favorites yet" : "Library is empty")
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                     
                     HStack(spacing: 4) {
-                        Text("Start using it now and discover")
+                        Text(selectedTab == .favorites 
+                             ? "Add songs to your favorites" 
+                             : "Start using it now and discover")
                             .font(.subheadline)
                             .foregroundColor(.white)
                         
-                        Text("AIVO AI")
-                            .font(.system(size: 16, weight: .black, design: .monospaced))
-                            .foregroundColor(AivoTheme.Primary.orange)
+                        if selectedTab == .mySong {
+                            Text("AIVO AI")
+                                .font(.system(size: 16, weight: .black, design: .monospaced))
+                                .foregroundColor(AivoTheme.Primary.orange)
+                        }
                     }
                 }
                 
-                // Start Creating Button
-                Button(action: startCreating) {
-                    Text("Start Creating")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(AivoTheme.Primary.orange)
-                        .cornerRadius(12)
-                        .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+                // Start Creating Button (only show for mySong tab)
+                if selectedTab == .mySong {
+                    Button(action: startCreating) {
+                        Text("Start Creating")
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(AivoTheme.Primary.orange)
+                            .cornerRadius(12)
+                            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+                    }
+                    .padding(.horizontal, 40)
                 }
-                .padding(.horizontal, 40)
             }
             
             Spacer()
         }
         .padding(.horizontal, 20)
+    }
+    
+    // MARK: - Tab Selection View
+    private var tabSelectionView: some View {
+        let expandAnim = Animation.spring(response: 0.35, dampingFraction: 0.9, blendDuration: 0.2)
+        
+        return HStack(spacing: 0) {
+            ForEach(LibraryTabType.allCases, id: \.self) { type in
+                Button {
+                    withAnimation(expandAnim) {
+                        selectedTab = type
+                    }
+                } label: {
+                    Text(type.rawValue)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(selectedTab == type ? .white : .white.opacity(0.7))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(selectedTab == type ? AivoTheme.Primary.orange : .clear)
+                        )
+                }
+            }
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.3))
+        )
     }
     
     // MARK: - Songs List View
@@ -134,15 +193,15 @@ struct LibraryTabView: View {
     private var downloadedSongsListView: some View {
         ScrollView {
             LazyVStack(spacing: 6) {
-                ForEach(Array(downloadedSongs.enumerated()), id: \.element.id) { index, song in
+                ForEach(Array(displayedSongs.enumerated()), id: \.element.id) { index, song in
                     DownloadedSongRowView(
                         song: song, 
                         index: index,
-                        downloadedSongs: downloadedSongs,
+                        downloadedSongs: displayedSongs,
                         onTap: {
                             selectedSongIndex = index
                             // Load song into MusicPlayer first
-                            MusicPlayer.shared.loadSong(song, at: index, in: downloadedSongs)
+                            MusicPlayer.shared.loadSong(song, at: index, in: displayedSongs)
                             showPlayMySongScreen = true
                         }
                     )
@@ -246,6 +305,10 @@ struct DownloadedSongRowView: View {
     let downloadedSongs: [SunoData]
     let onTap: () -> Void
     
+    private var isFavorite: Bool {
+        FavoriteManager.shared.isFavorite(songId: song.id)
+    }
+    
     var body: some View {
         // Card nền
         ZStack {
@@ -299,11 +362,14 @@ struct DownloadedSongRowView: View {
                             .foregroundColor(.gray)
                             .lineLimit(1)
                         
-                        Label("Saved", systemImage: "checkmark.circle.fill")
-                            .labelStyle(.titleAndIcon)
-                            .font(.caption)
-                            .foregroundColor(.green)
-                            .lineLimit(1)
+                        // Favorite indicator
+                        if isFavorite {
+                            Label("Favorite", systemImage: "heart.fill")
+                                .labelStyle(.titleAndIcon)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

@@ -184,6 +184,10 @@ enum SongMood: String, CaseIterable {
     static func getHottest() -> [SongMood] {
         return [.whimsical, .depressive, .confident, .happy, .chill, .motivational, .energetic, .romantic, .calm, .aggressive]
     }
+    
+    static func getIntroList() -> [SongMood] {
+        return [.happy, .chill, .sad, .romantic]
+    }
 }
 
 enum SongGenre: String, CaseIterable {
@@ -309,6 +313,10 @@ enum SongGenre: String, CaseIterable {
     }
     
     static func getHottest() -> [SongGenre] {
+        return [.rap, .pop_ballard, .rock, .edm, .hiphop, .electronic, .pop, .kpop, .jazz, .classical]
+    }
+    
+    static func getIntroList() -> [SongGenre] {
         return [.rap, .pop_ballard, .rock, .edm, .hiphop, .electronic, .pop, .kpop, .jazz, .classical]
     }
 }

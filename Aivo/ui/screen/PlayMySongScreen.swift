@@ -94,6 +94,12 @@ struct PlayMySongScreen: View {
                 withAnimation(.easeInOut(duration: 0.3)) { rotationAngle = 0 }
             }
         }
+        .onChange(of: currentSong?.id) { songId in
+            // Update favorite state when song changes
+            if let songId = songId {
+                isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
+            }
+        }
     }
 
     // MARK: - Các block view tách gọn
@@ -168,7 +174,7 @@ struct PlayMySongScreen: View {
             Spacer()
 
             HStack(spacing: 12) {
-                Button(action: { isFavorite.toggle() }) {
+                Button(action: { toggleFavorite() }) {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
                         .font(.title2)
                         .foregroundColor(isFavorite ? .red : .white)
@@ -446,6 +452,12 @@ struct PlayMySongScreen: View {
         isLoading = true
         localSongs = songs
         isLoading = false
+        
+        // Load favorite state when opening song
+        if let song = currentSong {
+            isFavorite = FavoriteManager.shared.isFavorite(songId: song.id)
+        }
+        
         if musicPlayer.isPlaying {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
@@ -453,6 +465,14 @@ struct PlayMySongScreen: View {
                 }
             }
         }
+    }
+    
+    private func toggleFavorite() {
+        guard let song = currentSong else { return }
+        
+        isFavorite = FavoriteManager.shared.toggleFavorite(songId: song.id)
+        
+        print("❤️ [Favorite] \(isFavorite ? "Added" : "Removed") favorite: \(song.title)")
     }
 
     private func exportCurrentSong() {

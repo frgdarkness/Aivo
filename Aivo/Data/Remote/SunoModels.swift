@@ -54,7 +54,7 @@ struct SunoTaskResponse: Codable {
     let sunoData: [SunoData]
 }
 
-struct SunoData: Codable, Identifiable {
+struct SunoData: Codable, Identifiable, Equatable {
     let id: String
     let audioUrl: String
     let sourceAudioUrl: String
@@ -68,6 +68,10 @@ struct SunoData: Codable, Identifiable {
     let tags: String
     let createTime: Int64
     var duration: Double
+    
+    static func == (lhs: SunoData, rhs: SunoData) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 // MARK: - Enums
