@@ -63,6 +63,100 @@ class SunoDataManager {
         return audioURL
     }
     
+    // MARK: - Update Song Data
+    func updateSunoData(_ songId: String, title: String, modelName: String) async throws {
+        Logger.d("💾 [SunoDataManager] Updating song data for: \(songId)")
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        let metadataURL = sunoDataDirectory.appendingPathComponent("\(songId).json")
+        
+        guard FileManager.default.fileExists(atPath: metadataURL.path) else {
+            Logger.e("❌ [SunoDataManager] Metadata file not found for song: \(songId)")
+            throw SunoDataError.fileNotFound
+        }
+        
+        do {
+            let data = try Data(contentsOf: metadataURL)
+            let metadata = try JSONDecoder().decode(SunoDataMetadata.self, from: data)
+            
+            // Update title and modelName
+            let updatedMetadata = SunoDataMetadata(
+                id: metadata.id,
+                audioUrl: metadata.audioUrl,
+                sourceAudioUrl: metadata.sourceAudioUrl,
+                streamAudioUrl: metadata.streamAudioUrl,
+                sourceStreamAudioUrl: metadata.sourceStreamAudioUrl,
+                imageUrl: metadata.imageUrl,
+                sourceImageUrl: metadata.sourceImageUrl,
+                coverUrl: metadata.coverUrl,
+                title: title,
+                modelName: modelName,
+                duration: metadata.duration,
+                prompt: metadata.prompt,
+                tags: metadata.tags,
+                createTime: metadata.createTime,
+                savedAt: metadata.savedAt
+            )
+            
+            // Save updated metadata
+            let updatedData = try JSONEncoder().encode(updatedMetadata)
+            try updatedData.write(to: metadataURL)
+            
+            Logger.d("✅ [SunoDataManager] Successfully updated song: \(title) by \(modelName)")
+        } catch {
+            Logger.e("❌ [SunoDataManager] Error updating song data: \(error)")
+            throw error
+        }
+    }
+    
+    // MARK: - Update Title (deprecated, use updateSunoData instead)
+    func updateSunoDataTitle(_ songId: String, title: String) async throws {
+        Logger.d("💾 [SunoDataManager] Updating title for song: \(songId)")
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        let metadataURL = sunoDataDirectory.appendingPathComponent("\(songId).json")
+        
+        guard FileManager.default.fileExists(atPath: metadataURL.path) else {
+            Logger.e("❌ [SunoDataManager] Metadata file not found for song: \(songId)")
+            throw SunoDataError.fileNotFound
+        }
+        
+        do {
+            let data = try Data(contentsOf: metadataURL)
+            var metadata = try JSONDecoder().decode(SunoDataMetadata.self, from: data)
+            
+            // Update title
+            let updatedMetadata = SunoDataMetadata(
+                id: metadata.id,
+                audioUrl: metadata.audioUrl,
+                sourceAudioUrl: metadata.sourceAudioUrl,
+                streamAudioUrl: metadata.streamAudioUrl,
+                sourceStreamAudioUrl: metadata.sourceStreamAudioUrl,
+                imageUrl: metadata.imageUrl,
+                sourceImageUrl: metadata.sourceImageUrl,
+                coverUrl: metadata.coverUrl,
+                title: title,
+                modelName: metadata.modelName,
+                duration: metadata.duration,
+                prompt: metadata.prompt,
+                tags: metadata.tags,
+                createTime: metadata.createTime,
+                savedAt: metadata.savedAt
+            )
+            
+            // Save updated metadata
+            let updatedData = try JSONEncoder().encode(updatedMetadata)
+            try updatedData.write(to: metadataURL)
+            
+            Logger.d("✅ [SunoDataManager] Successfully updated title for song: \(title)")
+        } catch {
+            Logger.e("❌ [SunoDataManager] Error updating title: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - Load All Saved SunoData
     // MARK: - Update Duration
     func updateSunoDataDuration(_ songId: String, duration: Double) async throws {

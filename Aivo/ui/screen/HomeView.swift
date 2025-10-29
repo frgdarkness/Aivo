@@ -128,7 +128,7 @@ struct HomeView: View {
             
             // Settings
             Button(action: {
-                showSunoSongResult = true
+                testSunoDataDecoding()
             }) {
                 Image(systemName: "gearshape.fill")
                     .font(.title2)
@@ -186,6 +186,80 @@ struct HomeView: View {
                     showSunoSongResult = false
                 }
             )
+        }
+    }
+    
+    // MARK: - Test Method
+    private func testSunoDataDecoding() {
+        let jsonString = """
+        [
+            {
+                "id": "a5272d42-505a-455f-ae08-d16a2dd2cc35",
+                "audioUrl": "https://cdn1.suno.ai/9e3074cf-3991-4a1a-a730-2336965ae9a4.mp3",
+                "sourceAudioUrl": "https://cdn1.suno.ai/9e3074cf-3991-4a1a-a730-2336965ae9a4.mp3",
+                "streamAudioUrl": "https://cdn1.suno.ai/9e3074cf-3991-4a1a-a730-2336965ae9a4.mp3",
+                "sourceStreamAudioUrl": "https://cdn1.suno.ai/9e3074cf-3991-4a1a-a730-2336965ae9a4.mp3",
+                "imageUrl": "https://musicfile.api.box/YTUyNzJkNDItNTA1YS00NTVmLWFlMDgtZDE2YTJkZDJjYzM1.jpeg",
+                "sourceImageUrl": "https://cdn2.suno.ai/image_a5272d42-505a-455f-ae08-d16a2dd2cc35.jpeg",
+                "prompt": "[Verse]\\nI caught the sunrise in your eyes\\nLike neon sparks across the skies\\nThe world is ours no need to hide",
+                "modelName": "chirp-v4",
+                "title": "Dancing in the glow",
+                "tags": "edm, sunset vibe, vocal, airy female vocals",
+                "createTime": 1761704068892,
+                "duration": 159
+            },
+            {
+                "id": "a5272d42-505a-455f-ae08-d16a2dd2cc35",
+                "audioUrl": "https://musicfile.api.box/MGI2NTE3OTItMTI4OC00MWJjLTg2ZjgtMTYwYThmOTExMGUy.mp3",
+                "sourceAudioUrl": "https://musicfile.api.box/MGI2NTE3OTItMTI4OC00MWJjLTg2ZjgtMTYwYThmOTExMGUy.mp3",
+                "streamAudioUrl": "https://musicfile.api.box/MGI2NTE3OTItMTI4OC00MWJjLTg2ZjgtMTYwYThmOTExMGUy.mp3",
+                "sourceStreamAudioUrl": "https://cdn1.suno.ai/9e3074cf-3991-4a1a-a730-2336965ae9a4.mp3",
+                "imageUrl": "https://musicfile.api.box/YTUyNzJkNDItNTA1YS00NTVmLWFlMDgtZDE2YTJkZDJjYzM1.jpeg",
+                "sourceImageUrl": "https://cdn2.suno.ai/image_a5272d42-505a-455f-ae08-d16a2dd2cc35.jpeg"
+            }
+        ]
+        """
+        
+        do {
+            guard let data = jsonString.data(using: .utf8) else {
+                print("❌ [Test] Failed to convert string to data")
+                return
+            }
+            
+            let songs = try JSONDecoder().decode([SunoData].self, from: data)
+            
+            print("✅ [Test] Successfully decoded \(songs.count) songs")
+            for (index, song) in songs.enumerated() {
+                print("\n[Song \(index + 1)]")
+                print("ID: \(song.id)")
+                print("Title: \(song.title)")
+                print("Model: \(song.modelName)")
+                print("Duration: \(song.duration)")
+                print("Prompt: \(song.prompt.isEmpty ? "(empty - using default)" : "\(song.prompt.prefix(50))...")")
+                print("Tags: \(song.tags.isEmpty ? "(empty - using default)" : song.tags)")
+            }
+            
+            // Show the result
+            Task { @MainActor in
+                showSunoSongResult = true
+            }
+            
+        } catch {
+            print("❌ [Test] Decoding error: \(error)")
+            if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    print("❌ [Test] Missing key: \(key.stringValue), context: \(context)")
+                case .valueNotFound(let type, let context):
+                    print("❌ [Test] Missing value: \(type), context: \(context)")
+                case .typeMismatch(let type, let context):
+                    print("❌ [Test] Type mismatch: \(type), context: \(context)")
+                case .dataCorrupted(let context):
+                    print("❌ [Test] Data corrupted: \(context)")
+                @unknown default:
+                    print("❌ [Test] Unknown error")
+                }
+            }
         }
     }
 }

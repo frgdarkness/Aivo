@@ -125,12 +125,16 @@ struct GenerateSongTabView: View {
                 Spacer()
                 if showToast {
                     Text(toastMessage)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: 15, weight: .medium))
                         .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(nil)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                        .background(Color.black.opacity(0.8))
-                        .cornerRadius(8)
+                        .padding(.vertical, 16)
+                        .background(Color.black.opacity(0.9))
+                        .cornerRadius(12)
+                        .padding(.horizontal, 20)
                         .padding(.bottom, 50)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                         .animation(.easeInOut(duration: 0.3), value: showToast)
@@ -692,6 +696,22 @@ struct GenerateSongTabView: View {
                     }
                 }
                 
+            } catch let error as SunoError {
+                print("❌ [GenerateSong] Error generating songs: \(error)")
+                await MainActor.run {
+                    showGenerateSongScreen = false
+                    
+                    // Show specific error message based on error type
+                    let errorMessage: String
+                    switch error {
+                    case .artistNameNotAllowed:
+                        errorMessage = "⚠️ Artist names are not allowed!\n\nPlease remove artist names from your song description and try again.\n\nExample:\n❌ \"Create a song like Ed Sheeran\"\n✅ \"Create a romantic acoustic ballad\""
+                    default:
+                        errorMessage = "Failed to generate songs: \(error.localizedDescription)"
+                    }
+                    
+                    showToastMessage(errorMessage)
+                }
             } catch {
                 print("❌ [GenerateSong] Error generating songs: \(error)")
                 await MainActor.run {
@@ -708,60 +728,53 @@ struct GenerateSongTabView: View {
         // If lyrics tab is selected and has lyrics, use only lyrics
         if selectedInputType == .lyrics && !songLyrics.isEmpty {
             // Check if lyrics doesn't start with [
-            
-            // Add genres
-            if !selectedGenres.isEmpty {
-                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += "Create a (\(genreText)) song"
-            }
-            
-            // Add moods
-            if !selectedMoods.isEmpty {
-                if (selectedGenres.isEmpty) {
-                    prompt += "Create a song"
-                }
-                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += " with (\(moodText)) mood"
-            }
-            
-            if !songDescription.isEmpty {
-                prompt += ". " + songDescription
-            }
-            
-            prompt += "\nLyric of song:\n"
-            
             if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
-                prompt += "[Verse]\n" + songLyrics
+                prompt = "[Verse]\n" + songLyrics
             } else {
-                prompt += songLyrics
-            }
-        } else {
-    
-            // Add genres
-            if !selectedGenres.isEmpty {
-                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += "Create (\(genreText)) song"
+                prompt = songLyrics
             }
             
             // Add moods
             if !selectedMoods.isEmpty {
-                if (selectedGenres.isEmpty) {
-                    prompt += "Create a song"
-                }
                 let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += " with (\(moodText)) mood"
+                prompt += ", \(moodText) mood"
             }
             
-            prompt += ". " + (songDescription.isEmpty ? "The song about beautiful love" : songDescription)
-
-//            if !songLyrics.isEmpty {
-//                prompt += "\n\nLyric of song:\n\(songLyrics)"
-//            }
+            // Add genres
+            if !selectedGenres.isEmpty {
+                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(genreText) style"
+            }
             
             // Add song name if provided
-//            if !songName.isEmpty {
-//                prompt += ", titled \"\(songName)\""
-//            }
+            if !songName.isEmpty {
+                prompt += ", titled \"\(songName)\""
+            }
+        } else {
+            // Description mode: Always use description as base
+            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
+            
+            // Add lyrics if provided
+            if !songLyrics.isEmpty {
+                prompt += "\n\nLyric of song:\n\(songLyrics)"
+            }
+            
+            // Add moods
+            if !selectedMoods.isEmpty {
+                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(moodText) mood"
+            }
+            
+            // Add genres
+            if !selectedGenres.isEmpty {
+                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+                prompt += ", \(genreText) style"
+            }
+            
+            // Add song name if provided
+            if !songName.isEmpty {
+                prompt += ", titled \"\(songName)\""
+            }
         }
         
         return prompt
@@ -820,7 +833,10 @@ struct GenerateSongTabView: View {
         toastMessage = message
         showToast = true
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        // Longer timeout for detailed error messages
+        let timeout = message.contains("⚠️") ? 8.0 : 3.0
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
             showToast = false
         }
     }

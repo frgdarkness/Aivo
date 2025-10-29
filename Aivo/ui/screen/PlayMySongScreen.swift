@@ -28,6 +28,7 @@ struct PlayMySongScreen: View {
     @State private var showDeleteAlert = false
     @State private var rotationAngle: Double = 0
     @State private var headerHeight: CGFloat = 0   // <- chiều cao header
+    @State private var showEditSheet = false
 
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
@@ -80,6 +81,13 @@ struct PlayMySongScreen: View {
         } message: {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
+        .overlay {
+            if showEditSheet, let song = currentSong {
+                EditSongInfoDialog(song: song) {
+                    showEditSheet = false
+                }
+            }
+        }
         .onAppear { onAppearTasks() }
         .onDisappear {
             // Reset animation state immediately when dismissing to prevent lag
@@ -99,6 +107,10 @@ struct PlayMySongScreen: View {
             if let songId = songId {
                 isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
             }
+        }
+        .onChange(of: musicPlayer.currentSong) { _ in
+            // Force refresh UI when MusicPlayer changes song
+            // This helps update cover image when playing next song
         }
     }
 
@@ -208,6 +220,23 @@ struct PlayMySongScreen: View {
     private var menuView: some View {
         VStack(alignment: .leading, spacing: 0) {         // <- căn trái toàn bộ
             Button {
+                showEditSheet = true
+                showMenu = false
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "pencil").font(.system(size: 16))
+                    Text("Edit Song Info")
+                        .font(.system(size: 16, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+
+            Divider().background(Color.white.opacity(0.2))
+
+            Button {
                 exportCurrentSong()
                 showMenu = false
             } label: {
@@ -220,8 +249,6 @@ struct PlayMySongScreen: View {
                 .foregroundColor(.white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
-                // KHÔNG đặt maxWidth: .infinity để menu không giãn,
-                // giữ “intrinsic width” theo item dài nhất
             }
 
             Divider().background(Color.white.opacity(0.2))
@@ -654,6 +681,221 @@ struct PlaylistSongRowView: View {
                 )
         )
         .onTapGesture { onTap() }
+    }
+}
+
+// MARK: - Edit Song Info Dialog
+struct EditSongInfoDialog: View {
+    let song: SunoData
+    let onDismiss: () -> Void
+    
+    @State private var editedTitle: String
+    @State private var editedModelName: String
+    @State private var isSaving = false
+    
+    init(song: SunoData, onDismiss: @escaping () -> Void) {
+        self.song = song
+        self.onDismiss = onDismiss
+        self._editedTitle = State(initialValue: song.title)
+        self._editedModelName = State(initialValue: song.modelName)
+    }
+    
+    var body: some View {
+        ZStack {
+            // Background overlay
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+            
+            // Dialog Content
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    Text("Edit Song Info")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 28, height: 28)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.white.opacity(0.1))
+                )
+                
+                VStack(spacing: 20) {
+                    // Song Title Field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Song Title")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        TextField("Enter title", text: $editedTitle)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.15))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Artist Name Field
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Artist")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        TextField("Enter artist", text: $editedModelName)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white)
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.15))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    }
+                    
+                    // Action Buttons
+                    HStack(spacing: 12) {
+                        Button(action: onDismiss) {
+                            Text("Cancel")
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white.opacity(0.9))
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(10)
+                        }
+                        
+                        Button(action: saveChanges) {
+                            if isSaving {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text("Save")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(AivoTheme.Primary.orange)
+                        .cornerRadius(10)
+                        .disabled(isSaving || editedTitle.isEmpty || editedModelName.isEmpty)
+                        .opacity(isSaving || editedTitle.isEmpty || editedModelName.isEmpty ? 0.5 : 1.0)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
+                .padding(.bottom, 24)
+            }
+            .background(
+                ZStack {
+                    // Base: Đen với gradient nhẹ
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 0.15, green: 0.12, blue: 0.16), // Dark purple-black
+                                    Color(red: 0.08, green: 0.06, blue: 0.1)  // Darker black
+                                ]),
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                    
+                    // Border accent cam vàng
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    AivoTheme.Primary.orange,
+                                    AivoTheme.Primary.orange.opacity(0.6)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2
+                        )
+                }
+                .shadow(color: AivoTheme.Shadow.orange.opacity(0.5), radius: 30, x: 0, y: 15)
+            )
+            .padding(.horizontal, 40)
+            .frame(maxWidth: 400)
+        }
+    }
+    
+    private func saveChanges() {
+        isSaving = true
+        
+        Task {
+            do {
+                // Update metadata file
+                try await SunoDataManager.shared.updateSunoData(song.id, title: editedTitle, modelName: editedModelName)
+                
+                await MainActor.run {
+                    // Update MusicPlayer's current song if it's the edited one
+                    if let currentSong = MusicPlayer.shared.currentSong, currentSong.id == song.id {
+                        // Create updated song data
+                        let updatedSong = SunoData(
+                            id: currentSong.id,
+                            audioUrl: currentSong.audioUrl,
+                            sourceAudioUrl: currentSong.sourceAudioUrl,
+                            streamAudioUrl: currentSong.streamAudioUrl,
+                            sourceStreamAudioUrl: currentSong.sourceStreamAudioUrl,
+                            imageUrl: currentSong.imageUrl,
+                            sourceImageUrl: currentSong.sourceImageUrl,
+                            prompt: currentSong.prompt,
+                            modelName: editedModelName,
+                            title: editedTitle,
+                            tags: currentSong.tags,
+                            createTime: currentSong.createTime,
+                            duration: currentSong.duration
+                        )
+                        
+                        // Update in MusicPlayer
+                        if let index = MusicPlayer.shared.songs.firstIndex(where: { $0.id == song.id }) {
+                            var songs = MusicPlayer.shared.songs
+                            songs[index] = updatedSong
+                            MusicPlayer.shared.songs = songs
+                        }
+                        
+                        MusicPlayer.shared.currentSong = updatedSong
+                    }
+                    
+                    isSaving = false
+                    onDismiss()
+                    
+                    Logger.d("✅ [EditSong] Successfully updated: \(editedTitle) by \(editedModelName)")
+                }
+            } catch {
+                await MainActor.run {
+                    isSaving = false
+                    Logger.e("❌ [EditSong] Error updating song info: \(error)")
+                }
+            }
+        }
     }
 }
 

@@ -191,112 +191,128 @@ enum SongMood: String, CaseIterable {
 }
 
 enum SongGenre: String, CaseIterable {
-    case rap = "Rap"
     case pop = "Pop"
-    case pop_ballard = "Pop/Ballad"
-    case rock = "Rock"
+    case pop_ballad = "Pop Ballad"
+    case pop_rock = "Pop Rock"
+    case synthpop = "Synthpop"
+    case electropop = "Electropop"
+    case indie_pop = "Indie Pop"
     case kpop = "K-Pop"
-    case electronic = "Electronic"
-    case country = "Country"
-    case rnb = "R&B"
-    case jazz = "Jazz"
-    case classical = "Classical"
-    case hiphop = "Hip-Hop"
+    case jpop = "J-Pop"
+    case vpop = "V-Pop"
+    case dance_pop = "Dance Pop"
+    case dream_pop = "Dream Pop"
+    case city_pop = "City Pop"
+
+    // MARK: - ROCK
+    case rock = "Rock"
+    case soft_rock = "Soft Rock"
+    case hard_rock = "Hard Rock"
+    case alternative_rock = "Alternative Rock"
+    case indie_rock = "Indie Rock"
+    case punk_rock = "Punk Rock"
+    case pop_punk = "Pop Punk"
+    case classic_rock = "Classic Rock"
+    case folk_rock = "Folk Rock"
+    case country_rock = "Country Rock"
+    case emo_rock = "Emo Rock"
+    case grunge = "Grunge"
+
+    // MARK: - EDM / ELECTRONIC
     case edm = "EDM"
-    
-    // New genres from the image
-    case arabicMariachi = "arabic mariachi"
-    case arabicPop = "arabic pop"
-    case arabicReggae = "arabic reggae"
-    case bachata = "bachata"
-    case bedroomPop = "bedroom pop"
-    case bedroomPopSka = "bedroom pop ska"
-    case bengaliDrill = "bengali drill"
-    case bengaliGrunge = "bengali grunge"
-    case bengaliSurf = "bengali surf"
-    case bigBandBoogie = "big band boogie"
-    case bigBandCumbia = "big band cumbia"
-    case bigBandGrunge = "big band grunge"
-    case bluegrass = "bluegrass"
-    case bluegrassKPop = "bluegrass k-pop"
-    case bluegrassPunk = "bluegrass punk"
-    case bluegrassRock = "bluegrass rock"
-    case bluesCumbia = "blues cumbia"
-    case bluesFolk = "blues folk"
-    case bluesRock = "blues rock"
-    case boogieCeltic = "boogie celtic"
+    case electronic = "Electronic"
+    case house = "House"
+    case deep_house = "Deep House"
+    case tropical_house = "Tropical House"
+    case progressive_house = "Progressive House"
+    case future_house = "Future House"
+    case trance = "Trance"
+    case techno = "Techno"
+    case dubstep = "Dubstep"
+    case melodic_dubstep = "Melodic Dubstep"
+    case drum_and_bass = "Drum & Bass"
+    case future_bass = "Future Bass"
+    case chill_edm = "Chill EDM"
+    case chillstep = "Chillstep"
+    case synthwave = "Synthwave"
+    case retrowave = "Retrowave"
+    case lo_fi_edm = "Lo-Fi EDM"
+
+    // MARK: - HIP-HOP / RAP
+    case hiphop = "Hip-Hop"
+    case rap = "Rap"
+    case trap = "Trap"
+    case boom_bap = "Boom Bap"
+    case drill = "Drill"
+    case melodic_rap = "Melodic Rap"
+    case old_school_rap = "Old School Rap"
+    case alternative_hiphop = "Alternative Hip-Hop"
+    case lo_fi_hiphop = "Lo-Fi Hip-Hop"
+
+    // MARK: - R&B / SOUL / FUNK
+    case rnb = "R&B"
+    case soul = "Soul"
+    case neo_soul = "Neo-Soul"
+    case funk = "Funk"
+    case motown = "Motown"
+    case gospel = "Gospel"
+
+    // MARK: - BALLAD / ACOUSTIC / FOLK
+    case ballad = "Ballad"
+    case acoustic = "Acoustic"
+    case acoustic_pop = "Acoustic Pop"
+    case acoustic_folk = "Acoustic Folk"
+    case indie_folk = "Indie Folk"
+    case singer_songwriter = "Singer-Songwriter"
+    case country = "Country"
+    case country_pop = "Country Pop"
+    case country_ballad = "Country Ballad"
+
+    // MARK: - JAZZ / BLUES
+    case jazz = "Jazz"
+    case smooth_jazz = "Smooth Jazz"
+    case blues = "Blues"
+    case blues_rock = "Blues Rock"
+    case soul_blues = "Soul Blues"
+
+    // MARK: - CLASSICAL / CINEMATIC
+    case classical = "Classical"
+    case orchestral = "Orchestral"
+    case cinematic = "Cinematic"
+    case piano = "Piano"
+    case modern_classical = "Modern Classical"
+    case epic_trailer = "Epic Trailer"
+    case ambient_soundtrack = "Ambient Soundtrack"
+
+    // MARK: - LO-FI / CHILL / AMBIENT
+    case lo_fi = "Lo-Fi"
+    case chillhop = "Chillhop"
+    case vaporwave = "Vaporwave"
+    case ambient = "Ambient"
+    case chillout = "Chillout"
+    case lounge = "Lounge"
+    case chill_vibes = "Chill Vibes"
+
+    // MARK: - WORLD / LATIN / AFRO
+    case latin_pop = "Latin Pop"
+    case reggaeton = "Reggaeton"
+    case afrobeat = "Afrobeat"
+    case afrobeats = "Afrobeats"
+    case amapiano = "Amapiano"
+    case dancehall = "Dancehall"
+    case bollywood_pop = "Bollywood Pop"
+    case arabic_pop = "Arabic Pop"
+    case chinese_pop = "Chinese Pop"
+
+    // MARK: - EXPERIMENTAL / OTHER
+    case hyperpop = "Hyperpop"
+    case electro_swing = "Electro Swing"
+    case industrial = "Industrial"
+    case world_music = "World Music"
+    case new_age = "New Age"
     
     var displayName: String {
         return self.rawValue
-    }
-    
-    var description: String {
-        switch self {
-        case .rap:
-            return "Rhythmic spoken lyrics"
-        case .pop:
-            return "Popular mainstream music"
-        case .rock:
-            return "Guitar-driven rock music"
-        case .kpop:
-            return "Korean pop music"
-        case .electronic:
-            return "Electronic and synthesized sounds"
-        case .country:
-            return "American country music"
-        case .rnb:
-            return "Rhythm and blues"
-        case .jazz:
-            return "Improvisational jazz"
-        case .classical:
-            return "Classical orchestral music"
-        case .hiphop:
-            return "Hip-hop beats and culture"
-        case .pop_ballard:
-            return "Ballad-style pop music"
-        case .edm:
-            return "Electronic dance music"
-        case .arabicMariachi:
-            return "Arabic mariachi fusion"
-        case .arabicPop:
-            return "Arabic pop music"
-        case .arabicReggae:
-            return "Arabic reggae fusion"
-        case .bachata:
-            return "Latin bachata music"
-        case .bedroomPop:
-            return "Indie bedroom pop"
-        case .bedroomPopSka:
-            return "Bedroom pop ska fusion"
-        case .bengaliDrill:
-            return "Bengali drill music"
-        case .bengaliGrunge:
-            return "Bengali grunge rock"
-        case .bengaliSurf:
-            return "Bengali surf music"
-        case .bigBandBoogie:
-            return "Big band boogie"
-        case .bigBandCumbia:
-            return "Big band cumbia"
-        case .bigBandGrunge:
-            return "Big band grunge"
-        case .bluegrass:
-            return "American bluegrass"
-        case .bluegrassKPop:
-            return "Bluegrass K-pop fusion"
-        case .bluegrassPunk:
-            return "Bluegrass punk fusion"
-        case .bluegrassRock:
-            return "Bluegrass rock fusion"
-        case .bluesCumbia:
-            return "Blues cumbia fusion"
-        case .bluesFolk:
-            return "Blues folk music"
-        case .bluesRock:
-            return "Blues rock fusion"
-        case .boogieCeltic:
-            return "Boogie celtic fusion"
-        }
     }
     
     var icon: String {
@@ -313,15 +329,38 @@ enum SongGenre: String, CaseIterable {
     }
     
     static func getHottest() -> [SongGenre] {
-        return [.rap, .pop_ballard, .rock, .edm, .hiphop, .electronic, .pop, .kpop, .jazz, .classical]
+        return [
+            .pop,              // nhạc đại chúng, dễ nghe nhất
+            .pop_ballad,       // tình cảm, phổ biến toàn cầu
+            .edm,              // nhạc điện tử sôi động
+            .future_bass,      // EDM hiện đại, hợp AI gen nhạc
+            .pop_rock,         // pha giữa pop và rock, trẻ trung
+            .rnb,              // R&B tình cảm, hợp vocal nữ
+            .hiphop,           // hip-hop đại chúng
+            .kpop,             // K-Pop thịnh hành ở châu Á
+            .acoustic_pop,     // pop mộc, kiểu Ed Sheeran
+            .latin_pop         // Latin Pop, xu hướng dance global
+        ]
     }
     
     static func getIntroList() -> [SongGenre] {
-        return [.rap, .pop_ballard, .rock, .edm, .hiphop, .electronic, .pop, .kpop, .jazz, .classical]
+        return [.edm, .pop, .rap, .rock]
     }
 }
 
 enum SongTheme: String, CaseIterable {
+    
+    case love = "Love"
+    case party = "Party"
+    case feelTheEnergy = "Feel the Energy"
+    case friendship = "Friendship"
+    case dream = "Dream"
+    case aspirations = "Aspirations"
+    case dreamAndFreedom = "Dream and Freedom"
+    
+    case motivation = "Motivation"
+    case intro = "Intro"
+    
     case myPet = "My Pet"
     case myLove = "My Love"
     case myFutureSelf = "My Future Self"
@@ -337,33 +376,33 @@ enum SongTheme: String, CaseIterable {
         return self.rawValue
     }
     
-    var description: String {
-        switch self {
-        case .myPet:
-            return "Songs about your beloved pet"
-        case .myLove:
-            return "Songs about love and relationships"
-        case .myFutureSelf:
-            return "Songs about your future aspirations"
-        case .myFamily:
-            return "Songs about family bonds"
-        case .myDreams:
-            return "Songs about dreams and aspirations"
-        case .myCity:
-            return "Songs about your hometown"
-        case .myWork:
-            return "Songs about work and career"
-        case .myHobbies:
-            return "Songs about your interests"
-        case .myMemories:
-            return "Songs about past memories"
-        case .myGoals:
-            return "Songs about your goals"
-        }
-    }
+//    var description: String {
+//        switch self {
+//        case .myPet:
+//            return "Songs about your beloved pet"
+//        case .myLove:
+//            return "Songs about love and relationships"
+//        case .myFutureSelf:
+//            return "Songs about your future aspirations"
+//        case .myFamily:
+//            return "Songs about family bonds"
+//        case .myDreams:
+//            return "Songs about dreams and aspirations"
+//        case .myCity:
+//            return "Songs about your hometown"
+//        case .myWork:
+//            return "Songs about work and career"
+//        case .myHobbies:
+//            return "Songs about your interests"
+//        case .myMemories:
+//            return "Songs about past memories"
+//        case .myGoals:
+//            return "Songs about your goals"
+//        }
+//    }
     
     static func getHottest() -> [SongTheme] {
-        return [.myPet, .myLove, .myFutureSelf, .myDreams]
+        return [.love, .party, .friendship, .dream]
     }
 }
 

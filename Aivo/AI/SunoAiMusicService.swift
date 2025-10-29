@@ -178,6 +178,29 @@ class SunoAiMusicService: ObservableObject {
                     print("❌ [SunoAI] Key not found: \(key), context: \(context)")
                 case .valueNotFound(let type, let context):
                     print("❌ [SunoAI] Value not found: \(type), context: \(context)")
+                    
+                    // Check if error is about null sunoData and status is SENSITIVE_WORD_ERROR
+                    if String(describing: type).contains("Array") && context.codingPath.contains(where: { $0.stringValue == "sunoData" }) {
+                        // Try to parse raw JSON to check status
+                        do {
+                            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let responseData = json["data"] as? [String: Any],
+                               let status = responseData["status"] as? String,
+                               status == "SENSITIVE_WORD_ERROR" {
+                                let errorMsg = responseData["errorMessage"] as? String ?? ""
+                                print("❌ [SunoAI] Detected SENSITIVE_WORD_ERROR: \(errorMsg)")
+                                if errorMsg.contains("artist name") {
+                                    throw SunoError.artistNameNotAllowed
+                                } else {
+                                    throw SunoError.generationFailed(status)
+                                }
+                            }
+                        } catch let sunoError as SunoError {
+                            throw sunoError
+                        } catch {
+                            // Fall through to original error
+                        }
+                    }
                 case .typeMismatch(let type, let context):
                     print("❌ [SunoAI] Type mismatch: \(type), context: \(context)")
                 case .dataCorrupted(let context):
@@ -250,7 +273,10 @@ class SunoAiMusicService: ObservableObject {
                 
                 switch taskDetails.status {
                 case .SUCCESS:
-                    let sunoData = taskDetails.response?.sunoData ?? []
+                    guard let sunoData = taskDetails.response?.sunoData, !sunoData.isEmpty else {
+                        print("❌ [SunoAI] No songs generated despite SUCCESS status")
+                        throw SunoError.invalidResponse
+                    }
                     print("🚀 [SunoAI] SUCCESS! Generated \(sunoData.count) songs")
                     for (index, song) in sunoData.enumerated() {
                         print("🚀 [SunoAI] Song \(index + 1): \(song.title) - Duration: \(song.duration)s")
@@ -264,9 +290,20 @@ class SunoAiMusicService: ObservableObject {
                         try await Task.sleep(nanoseconds: retryInterval)
                     }
                     
-                case .CREATE_TASK_FAILED, .GENERATE_AUDIO_FAILED, .CALLBACK_EXCEPTION, .SENSITIVE_WORD_ERROR:
+                case .CREATE_TASK_FAILED, .GENERATE_AUDIO_FAILED, .CALLBACK_EXCEPTION:
                     print("❌ [SunoAI] Generation failed with status: \(taskDetails.status.rawValue)")
                     throw SunoError.generationFailed(taskDetails.status.rawValue)
+                    
+                case .SENSITIVE_WORD_ERROR:
+                    print("❌ [SunoAI] Sensitive word error: \(taskDetails.errorMessage ?? "Unknown")")
+                    let errorMsg = taskDetails.errorMessage ?? ""
+                    
+                    // Check if error is about artist name
+                    if errorMsg.contains("artist name") {
+                        throw SunoError.artistNameNotAllowed
+                    } else {
+                        throw SunoError.generationFailed(taskDetails.status.rawValue)
+                    }
                 }
                 
             } catch {

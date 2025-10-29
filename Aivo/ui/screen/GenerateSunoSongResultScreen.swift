@@ -108,19 +108,31 @@ struct GenerateSunoSongResultScreen: View {
     // MARK: - Cover Image View
     private var coverImageView: some View {
         ZStack {
-            // Cover image from Suno
-            AsyncImage(url: URL(string: currentSong.imageUrl)) { image in
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Image("demo_cover")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
+            // Cover image from Suno - use getImageURL to support local covers
+            AsyncImage(url: getImageURL(for: currentSong)) { phase in
+                switch phase {
+                case .empty:
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                @unknown default:
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                }
             }
             .frame(width: 280, height: 280)
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .shadow(color: AivoTheme.Shadow.orange, radius: 20, x: 0, y: 10)
+            .id("\(currentSong.id)_\(selectedSongIndex)") // Force refresh when song changes
             
             // Download progress overlay
             if downloadingSongs.contains(currentSong.id) {
@@ -298,8 +310,8 @@ struct GenerateSunoSongResultScreen: View {
             return localCoverPath
         }
         
-        // Fallback to source URL
-        return URL(string: song.sourceImageUrl)
+        // Fallback to source URL or regular image URL
+        return URL(string: song.sourceImageUrl.isEmpty ? song.imageUrl : song.sourceImageUrl)
     }
     
     private func downloadSong(_ song: SunoData) {

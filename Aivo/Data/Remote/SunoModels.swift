@@ -51,7 +51,7 @@ struct SunoTaskDetails: Codable {
 
 struct SunoTaskResponse: Codable {
     let taskId: String
-    let sunoData: [SunoData]
+    let sunoData: [SunoData]?
 }
 
 struct SunoData: Codable, Identifiable, Equatable {
@@ -68,6 +68,59 @@ struct SunoData: Codable, Identifiable, Equatable {
     let tags: String
     let createTime: Int64
     var duration: Double
+    
+    // Custom Decodable init to handle missing fields with default values
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Required fields
+        id = try container.decode(String.self, forKey: .id)
+        audioUrl = try container.decode(String.self, forKey: .audioUrl)
+        
+        // Optional fields with defaults
+        sourceAudioUrl = try container.decodeIfPresent(String.self, forKey: .sourceAudioUrl) ?? audioUrl
+        streamAudioUrl = try container.decodeIfPresent(String.self, forKey: .streamAudioUrl) ?? audioUrl
+        sourceStreamAudioUrl = try container.decodeIfPresent(String.self, forKey: .sourceStreamAudioUrl) ?? audioUrl
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl) ?? ""
+        sourceImageUrl = try container.decodeIfPresent(String.self, forKey: .sourceImageUrl) ?? ""
+        prompt = try container.decodeIfPresent(String.self, forKey: .prompt) ?? ""
+        modelName = try container.decodeIfPresent(String.self, forKey: .modelName) ?? "Aivo music"
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        tags = try container.decodeIfPresent(String.self, forKey: .tags) ?? ""
+        createTime = try container.decodeIfPresent(Int64.self, forKey: .createTime) ?? 0
+        duration = try container.decodeIfPresent(Double.self, forKey: .duration) ?? 0
+    }
+    
+    // Default init for creating SunoData manually
+    init(
+        id: String,
+        audioUrl: String,
+        sourceAudioUrl: String = "",
+        streamAudioUrl: String = "",
+        sourceStreamAudioUrl: String = "",
+        imageUrl: String = "",
+        sourceImageUrl: String = "",
+        prompt: String = "",
+        modelName: String = "Aivo music",
+        title: String = "",
+        tags: String = "",
+        createTime: Int64 = 0,
+        duration: Double = 0
+    ) {
+        self.id = id
+        self.audioUrl = audioUrl
+        self.sourceAudioUrl = sourceAudioUrl.isEmpty ? audioUrl : sourceAudioUrl
+        self.streamAudioUrl = streamAudioUrl.isEmpty ? audioUrl : streamAudioUrl
+        self.sourceStreamAudioUrl = sourceStreamAudioUrl.isEmpty ? audioUrl : sourceStreamAudioUrl
+        self.imageUrl = imageUrl
+        self.sourceImageUrl = sourceImageUrl
+        self.prompt = prompt
+        self.modelName = modelName
+        self.title = title
+        self.tags = tags
+        self.createTime = createTime
+        self.duration = duration
+    }
     
     static func == (lhs: SunoData, rhs: SunoData) -> Bool {
         return lhs.id == rhs.id
@@ -163,6 +216,7 @@ enum SunoError: LocalizedError {
     case invalidAPIKey
     case invalidURL
     case requestTimeout
+    case artistNameNotAllowed
     
     var errorDescription: String? {
         switch self {
@@ -182,6 +236,8 @@ enum SunoError: LocalizedError {
             return "Invalid URL"
         case .requestTimeout:
             return "Request timeout"
+        case .artistNameNotAllowed:
+            return NSLocalizedString("Artist names are not allowed in song descriptions. Please remove the artist name and try again.", comment: "Error when artist name is used in prompt")
         }
     }
 }

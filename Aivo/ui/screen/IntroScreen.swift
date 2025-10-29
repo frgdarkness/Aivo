@@ -165,7 +165,7 @@ struct MoodSelectionView: View {
             
             // Mood options
             VStack(spacing: 16) {
-                ForEach(SongMood.getHottest(), id: \.self) { mood in
+                ForEach(SongMood.getIntroList(), id: \.self) { mood in
                     MoodOptionButton(
                         mood: mood,
                         isSelected: selectedMood == mood,
@@ -197,7 +197,7 @@ struct GenreSelectionView: View {
             
             // Genre options
             VStack(spacing: 16) {
-                ForEach(SongGenre.getHottest(), id: \.self) { genre in
+                ForEach(SongGenre.getIntroList(), id: \.self) { genre in
                     GenreOptionButton(
                         genre: genre,
                         isSelected: selectedGenre == genre,
