@@ -1,362 +1,233 @@
 import SwiftUI
 
-// MARK: - Subscription Plan Model
-enum SubscriptionPlan: String, CaseIterable, Identifiable {
-    case weekly = "Weekly"
-    case monthly = "Monthly"
-    case annually = "Annually"
-    
-    var id: String { self.rawValue }
-    
-    var displayName: String {
-        switch self {
-        case .weekly: return "Weekly Plan"
-        case .monthly: return "Monthly Plan"
-        case .annually: return "Annually Plan"
-        }
-    }
-    
-    var price: String {
-        switch self {
-        case .weekly: return "198.000 ₫ / week"
-        case .monthly: return "49.000 ₫ / month"
-        case .annually: return "1.250.000 ₫ / year"
-        }
-    }
-    
-    var weeklyEquivalent: String {
-        switch self {
-        case .weekly: return "198.000 ₫ / week"
-        case .monthly: return "₫11,307.69 / week"
-        case .annually: return "₫24,038.46 / week"
-        }
-    }
-    
-    var isBestValue: Bool {
-        return self == .annually
-    }
-    
-    var renewalText: String {
-        switch self {
-        case .weekly: return "Renews Weekly"
-        case .monthly: return "Renews Monthly"
-        case .annually: return "Renews Annualy"
-        }
-    }
-}
-
-// MARK: - Subscription Screen
 struct SubscriptionScreen: View {
-    @State private var selectedPlan: SubscriptionPlan = .annually
-    @State private var autoRenewal: Bool = true
     @Environment(\.dismiss) private var dismiss
-    
+    @State private var selectedPlan: Plan = .professional
+
+    enum Plan { case professional, team }
+
     var body: some View {
         ZStack {
-            // Background
-            AivoSunsetBackground()
-            
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header
-                    headerView
-                    
-                    // Features
-                    featuresView
-                    
-                    // Subscription Plans
-                    plansView
-                    
-                    // Auto Renewal
-                    autoRenewalView
-                    
-                    // Subscribe Button
-                    subscribeButton
-                    
-                    // Footer Links
-                    footerLinks
-                }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 40)
-            }
-        }
-        .navigationBarHidden(true)
-    }
-    
-    // MARK: - Header View
-    private var headerView: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Spacer()
-                Button(action: { dismiss() }) {
-                    Image(systemName: "xmark")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                }
-            }
-            .padding(.top, 20)
-            
-            VStack(spacing: 12) {
-                Text("ENJOY AIVO PRO")
-                    .font(.system(size: 28, weight: .black, design: .monospaced))
-                    .foregroundColor(.white)
-                
-                Text("AI Song & Music Maker")
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        Capsule()
-                            .fill(Color.gray.opacity(0.3))
-                    )
-            }
-        }
-        .padding(.bottom, 40)
-    }
-    
-    // MARK: - Features View
-    private var featuresView: some View {
-        VStack(spacing: 20) {
-            FeatureRow(
-                icon: "mic.fill",
-                iconColor: .blue,
-                title: "Fast Song Creation",
-                description: "Generate Hits in Seconds"
-            )
-            
-            FeatureRow(
-                icon: "guitar.fill",
-                iconColor: .red,
-                title: "Ai Voice Covers",
-                description: "Create Your Voice"
-            )
-            
-            FeatureRow(
-                icon: "camera.fill",
-                iconColor: .gray,
-                title: "Top-Notch studio Quality",
-                description: "Advanced Details"
-            )
-            
-            FeatureRow(
-                icon: "ribbon.fill",
-                iconColor: .yellow,
-                title: "Royalty Free",
-                description: "Use songs anywhere you want"
-            )
-        }
-        .padding(.bottom, 40)
-    }
-    
-    // MARK: - Plans View
-    private var plansView: some View {
-        VStack(spacing: 16) {
-            ForEach(SubscriptionPlan.allCases) { plan in
-                PlanCard(
-                    plan: plan,
-                    isSelected: selectedPlan == plan,
-                    action: { selectedPlan = plan }
-                )
-            }
-        }
-        .padding(.bottom, 24)
-    }
-    
-    // MARK: - Auto Renewal View
-    private var autoRenewalView: some View {
-        HStack(spacing: 12) {
-            Button(action: { autoRenewal.toggle() }) {
-                Image(systemName: autoRenewal ? "checkmark.square.fill" : "square")
-                    .font(.title2)
-                    .foregroundColor(autoRenewal ? AivoTheme.Primary.orange : .gray)
-            }
-            
-            Text("Auto Renewal. Cancel anytime.")
-                .font(.subheadline)
-                .foregroundColor(.white)
-            
-            Spacer()
-        }
-        .padding(.bottom, 32)
-    }
-    
-    // MARK: - Subscribe Button
-    private var subscribeButton: some View {
-        Button(action: subscribeAction) {
-            VStack(spacing: 4) {
-                Text("Start My Subscription")
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
-                
-                Text(selectedPlan.renewalText)
-                    .font(.caption)
-                    .foregroundColor(.black.opacity(0.8))
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(AivoTheme.Primary.orange)
-            .cornerRadius(12)
-            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
-        }
-        .padding(.bottom, 24)
-    }
-    
-    // MARK: - Footer Links
-    private var footerLinks: some View {
-        VStack(spacing: 16) {
-            Button(action: restoreAction) {
-                Text("Restore Subscriptions")
-                    .font(.subheadline)
-                    .foregroundColor(.white)
-            }
-            
-            HStack {
-                Button(action: privacyAction) {
-                    Text("Privacy Policy")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-                
-                Spacer()
-                
-                Button(action: termsAction) {
-                    Text("Term of Use")
-                        .font(.caption)
-                        .foregroundColor(.white.opacity(0.8))
-                }
-            }
-        }
-    }
-    
-    // MARK: - Actions
-    private func subscribeAction() {
-        // Handle subscription logic
-        print("Subscribe to \(selectedPlan.displayName)")
-    }
-    
-    private func restoreAction() {
-        // Handle restore logic
-        print("Restore subscriptions")
-    }
-    
-    private func privacyAction() {
-        // Handle privacy policy
-        print("Open privacy policy")
-    }
-    
-    private func termsAction() {
-        // Handle terms of use
-        print("Open terms of use")
-    }
-}
+            customBackgroundView
 
-// MARK: - Feature Row Component
-struct FeatureRow: View {
-    let icon: String
-    let iconColor: Color
-    let title: String
-    let description: String
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.title2)
-                .foregroundColor(iconColor)
-                .frame(width: 24, height: 24)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                    .fontWeight(.bold)
-                    .foregroundColor(.white)
-                
-                Text(description)
-                    .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+            VStack(spacing: 0) {
+                header
+                Spacer(minLength: 20)
+                title
+                features
+                //Spacer(minLength: 12)
+                planCards
+                //Spacer(minLength: 8)
+                ctaButton
+                footer
             }
-            
-            Spacer()
+            .padding(.horizontal, 20)
+            .padding(.bottom, 24)
         }
+        .ignoresSafeArea()
+        .background(AivoTheme.Background.primary.ignoresSafeArea())
     }
-}
 
-// MARK: - Plan Card Component
-struct PlanCard: View {
-    let plan: SubscriptionPlan
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        ZStack {
-            // Best value tag
-            if plan.isBestValue {
+    // MARK: - Background giống PlayMySongScreen (nửa trên ảnh, dưới đen, overlay gradient)
+    private var customBackgroundView: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Nửa trên: Ảnh cover (không blur)
                 VStack {
-                    HStack {
-                        Spacer()
-                        Text("Best value")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                Capsule()
-                                    .fill(Color.yellow)
-                            )
-                            .offset(x: -8, y: -8)
-                    }
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .scaleEffect(1.2)
+                        .clipped()
+                        .frame(height: geometry.size.height * 0.55)
+                        .clipped()
+
                     Spacer()
                 }
-            }
-            
-            // Plan card
-            Button(action: action) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(plan.displayName)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.white)
-                        
-                        Text(plan.price)
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.8))
-                    }
-                    
+
+                // Nửa dưới: Đen theo theme
+                VStack {
                     Spacer()
-                    
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Text(plan.weeklyEquivalent)
-                            .font(.caption)
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Circle()
-                            .stroke(isSelected ? AivoTheme.Primary.orange : Color.gray, lineWidth: 2)
-                            .frame(width: 20, height: 20)
-                            .overlay(
-                                Circle()
-                                    .fill(isSelected ? AivoTheme.Primary.orange : Color.clear)
-                                    .frame(width: 8, height: 8)
-                            )
-                    }
+                    AivoTheme.Primary.blackOrangeDark
+                        .opacity(0.9)
+                        .frame(height: geometry.size.height * 0.45)
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.gray.opacity(0.2))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(isSelected ? AivoTheme.Primary.orange : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
-                        )
+
+                // Overlay đen dần từ đỉnh đến cuối (nhấn cam nhẹ)
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: Color.black.opacity(0.05), location: 0.0),
+                        .init(color: Color.black.opacity(1.0), location: 0.5),
+                        .init(color: Color.black.opacity(1.0), location: 1.0)
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+
+                // Orange glow very subtle at bottom area
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.clear,
+                        AivoTheme.Primary.orange.opacity(0.08)
+                    ]),
+                    startPoint: .center,
+                    endPoint: .bottom
                 )
             }
+            .ignoresSafeArea()
+            .drawingGroup()
+        }
+    }
+
+    private var header: some View {
+        HStack {
+            Button(action: { dismiss() }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Circle())
+            }
+            Spacer()
+        }
+        .padding(.top, 14)
+    }
+
+    private var title: some View {
+        HStack { Text("Upgrade to Premium")
+                .font(.system(size: 28, weight: .heavy))
+                .foregroundColor(.white)
+                .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
+            Spacer()
+        }
+        .padding(.top, 8)
+    }
+
+    private var features: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            featureRow("Unlimited AI Generations")
+            featureRow("Generate High Quality Images")
+            featureRow("Ads Free")
+            featureRow("Unlimited Storage")
+        }
+        .padding(.top, 18)
+    }
+
+    private func featureRow(_ text: String) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
+                    .frame(width: 28, height: 28)
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .font(.system(size: 20))
+            }
+            Text(text)
+                .foregroundColor(.white)
+                .font(.system(size: 17, weight: .medium))
+            Spacer()
+        }
+    }
+
+    private var planCards: some View {
+        VStack(spacing: 14) {
+            planCard(
+                title: "Professional",
+                subtitle: "7-Days Free Trial",
+                price: "$29",
+                per: "/Month",
+                isSelected: selectedPlan == .professional
+            ) { selectedPlan = .professional }
+
+            planCard(
+                title: "Team",
+                subtitle: "14-Days Free Trial",
+                price: "$99",
+                per: "/Month",
+                isSelected: selectedPlan == .team
+            ) { selectedPlan = .team }
+        }
+        .padding(.top, 28)
+    }
+
+    private func planCard(title: String, subtitle: String, price: String, per: String, isSelected: Bool, onTap: @escaping () -> Void) -> some View {
+        Button(action: onTap) {
+            HStack {
+                // Radio
+                ZStack {
+                    Circle().stroke(AivoTheme.Primary.orange, lineWidth: 2)
+                        .frame(width: 26, height: 26)
+                    if isSelected {
+                        Circle().fill(AivoTheme.Primary.orange)
+                            .frame(width: 14, height: 14)
+                    }
+                }
+                .padding(.leading, 18)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .foregroundColor(.white)
+                        .font(.system(size: 17, weight: .semibold))
+                    Text(subtitle)
+                        .foregroundColor(.white.opacity(0.7))
+                        .font(.system(size: 13, weight: .regular))
+                }
+                Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(price)
+                        .foregroundColor(.white)
+                        .font(.system(size: 18, weight: .bold))
+                    Text(per)
+                        .foregroundColor(.white.opacity(0.7))
+                        .font(.system(size: 12, weight: .regular))
+                }
+                .padding(.trailing, 10)
+            }
+            .frame(height: 74)
+            .background(
+                RoundedRectangle(cornerRadius: 36)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 36)
+                            .stroke(isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.15), lineWidth: 2)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var ctaButton: some View {
+        Button(action: { /* open purchase flow */ }) {
+            Text("Continue For Payment")
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 58)
+                .background(
+                    Capsule()
+                        .fill(AivoTheme.Primary.orange)
+                )
+        }
+        .padding(.top, 18)
+    }
+
+    private var footer: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Text("Terms of use")
+                Text("|")
+                Text("Privacy Policy")
+                Text("|")
+                Text("Restore")
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.top, 10)
         }
     }
 }
 
-// MARK: - Preview
 struct SubscriptionScreen_Previews: PreviewProvider {
     static var previews: some View {
         SubscriptionScreen()

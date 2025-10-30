@@ -90,7 +90,23 @@ struct CoverTabView: View {
                 availableModels: availableModels,
                 initialSelected: selectedModel,
                 onDone: { model in
-                    selectedModel = model
+                    if let model = model {
+                        // If the selected model is beyond the first 8, move it to the front
+                        if let currentIndex = availableModels.firstIndex(where: { $0.id == model.id }) {
+                            if currentIndex >= 8 {
+                                var reordered = availableModels
+                                let picked = reordered.remove(at: currentIndex)
+                                reordered.insert(picked, at: 0)
+                                availableModels = reordered
+                            }
+                        } else {
+                            // In case model not present (safety), insert at front
+                            availableModels.insert(model, at: 0)
+                        }
+                        selectedModel = model
+                    } else {
+                        selectedModel = nil
+                    }
                     showModelSelectionScreen = false
                 },
                 onCancel: {

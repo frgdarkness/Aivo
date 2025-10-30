@@ -5,6 +5,7 @@ struct HomeView: View {
     @State private var selectedTab: TabItem = .home
     @State private var showGenerateSongResult = false
     @State private var showSunoSongResult = false
+    @State private var showSubscription = false
     
     // Hardcoded SunoData for testing
     private let hardcodedSunoData: [SunoData] = [
@@ -104,7 +105,7 @@ struct HomeView: View {
             Spacer()
             
             // VIP Button
-            Button(action: {}) {
+            Button(action: { showSubscription = true }) {
                 HStack(spacing: 4) {
                     Image(systemName: "crown.fill")
                         .font(.caption)
@@ -171,6 +172,9 @@ struct HomeView: View {
                 .fill(AivoTheme.Background.primary)
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -5)
         )
+        .fullScreenCover(isPresented: $showSubscription) {
+            SubscriptionScreen()
+        }
         .fullScreenCover(isPresented: $showGenerateSongResult) {
             GenerateSongResultScreen(
                 audioUrl: "https://cdn1.suno.ai/53d93a26-3bed-4f54-b9fc-47433f424884.mp3",
