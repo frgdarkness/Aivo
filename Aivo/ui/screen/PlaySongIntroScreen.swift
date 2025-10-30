@@ -4,12 +4,13 @@ import AVFoundation
 // MARK: - Play Song Screen
 struct PlaySongIntroScreen: View {
     let songData: SongCreationData?
-    let audioUrl: String? // New parameter for external audio URL
+    let audioUrl: String? // Deprecated: Use sunoData instead
+    let sunoData: SunoData? // New parameter for SunoData
     let onIntroCompleted: () -> Void // Callback to SplashScreenView
     
     @State private var isPlaying = false
     @State private var currentTime: TimeInterval = 0
-    @State private var duration: TimeInterval = 180 // 3 minutes for ai_tokyo
+    @State private var duration: TimeInterval = 180 // Default 3 minutes
     @State private var audioPlayer: AVAudioPlayer?
     @State private var showLyrics = false
     @State private var playbackTimer: Timer?
@@ -22,8 +23,39 @@ struct PlaySongIntroScreen: View {
     
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
     
-    // Hard-coded song for now
+    // Hard-coded song for fallback
     private let song = Song.tokyo
+    
+    private var placeholderView: some View {
+        RoundedRectangle(cornerRadius: 20)
+            .fill(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        AivoTheme.Primary.orange,
+                        AivoTheme.Primary.orangeLight,
+                        AivoTheme.Primary.orangeAccent
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+            .frame(width: 280, height: 280)
+            .overlay(
+                VStack {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 60))
+                        .foregroundColor(.white)
+                }
+            )
+            .shadow(color: AivoTheme.Shadow.orange, radius: 20, x: 0, y: 10)
+    }
+    
+    init(songData: SongCreationData?, audioUrl: String? = nil, sunoData: SunoData? = nil, onIntroCompleted: @escaping () -> Void) {
+        self.songData = songData
+        self.audioUrl = audioUrl
+        self.sunoData = sunoData
+        self.onIntroCompleted = onIntroCompleted
+    }
     
     var body: some View {
         ZStack {
@@ -117,36 +149,36 @@ struct PlaySongIntroScreen: View {
     // MARK: - Song Cover View
     private var songCoverView: some View {
         VStack(spacing: 0) {
-            // Cover image placeholder (using a colorful gradient for now)
+            // Cover image from SunoData or gradient placeholder
             ZStack {
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                AivoTheme.Primary.orange,
-                                AivoTheme.Primary.orangeLight,
-                                AivoTheme.Primary.orangeAccent
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 280, height: 280)
-                    .overlay(
-                        VStack {
-                            Image(systemName: "music.note")
-                                .font(.system(size: 60))
-                                .foregroundColor(.white)
+                if let sunoData = sunoData, let imageUrl = URL(string: sunoData.imageUrl) {
+                    AsyncImage(url: imageUrl) { phase in
+                        switch phase {
+                        case .empty:
+                            placeholderView
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        case .failure:
+                            placeholderView
+                        @unknown default:
+                            placeholderView
                         }
-                    )
+                    }
+                    .frame(width: 280, height: 280)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
                     .shadow(color: AivoTheme.Shadow.orange, radius: 20, x: 0, y: 10)
+                } else {
+                    placeholderView
+                }
                 
                 // Song title at bottom left
                 VStack {
                     Spacer()
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("AI Tokyo")
+                            Text(sunoData?.title ?? "AI Tokyo")
                                 .font(.title2)
                                 .fontWeight(.bold)
                                 .foregroundColor(.white)
@@ -279,6 +311,12 @@ struct PlaySongIntroScreen: View {
     
     // MARK: - Computed Properties
     private var lyricsArray: [String] {
+        // Parse lyrics from SunoData prompt if available
+        if let sunoData = sunoData, !sunoData.prompt.isEmpty {
+            return parseLyrics(from: sunoData.prompt)
+        }
+        
+        // Fallback to default lyrics
         return [
             "[Verse 1]",
             "In the neon lights of Tokyo",
@@ -306,13 +344,26 @@ struct PlaySongIntroScreen: View {
         ]
     }
     
+    private func parseLyrics(from prompt: String) -> [String] {
+        // Split by newlines and filter empty lines
+        let lines = prompt.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        
+        return lines.isEmpty ? ["Lyric not available"] : lines
+    }
+    
     // MARK: - Audio Setup
     private func setupAudioPlayer() {
-        if let audioUrl = audioUrl {
+        // Priority: sunoData.audioUrl > audioUrl > local file
+        if let sunoData = sunoData, !sunoData.audioUrl.isEmpty {
+            // Download and play from SunoData
+            downloadAndPlayAudio(from: sunoData.audioUrl)
+        } else if let audioUrl = audioUrl, !audioUrl.isEmpty {
             // Download and play external audio
             downloadAndPlayAudio(from: audioUrl)
         } else {
-            // Play local audio file
+            // Play local audio file as fallback
             playLocalAudio()
         }
     }
@@ -370,7 +421,12 @@ struct PlaySongIntroScreen: View {
                 currentTime = 0
                 playbackTimer?.invalidate()
             }
-            duration = audioPlayer?.duration ?? 180
+            // Use duration from SunoData if available, otherwise from audio player
+            if let sunoData = sunoData, sunoData.duration > 0 {
+                duration = sunoData.duration
+            } else {
+                duration = audioPlayer?.duration ?? 180
+            }
             
             // Start timer for progress updates
             startPlaybackTimer()

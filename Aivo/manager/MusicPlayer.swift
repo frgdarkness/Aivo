@@ -236,7 +236,7 @@ class MusicPlayer: NSObject, ObservableObject {
             duration = audioPlayer?.duration ?? 0
             
             // Update duration in currentSong if exists
-            if var song = self.currentSong, duration > 0 {
+            if let song = self.currentSong, duration > 0 {
                 // Update local copy
                 var updatedSong = song
                 updatedSong.duration = duration

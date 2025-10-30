@@ -180,11 +180,32 @@ struct HomeView: View {
             )
         }
         .fullScreenCover(isPresented: $showSunoSongResult) {
-            GenerateSunoSongResultScreen(
-                sunoDataList: hardcodedSunoData,
-                onClose: {
-                    showSunoSongResult = false
-                }
+            let data =
+                    SunoData(
+                        id: "97d4adf6-8c34-442a-84b1-ecd3b9e5be04",
+                        audioUrl: "https://musicfile.api.box/N2QyMzY1OWQtNjQ0NC00MDc5LTk5MmMtMjZkYjhlYTcwZTU4.mp3",
+                        sourceAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+                        streamAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+                        sourceStreamAudioUrl: "https://cdn1.suno.ai/97d4adf6-8c34-442a-84b1-ecd3b9e5be04.mp3",
+                        imageUrl: "https://musicfile.api.box/N2QyMzY1OWQtNjQ0NC00MDc5LTk5MmMtMjZkYjhlYTcwZTU4.jpeg",
+                        sourceImageUrl: "https://cdn2.suno.ai/image_7d23659d-6444-4079-992c-26db8ea70e58.jpeg",
+                        prompt: "[Verse]\nWhispers in the night they call my name\nStars align to play our timeless game\nFootsteps echo soft on moonlit sand\n\n[Prechorus]\nEvery shadow fades to light\nWhen you're here it feels so right\n\n[Chorus]\nWe are the glow that never dies\nBurning bright in endless skies\nYou and me\nInfinity\nOur love will always rise\n\n[Verse 2]\nGolden rivers flow through endless streams\nChasing moments painted in our dreams\nTime stands still beneath this glowing tide\n\n[Prechorus]\nEvery heartbeat feels like fire\nYou lift me higher and higher\n\n[Chorus]\nWe are the glow that never dies\nBurning bright in endless skies\nYou and me\nInfinity\nOur love will always rise",
+                        modelName: "chirp-v4",
+                        title: "Freedom",
+                        tags: "",
+                        createTime: 1761204292496,
+                        duration: 178.4
+                        )
+//            GenerateSunoSongResultScreen(
+//                sunoDataList: hardcodedSunoData,
+//                onClose: {
+//                    showSunoSongResult = false
+//                }
+//            )
+            PlaySunoSongIntroScreen(
+                sunoData: data,
+                onIntroCompleted: {},
+                
             )
         }
     }

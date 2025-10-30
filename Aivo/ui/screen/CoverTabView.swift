@@ -5,6 +5,7 @@ import Kingfisher
 struct CoverTabView: View {
     @State private var selectedSong = ""
     @State private var songName = ""  // Add song name state
+    @State private var lyric: String = ""
     @State private var selectedVoiceType: VoiceType = .otherVoice
     @State private var youtubeUrl = ""
     @State private var selectedLanguage: CoverLanguage = .english
@@ -115,7 +116,7 @@ struct CoverTabView: View {
                 
                 // Auto-fill song name if empty
                 songName = selectedSong.title + " (cover)"
-                
+                lyric = selectedSong.sunoData?.prompt ?? ""
                 
                 Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
                 Logger.i("🎵 [CoverTab] Auto-filled song name: \(songName)")
@@ -645,7 +646,7 @@ struct CoverTabView: View {
         let uniqueId = "cover_\(UUID().uuidString.prefix(8))"
         
         // Create title: song title + " cover"
-        let finalTitle = songName.isEmpty ? "Cover Song" : "\(songName) cover"
+        let finalTitle = songName.isEmpty ? "Cover Song" : "\(songName)"
         
         // Create model name: model display name + " cover"
         let modelName = selectedModel?.displayName ?? "Unknown Artist"
@@ -663,7 +664,7 @@ struct CoverTabView: View {
             sourceStreamAudioUrl: "",
             imageUrl: "",
             sourceImageUrl: "",
-            prompt: "Voice cover of \(songName.isEmpty ? "song" : songName)",
+            prompt: lyric.isEmpty ? "Voice cover of \(songName.isEmpty ? "song" : songName)" : lyric,
             modelName: finalModelName,
             title: finalTitle,
             tags: "cover,voice,ai",

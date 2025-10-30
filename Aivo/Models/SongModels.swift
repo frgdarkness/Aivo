@@ -316,15 +316,69 @@ enum SongGenre: String, CaseIterable {
     }
     
     var icon: String {
+        // Map genre cases to available icons
         switch self {
-        case .edm:
-            return "icon_edm"
+        // POP
+        case .pop, .pop_rock, .synthpop, .electropop, .indie_pop, .jpop, .vpop, .dance_pop, .dream_pop, .city_pop:
+            return "icon_genre_pop"
+            
+        // EDM / ELECTRONIC
+        case .edm, .chill_edm, .future_bass, .chillstep, .lo_fi_edm:
+            return "icon_genre_edm"
+        case .electronic, .house, .deep_house, .tropical_house, .progressive_house, .future_house, .trance, .techno, .dubstep, .melodic_dubstep, .drum_and_bass, .synthwave, .retrowave:
+            return "icon_genre_electronic"
+            
+        // ROCK
+        case .rock, .soft_rock, .hard_rock, .alternative_rock, .indie_rock, .punk_rock, .pop_punk, .classic_rock, .folk_rock, .country_rock, .emo_rock, .grunge, .blues_rock:
+            return "icon_genre_rock"
+            
+        // RAP / HIP-HOP
+        case .rap, .trap, .boom_bap, .drill, .melodic_rap, .old_school_rap, .alternative_hiphop, .lo_fi_hiphop:
+            return "icon_genre_rap"
         case .hiphop:
-            return "icon_hiphop"
-        case .rap:
-            return "icon_rap"
+            return "icon_genre_hiphop" // Use rap icon for hiphop
+            
+        // R&B / SOUL
+        case .rnb, .soul, .neo_soul, .funk, .motown, .gospel, .soul_blues:
+            return "icon_genre_r&b"
+            
+        // BALLAD / ACOUSTIC
+        case .ballad, .pop_ballad, .acoustic, .acoustic_pop, .acoustic_folk, .indie_folk, .singer_songwriter, .country_ballad:
+            return "icon_genre_ballad"
+            
+        // COUNTRY
+        case .country, .country_pop:
+            return "icon_genre_country"
+            
+        // JAZZ / BLUES
+        case .jazz, .smooth_jazz:
+            return "icon_genre_jazz"
+        case .blues:
+            return "demo_cover" // No blues icon available, fallback to demo_cover
+            
+        // CLASSICAL
+        case .classical, .orchestral, .cinematic, .piano, .modern_classical, .epic_trailer, .ambient_soundtrack:
+            return "icon_genre_classical"
+            
+        // K-POP
+        case .kpop:
+            return "icon_genre_kpop"
+            
+        // WORLD / LATIN - fallback to pop
+        case .latin_pop, .reggaeton, .afrobeat, .afrobeats, .amapiano, .dancehall, .bollywood_pop, .arabic_pop, .chinese_pop:
+            return "icon_genre_pop"
+            
+        // LO-FI / CHILL / AMBIENT - fallback to electronic
+        case .lo_fi, .chillhop, .vaporwave, .ambient, .chillout, .lounge, .chill_vibes:
+            return "icon_genre_electronic"
+            
+        // EXPERIMENTAL / OTHER - fallback to electronic
+        case .hyperpop, .electro_swing, .industrial, .world_music, .new_age:
+            return "icon_genre_electronic"
+            
+        // Default fallback
         default:
-            return "icon_edm" // Default icon
+            return "demo_cover"
         }
     }
     
@@ -333,13 +387,13 @@ enum SongGenre: String, CaseIterable {
             .pop,              // nhạc đại chúng, dễ nghe nhất
             .pop_ballad,       // tình cảm, phổ biến toàn cầu
             .edm,              // nhạc điện tử sôi động
-            .future_bass,      // EDM hiện đại, hợp AI gen nhạc
-            .pop_rock,         // pha giữa pop và rock, trẻ trung
+            .electronic,      // EDM hiện đại, hợp AI gen nhạc
+            .rock,         // pha giữa pop và rock, trẻ trung
             .rnb,              // R&B tình cảm, hợp vocal nữ
+            .rap,
             .hiphop,           // hip-hop đại chúng
-            .kpop,             // K-Pop thịnh hành ở châu Á
-            .acoustic_pop,     // pop mộc, kiểu Ed Sheeran
-            .latin_pop         // Latin Pop, xu hướng dance global
+            .classical,             // K-Pop thịnh hành ở châu Á
+            .jazz,     // pop mộc, kiểu Ed Sheeran
         ]
     }
     

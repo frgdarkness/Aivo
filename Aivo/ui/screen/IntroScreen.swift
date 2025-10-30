@@ -8,7 +8,8 @@ struct IntroScreen: View {
     @State private var selectedMood: SongMood?
     @State private var selectedGenre: SongGenre?
     @State private var selectedTheme: SongTheme?
-    @State private var showPlaySong = false
+    @State private var showProcessing = false
+    @State private var selectedSong: SunoData?
     
     var body: some View {
         ZStack {
@@ -30,12 +31,23 @@ struct IntroScreen: View {
             .padding(.horizontal, 20)
             .padding(.top, 50)
         }
-        .fullScreenCover(isPresented: $showPlaySong) {
-                PlaySongIntroScreen(
-                    songData: songCreationData,
-                    audioUrl: nil,
-                    onIntroCompleted: onIntroCompleted
-                )
+        .fullScreenCover(isPresented: $showProcessing) {
+            GenerateSongProcessingScreen(
+                requestType: .generateSong,
+                onComplete: {
+                    // Processing screen will auto-dismiss after 5s
+                    // Then we'll show play screen
+                }
+            )
+        }
+        .fullScreenCover(item: $selectedSong) { song in
+            PlaySunoSongIntroScreen(
+                sunoData: song,
+                onIntroCompleted: onIntroCompleted
+            )
+            .onAppear {
+                Logger.d("🎵 [IntroScreen] PlaySunoSongIntroScreen appeared with song: \(song.title)")
+            }
         }
     }
     
@@ -46,27 +58,40 @@ struct IntroScreen: View {
                 .font(.system(size: 32, weight: .black, design: .monospaced))
                 .foregroundColor(.white)
             
-            if let mood = selectedMood, let genre = selectedGenre, let theme = selectedTheme {
-                Text("Make a \(mood.displayName) & \(genre.displayName) song for \(theme.displayName)")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-            } else if let mood = selectedMood, let genre = selectedGenre {
-                Text("Make a \(mood.displayName) & \(genre.displayName) song")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-            } else if let mood = selectedMood {
-                Text("Make a \(mood.displayName) song")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-            } else {
-                Text("Make a song")
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
+            // Fixed height container for text to prevent layout shifts (~3 lines)
+            VStack(spacing: 0) {
+                if let mood = selectedMood, let genre = selectedGenre, let theme = selectedTheme {
+                    Text("Make a \(mood.displayName) & \(genre.displayName) song for \(theme.displayName)")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let mood = selectedMood, let genre = selectedGenre {
+                    Text("Make a \(mood.displayName) & \(genre.displayName) song")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else if let mood = selectedMood {
+                    Text("Make a \(mood.displayName) song")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    Text("Make a song")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
+            .frame(height: 52) // Fixed height for ~3 lines (headline font ~20pt per line with 4pt spacing)
+            .frame(maxWidth: .infinity)
         }
         .padding(.bottom, 40)
     }
@@ -139,8 +164,46 @@ struct IntroScreen: View {
                 currentStep += 1
             }
         } else {
-            // All steps completed, show play song screen
-            showPlaySong = true
+            // All steps completed, query song and show processing
+            guard let mood = selectedMood,
+                  let genre = selectedGenre,
+                  let theme = selectedTheme else {
+                Logger.e("❌ [IntroScreen] Missing selection data")
+                return
+            }
+            
+            // Query and select random song
+            Task {
+                if let song = IntroSongService.shared.getRandomSong(mood: mood, genre: genre, theme: theme) {
+                    await MainActor.run {
+                        Logger.d("🎵 [IntroScreen] Selected song: \(song.title)")
+                        
+                        // DON'T set selectedSong yet - we'll set it after processing to trigger fullScreenCover(item:)
+                        // Show processing screen first
+                        showProcessing = true
+                        Logger.d("⏳ [IntroScreen] Showing processing screen")
+                        
+                        // After 5 seconds, hide processing and show play screen
+                        Task { @MainActor in
+                            try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                            Logger.d("✅ [IntroScreen] Hiding processing, showing play screen")
+                            showProcessing = false
+                            
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds - longer delay to ensure processing dismissed
+                            
+                            // NOW set selectedSong - this will trigger fullScreenCover(item:) automatically
+                            Logger.d("🎵 [IntroScreen] Setting selectedSong to trigger fullScreenCover: \(song.title)")
+                            selectedSong = song
+                            Logger.d("🎵 [IntroScreen] selectedSong set, fullScreenCover should trigger automatically")
+                        }
+                    }
+                } else {
+                    await MainActor.run {
+                        Logger.e("❌ [IntroScreen] No song found for \(mood.displayName)/\(genre.displayName)/\(theme.displayName)")
+                        // No fallback - user should try different selections
+                    }
+                }
+            }
         }
     }
 }
