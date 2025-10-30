@@ -23,6 +23,7 @@ struct CoverTabView: View {
     @State private var showSongSelectionDialog = false
     @State private var selectedSongForCover: SelectedSong? = nil
     @State private var selectedAudioFileURL: URL? = nil
+    @State private var showModelSelectionScreen = false
     
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
@@ -83,6 +84,19 @@ struct CoverTabView: View {
                     }
                 )
             }
+        }
+        .fullScreenCover(isPresented: $showModelSelectionScreen) {
+            SelectModelScreen(
+                availableModels: availableModels,
+                initialSelected: selectedModel,
+                onDone: { model in
+                    selectedModel = model
+                    showModelSelectionScreen = false
+                },
+                onCancel: {
+                    showModelSelectionScreen = false
+                }
+            )
         }
         .overlay(
             // Toast Message
@@ -316,20 +330,15 @@ struct CoverTabView: View {
                 .foregroundColor(.white)
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 6) {
-                ForEach(availableModels) { model in
+                ForEach(Array(availableModels.prefix(8))) { model in
                     Button(action: { 
                         selectedModel = selectedModel?.id == model.id ? nil : model 
                     }) {
                         VStack(spacing: 4) {
-                            // Use Kingfisher for optimized image loading with caching
                             KFImage(URL(string: model.thumbUrl))
-                                .placeholder {
-                                    ProgressView()
-                                        .frame(width: 70, height: 70)
-                                }
+                                .placeholder { ProgressView().frame(width: 70, height: 70) }
                                 .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 120, height: 120)))
-                                //.cacheMemoryOnly()
-                                .loadDiskFileSynchronously()         // đọc từ disk đồng bộ -> hiện ngay, ít flicker
+                                .loadDiskFileSynchronously()
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 80, height: 80)
@@ -352,6 +361,25 @@ struct CoverTabView: View {
                             RoundedRectangle(cornerRadius: 12)
                                 .stroke(selectedModel?.id == model.id ? AivoTheme.Primary.orange : Color.clear, lineWidth: 3)
                         )
+                    }
+                }
+                if availableModels.count > 8 {
+                    Button(action: { showModelSelectionScreen = true }) {
+                        VStack(spacing: 8) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color.black.opacity(0.3))
+                                    .frame(width: 80, height: 80)
+                                Image(systemName: "ellipsis")
+                                    .font(.title)
+                                    .foregroundColor(.white)
+                            }
+                            Text("More")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                        }
+                        .frame(width: 90, height: 110)
                     }
                 }
             }

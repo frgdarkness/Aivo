@@ -107,31 +107,31 @@ class ModelsLabService: ObservableObject {
         Logger.d("Parameters - audioUrl: \(audioUrl)")
         Logger.d("Parameters - modelID: \(modelID)")
         Logger.d("Parameters - language: \(language)")
-        
+
         guard let url = URL(string: "\(baseURL)/voice/voice_cover") else {
             Logger.e("❌ Invalid URL: \(baseURL)/voice/voice_cover")
             throw ModelsLabError.invalidURL
         }
-        
+
         Logger.d("📡 Request URL: \(url.absoluteString)")
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(apiKey, forHTTPHeaderField: "Authorization")
         request.timeoutInterval = requestTimeout
-        
+
         Logger.d("⏱️ Request timeout set to: \(requestTimeout) seconds")
-        
+
         let requestBody: [String: Any] = [
             "init_audio": audioUrl,
-            "model_id": modelID,  // Use actual modelID parameter instead of hardcoded "trump"
+            "model_id": modelID,
             "language": language,
             "key": apiKey
         ]
-        
+
         Logger.d("📦 Request body: \(requestBody)")
-        
+
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
             Logger.d("✅ Request body serialized successfully")
@@ -139,68 +139,99 @@ class ModelsLabService: ObservableObject {
             Logger.e("❌ Error serializing request body: \(error)")
             throw ModelsLabError.invalidRequestBody
         }
-        
-        Logger.i("🚀 Sending voice cover request...")
-        let startTime = Date()
-        
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let duration = Date().timeIntervalSince(startTime)
-            
-            Logger.i("📥 Response received in \(String(format: "%.2f", duration)) seconds")
-            Logger.d("📊 Response data size: \(data.count) bytes")
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                Logger.e("❌ Invalid HTTP response type")
-                throw ModelsLabError.invalidResponse
-            }
-            
-            Logger.d("📈 HTTP Status Code: \(httpResponse.statusCode)")
-            Logger.d("📋 Response Headers: \(httpResponse.allHeaderFields)")
-            
-            guard httpResponse.statusCode == 200 else {
-                Logger.e("❌ HTTP Error: \(httpResponse.statusCode)")
-                if let responseString = String(data: data, encoding: .utf8) {
-                    Logger.e("📄 Error Response Body: \(responseString)")
-                }
-                throw ModelsLabError.httpError(httpResponse.statusCode)
-            }
-            
-            // Log raw response data for debugging
-            if let responseString = String(data: data, encoding: .utf8) {
-                Logger.d("📄 Raw API Response: \(responseString)")
-            }
-            
+
+        let maxAttempts = 5
+        let retryDelayNs: UInt64 = 2_000_000_000 // 2 seconds
+
+        for attempt in 1...maxAttempts {
+            Logger.i("🚀 Sending voice cover request (attempt \(attempt)/\(maxAttempts))...")
+            let startTime = Date()
+
             do {
-                let voiceCoverResponse = try JSONDecoder().decode(VoiceCoverResponse.self, from: data)
-                Logger.i("✅ Voice cover response decoded successfully")
-                Logger.d("📋 Response Status: \(voiceCoverResponse.status)")
-                Logger.d("🆔 Response ID: \(voiceCoverResponse.id ?? -1)")
-                Logger.d("💬 Response Message: \(voiceCoverResponse.message ?? "No message")")
-                Logger.d("⏳ ETA: \(voiceCoverResponse.eta ?? -1) seconds")
-                return voiceCoverResponse
-            } catch {
-                Logger.e("❌ Error decoding VoiceCoverResponse: \(error)")
-                if let responseString = String(data: data, encoding: .utf8) {
-                    Logger.e("📄 Failed to decode response: \(responseString)")
+                let (data, response) = try await URLSession.shared.data(for: request)
+                let duration = Date().timeIntervalSince(startTime)
+
+                Logger.i("📥 Response received in \(String(format: "%.2f", duration)) seconds")
+                Logger.d("📊 Response data size: \(data.count) bytes")
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    Logger.e("❌ Invalid HTTP response type")
+                    throw ModelsLabError.invalidResponse
                 }
-                throw ModelsLabError.decodingError(error)
-            }
-        } catch let error as NSError {
-            Logger.e("❌ Network request failed")
-            Logger.e("🔍 Error Domain: \(error.domain)")
-            Logger.e("🔍 Error Code: \(error.code)")
-            Logger.e("🔍 Error Description: \(error.localizedDescription)")
-            Logger.e("🔍 Error UserInfo: \(error.userInfo)")
-            
-            if error.code == NSURLErrorTimedOut {
-                Logger.e("⏰ Request timed out after \(requestTimeout) seconds")
-                throw ModelsLabError.requestTimeout
-            } else {
-                Logger.e("🌐 Network error: \(error)")
-                throw ModelsLabError.networkError(error)
+
+                Logger.d("📈 HTTP Status Code: \(httpResponse.statusCode)")
+                Logger.d("📋 Response Headers: \(httpResponse.allHeaderFields)")
+
+                guard httpResponse.statusCode == 200 else {
+                    Logger.e("❌ HTTP Error: \(httpResponse.statusCode)")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        Logger.e("📄 Error Response Body: \(responseString)")
+                    }
+                    throw ModelsLabError.httpError(httpResponse.statusCode)
+                }
+
+                if let responseString = String(data: data, encoding: .utf8) {
+                    Logger.d("📄 Raw API Response: \(responseString)")
+                }
+
+                do {
+                    let voiceCoverResponse = try JSONDecoder().decode(VoiceCoverResponse.self, from: data)
+                    let statusLower = voiceCoverResponse.status.lowercased()
+                    let messageLower = (voiceCoverResponse.message ?? "").lowercased()
+                    Logger.i("✅ Voice cover response decoded successfully")
+                    Logger.d("📋 Response Status: \(voiceCoverResponse.status)")
+                    Logger.d("🆔 Response ID: \(voiceCoverResponse.id ?? -1)")
+                    Logger.d("💬 Response Message: \(voiceCoverResponse.message ?? "No message")")
+                    Logger.d("⏳ ETA: \(voiceCoverResponse.eta ?? -1) seconds")
+
+                    let shouldRetry = (statusLower == "failed") && (
+                        messageLower.contains("try again") ||
+                        messageLower.contains("something went wrong")
+                    )
+
+                    if shouldRetry && attempt < maxAttempts {
+                        Logger.w("⚠️ Retryable server error detected. Retrying in 2s (attempt \(attempt+1)/\(maxAttempts))...")
+                        try? await Task.sleep(nanoseconds: retryDelayNs)
+                        continue
+                    }
+
+                    return voiceCoverResponse
+                } catch {
+                    Logger.e("❌ Error decoding VoiceCoverResponse: \(error)")
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        Logger.e("📄 Failed to decode response: \(responseString)")
+                    }
+                    throw ModelsLabError.decodingError(error)
+                }
+            } catch let error as NSError {
+                Logger.e("❌ Network request failed (attempt \(attempt))")
+                Logger.e("🔍 Error Domain: \(error.domain)")
+                Logger.e("🔍 Error Code: \(error.code)")
+                Logger.e("🔍 Error Description: \(error.localizedDescription)")
+                Logger.e("🔍 Error UserInfo: \(error.userInfo)")
+
+                if error.code == NSURLErrorTimedOut {
+                    Logger.e("⏰ Request timed out after \(requestTimeout) seconds")
+                    if attempt < maxAttempts {
+                        Logger.w("⚠️ Retrying in 2s due to timeout...")
+                        try? await Task.sleep(nanoseconds: retryDelayNs)
+                        continue
+                    }
+                    throw ModelsLabError.requestTimeout
+                } else {
+                    if attempt < maxAttempts {
+                        Logger.w("⚠️ Network error. Retrying in 2s...")
+                        try? await Task.sleep(nanoseconds: retryDelayNs)
+                        continue
+                    }
+                    Logger.e("🌐 Network error: \(error)")
+                    throw ModelsLabError.networkError(error)
+                }
             }
         }
+
+        // Should never reach here
+        throw ModelsLabError.invalidResponse
     }
     
     // MARK: - Fetch Voice Result
