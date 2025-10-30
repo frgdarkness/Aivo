@@ -3,6 +3,7 @@ import SwiftUI
 struct SubscriptionScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var selectedPlan: Plan = .professional
+    @State private var autoRenewal: Bool = true
 
     enum Plan { case professional, team }
 
@@ -17,6 +18,7 @@ struct SubscriptionScreen: View {
                 features
                 //Spacer(minLength: 12)
                 planCards
+                autoRenewalView
                 //Spacer(minLength: 8)
                 ctaButton
                 footer
@@ -37,9 +39,7 @@ struct SubscriptionScreen: View {
                     Image("demo_cover")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .scaleEffect(1.2)
-                        .clipped()
-                        .frame(height: geometry.size.height * 0.55)
+                        .frame(width: geometry.size.width, height: geometry.size.height * 0.55, alignment: .center)
                         .clipped()
 
                     Spacer()
@@ -81,6 +81,7 @@ struct SubscriptionScreen: View {
 
     private var header: some View {
         HStack {
+            Spacer()
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .bold))
@@ -89,9 +90,8 @@ struct SubscriptionScreen: View {
                     .background(Color.white.opacity(0.15))
                     .clipShape(Circle())
             }
-            Spacer()
         }
-        .padding(.top, 14)
+        .padding(.top, 50)
     }
 
     private var title: some View {
@@ -106,10 +106,11 @@ struct SubscriptionScreen: View {
 
     private var features: some View {
         VStack(alignment: .leading, spacing: 16) {
-            featureRow("Unlimited AI Generations")
-            featureRow("Generate High Quality Images")
-            featureRow("Ads Free")
-            featureRow("Unlimited Storage")
+            featureRow("1000 credits")
+            featureRow("Access to All Features")
+            featureRow("Remove all Ads")
+            featureRow("Premium quality AI Song")
+            featureRow("Unlimited downloads")
         }
         .padding(.top, 18)
     }
@@ -124,7 +125,7 @@ struct SubscriptionScreen: View {
                     .font(.system(size: 20))
             }
             Text(text)
-                .foregroundColor(.white)
+                .foregroundColor(.white.opacity(0.85))
                 .font(.system(size: 17, weight: .medium))
             Spacer()
         }
@@ -133,27 +134,30 @@ struct SubscriptionScreen: View {
     private var planCards: some View {
         VStack(spacing: 14) {
             planCard(
-                title: "Professional",
-                subtitle: "7-Days Free Trial",
-                price: "$29",
-                per: "/Month",
-                isSelected: selectedPlan == .professional
+                title: "Yearly",
+                subtitle: "1200 credit per week",
+                price: "$119.99",
+                per: "/Year",
+                isSelected: selectedPlan == .professional,
+                showTag: true
             ) { selectedPlan = .professional }
 
             planCard(
-                title: "Team",
-                subtitle: "14-Days Free Trial",
-                price: "$99",
-                per: "/Month",
-                isSelected: selectedPlan == .team
+                title: "Weekly",
+                subtitle: "1000 credits per week",
+                price: "$8.99",
+                per: "/Week",
+                isSelected: selectedPlan == .team,
+                showTag: false
             ) { selectedPlan = .team }
         }
         .padding(.top, 28)
     }
 
-    private func planCard(title: String, subtitle: String, price: String, per: String, isSelected: Bool, onTap: @escaping () -> Void) -> some View {
-        Button(action: onTap) {
-            HStack {
+    private func planCard(title: String, subtitle: String, price: String, per: String, isSelected: Bool, showTag: Bool, onTap: @escaping () -> Void) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Button(action: onTap) {
+                HStack {
                 // Radio
                 ZStack {
                     Circle().stroke(AivoTheme.Primary.orange, lineWidth: 2)
@@ -163,38 +167,68 @@ struct SubscriptionScreen: View {
                             .frame(width: 14, height: 14)
                     }
                 }
-                .padding(.leading, 18)
+                    .padding(.leading, 18)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .foregroundColor(.white)
-                        .font(.system(size: 17, weight: .semibold))
-                    Text(subtitle)
-                        .foregroundColor(.white.opacity(0.7))
-                        .font(.system(size: 13, weight: .regular))
+                        .font(.system(size: 18, weight: .semibold))
+//                    Text(subtitle)
+//                        .foregroundColor(.white.opacity(0.7))
+//                        .font(.system(size: 13, weight: .regular))
                 }
-                Spacer()
-                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Spacer()
+                    HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(price)
                         .foregroundColor(.white)
                         .font(.system(size: 18, weight: .bold))
                     Text(per)
                         .foregroundColor(.white.opacity(0.7))
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: 14, weight: .regular))
+                    }
+                    .padding(.trailing, 16)
                 }
-                .padding(.trailing, 10)
+                .frame(height: 64)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.06))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.15), lineWidth: 2)
+                        )
+                )
             }
-            .frame(height: 74)
-            .background(
-                RoundedRectangle(cornerRadius: 36)
-                    .fill(Color.white.opacity(0.06))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 36)
-                            .stroke(isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.15), lineWidth: 2)
-                    )
-            )
+            .buttonStyle(.plain)
+
+            if showTag {
+                tagView("Save 75%")
+                    .padding(.trailing, 12)
+                    .padding(.top, -8)
+            }
         }
-        .buttonStyle(.plain)
+    }
+
+    private func tagView(_ text: String) -> some View {
+        let gradient = LinearGradient(
+                colors: [
+                    Color(red: 1.0, green: 0.1, blue: 0.1),   // 🔴 Đỏ tươi (#FF1A1A)
+                    Color(red: 1.0, green: 0.25, blue: 0.0)   // 🟠 Đỏ-cam nhạt (#FF4000)
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        return Text(text)
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule().fill(gradient)
+            )
+            .overlay(
+                Capsule().stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: AivoTheme.Shadow.black.opacity(0.4), radius: 6, x: 0, y: 3)
     }
 
     private var ctaButton: some View {
@@ -210,6 +244,21 @@ struct SubscriptionScreen: View {
                 )
         }
         .padding(.top, 18)
+    }
+
+    // MARK: - Auto Renewal
+    private var autoRenewalView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundColor(AivoTheme.Primary.orange)
+            Text("Auto Renewal. Cancel anytime.")
+                .foregroundColor(.white.opacity(0.85))
+                .font(.system(size: 15, weight: .medium))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 10)
+        .padding(.bottom, 6)
     }
 
     private var footer: some View {
