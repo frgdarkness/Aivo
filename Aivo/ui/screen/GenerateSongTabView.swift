@@ -22,6 +22,8 @@ struct GenerateSongTabView: View {
     @State private var toastMessage = ""
     @State private var showGenerateLyricsScreen = false
     @State private var generatedLyrics: String = ""
+    @State private var isBPMEnabled: Bool = false
+    @State private var bpmValue: Double = 100
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -379,24 +381,35 @@ struct GenerateSongTabView: View {
                         Button(action: {
                             toggleGenreSelection(genre)
                         }) {
-                            VStack(spacing: 4) {
+                            VStack(spacing: 3) {
                                 Image(genre.icon)
                                     .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 60, height: 60)
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 72, height: 72)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8)) // 🟡 Bo góc ảnh
+                                    .padding(.top, 4)
                                 
                                 Text(genre.displayName)
                                     .font(.system(size: 12, weight: .medium))
                                     .foregroundColor(.white)
                             }
-                            .frame(width: 88, height: 88)
+                            .frame(width: 86, height: 100)
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(selectedGenres.contains(genre) ? AivoTheme.Primary.orangeDark : Color.gray.opacity(0.3))
+                                    .fill(selectedGenres.contains(genre) ?
+                                          AivoTheme.Primary.orangeDark :
+                                          Color.gray.opacity(0.3))
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(selectedGenres.contains(genre) ?
+                                            AivoTheme.Primary.orange :
+                                            Color.clear, lineWidth: 2)
                             )
                         }
                     }
                     
+                    // Nút "More"
                     Button(action: {
                         showMultiGenreScreen = true
                     }) {
@@ -425,6 +438,7 @@ struct GenerateSongTabView: View {
             }
         }
     }
+
     
     // MARK: - Advanced Options Section
     private var advancedOptionsSection: some View {
@@ -491,6 +505,44 @@ struct GenerateSongTabView: View {
                                     }
                             }
                             
+                            // BPM Toggle + Slider
+                            VStack(alignment: .leading, spacing: 4) {
+                                HStack {
+                                    Text("BPM (Beats Per Minute)")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.white)
+
+                                    
+                                    
+                                    
+
+                                    Toggle("", isOn: $isBPMEnabled)
+                                        .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
+                                }
+
+                                HStack(spacing: 12) {
+                                    Text("40")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+
+                                    Slider(value: $bpmValue, in: 40...200, step: 1)
+                                        .accentColor(AivoTheme.Primary.orange)
+                                        .disabled(!isBPMEnabled)
+
+                                    Text("200")
+                                        .font(.caption)
+                                        .foregroundColor(.white.opacity(0.7))
+                                }
+                                .opacity(isBPMEnabled ? 1.0 : 0.5)
+
+                                HStack {
+                                    Spacer()
+                                    Text("= \(Int(bpmValue)) bpm")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(isBPMEnabled ? AivoTheme.Secondary.goldenSun : .white.opacity(0.3))
+                                }
+                            }
+
                             // Instrumental Toggle
                             HStack {
                                 Text("Instrumental")
@@ -506,6 +558,35 @@ struct GenerateSongTabView: View {
                                             selectedVocalGender = .random
                                         }
                                     }
+                            }
+                                
+                            // Vocal Gender - Disabled when instrumental
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Vocal Gender")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                HStack(spacing: 6) {
+                                    ForEach(LocalVocalGender.allCases, id: \.self) { gender in
+                                        Button(action: {
+                                            if !isInstrumental {
+                                                selectedVocalGender = gender
+                                            }
+                                        }) {
+                                            Text(gender.rawValue)
+                                                .font(.system(size: 14, weight: .medium))
+                                                .foregroundColor(selectedVocalGender == gender ? .black : .white)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 12)
+                                                .background(
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(selectedVocalGender == gender ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                                )
+                                        }
+                                        .disabled(isInstrumental)
+                                        .opacity(isInstrumental ? 0.5 : 1.0)
+                                    }
+                                }
                             }
                             
                             // Model Selection
@@ -537,34 +618,6 @@ struct GenerateSongTabView: View {
                                 }
                             }
                             
-                            // Vocal Gender - Disabled when instrumental
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Vocal Gender")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                
-                                HStack(spacing: 6) {
-                                    ForEach(LocalVocalGender.allCases, id: \.self) { gender in
-                                        Button(action: {
-                                            if !isInstrumental {
-                                                selectedVocalGender = gender
-                                            }
-                                        }) {
-                                            Text(gender.rawValue)
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(selectedVocalGender == gender ? .black : .white)
-                                                .frame(maxWidth: .infinity)
-                                                .padding(.vertical, 12)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(selectedVocalGender == gender ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
-                                                )
-                                        }
-                                        .disabled(isInstrumental)
-                                        .opacity(isInstrumental ? 0.5 : 1.0)
-                                    }
-                                }
-                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
@@ -728,52 +781,58 @@ struct GenerateSongTabView: View {
         // If lyrics tab is selected and has lyrics, use only lyrics
         if selectedInputType == .lyrics && !songLyrics.isEmpty {
             // Check if lyrics doesn't start with [
+            
+            // Add genres
+            
+            let genreData = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+            let genreText = selectedGenres.isEmpty ? "" : " (\(genreData))"
+            prompt += "Create a\(genreText) song"
+            
+            
+            let moodData = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+            let moodText = selectedMoods.isEmpty ? "" : "(\(moodData))"
+            prompt += self.selectedMoods.isEmpty ? "" : " with \(moodText) mood"
+            
+            if isBPMEnabled {
+                prompt += ", tempo: \(Int(bpmValue)) BPM"
+            }
+            
+            if (!prompt.isEmpty) {
+                prompt += ". "
+            }
+            
+            if !songDescription.isEmpty {
+                prompt += songDescription
+            }
+            prompt += "\nLyric of song:\n"
+                        
             if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
-                prompt = "[Verse]\n" + songLyrics
+                prompt += "[Verse]\n" + songLyrics
             } else {
-                prompt = songLyrics
+                prompt += songLyrics
             }
             
-            // Add moods
-            if !selectedMoods.isEmpty {
-                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(moodText) mood"
-            }
-            
-            // Add genres
-            if !selectedGenres.isEmpty {
-                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(genreText) style"
-            }
-            
-            // Add song name if provided
-            if !songName.isEmpty {
-                prompt += ", titled \"\(songName)\""
-            }
         } else {
-            // Description mode: Always use description as base
-            prompt = songDescription.isEmpty ? "beautiful girl in white, pop and ballad" : songDescription
-            
-            // Add lyrics if provided
-            if !songLyrics.isEmpty {
-                prompt += "\n\nLyric of song:\n\(songLyrics)"
-            }
-            
-            // Add moods
-            if !selectedMoods.isEmpty {
-                let moodText = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(moodText) mood"
-            }
-            
             // Add genres
-            if !selectedGenres.isEmpty {
-                let genreText = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                prompt += ", \(genreText) style"
+            let genreData = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+            let genreText = selectedGenres.isEmpty ? "" : " (\(genreData))"
+            prompt += "Create a\(genreText) song"
+            
+            
+            let moodData = selectedMoods.map { $0.displayName }.joined(separator: ", ")
+            let moodText = selectedMoods.isEmpty ? "" : "(\(moodData))"
+            prompt += self.selectedMoods.isEmpty ? "" : " with \(moodText) mood"
+            
+            if isBPMEnabled {
+                prompt += ", tempo: \(Int(bpmValue)) BPM"
             }
             
-            // Add song name if provided
-            if !songName.isEmpty {
-                prompt += ", titled \"\(songName)\""
+            if (!prompt.isEmpty) {
+                prompt += ". "
+            }
+            
+            if !songDescription.isEmpty {
+                prompt += songDescription
             }
         }
         
