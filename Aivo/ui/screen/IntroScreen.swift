@@ -10,6 +10,7 @@ struct IntroScreen: View {
     @State private var selectedTheme: SongTheme?
     @State private var showProcessing = false
     @State private var selectedSong: SunoData?
+    @State private var processingTask: Task<Void, Never>?
     
     var body: some View {
         ZStack {
@@ -37,6 +38,17 @@ struct IntroScreen: View {
                 onComplete: {
                     // Processing screen will auto-dismiss after 5s
                     // Then we'll show play screen
+                },
+                onCancel: {
+                    // Cancel processing and reset state
+                    Logger.i("⚠️ [IntroScreen] Processing cancelled by user")
+                    processingTask?.cancel()
+                    showProcessing = false
+                    // Reset selections if needed
+                    selectedMood = nil
+                    selectedGenre = nil
+                    selectedTheme = nil
+                    currentStep = 1
                 }
             )
         }
@@ -184,12 +196,31 @@ struct IntroScreen: View {
                         Logger.d("⏳ [IntroScreen] Showing processing screen")
                         
                         // After 5 seconds, hide processing and show play screen
-                        Task { @MainActor in
+                        processingTask = Task { @MainActor in
+                            // Check if task was cancelled
+                            guard !Task.isCancelled else {
+                                Logger.d("⚠️ [IntroScreen] Processing task was cancelled")
+                                return
+                            }
+                            
                             try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                            
+                            // Check again after sleep
+                            guard !Task.isCancelled else {
+                                Logger.d("⚠️ [IntroScreen] Processing task was cancelled after sleep")
+                                return
+                            }
+                            
                             Logger.d("✅ [IntroScreen] Hiding processing, showing play screen")
                             showProcessing = false
                             
                             try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds - longer delay to ensure processing dismissed
+                            
+                            // Final check before setting selectedSong
+                            guard !Task.isCancelled else {
+                                Logger.d("⚠️ [IntroScreen] Processing task was cancelled before showing play screen")
+                                return
+                            }
                             
                             // NOW set selectedSong - this will trigger fullScreenCover(item:) automatically
                             Logger.d("🎵 [IntroScreen] Setting selectedSong to trigger fullScreenCover: \(song.title)")

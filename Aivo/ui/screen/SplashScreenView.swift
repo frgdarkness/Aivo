@@ -144,8 +144,8 @@ extension SplashScreenView {
         Logger.d("🚀 Splash: Start initialization")
         
         // Progress step 1
-        withAnimation(.easeInOut(duration: 1.2)) {
-            progress = 0.3
+        withAnimation(.easeInOut(duration: 0.5)) {
+            progress = 0.5
         }
         
         Task {
@@ -161,57 +161,25 @@ extension SplashScreenView {
             Logger.d("🔄 Fetching Remote Config...")
             await remoteConfigManager.fetchRemoteConfig()
             
-            // Load ad config from Remote Config
-            adManager.loadAdConfig()
-            
-            // Initialize AdMob SDK
-            await MainActor.run {
-                adManager.startSDK()
-                adManager.preloadNative { _ in }
-                Logger.d("✅ AdMob SDK started")
-            }
-            
             // Update progress
             await MainActor.run {
-                withAnimation(.easeInOut(duration: 1.0)) {
-                    progress = 0.7
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    progress = 1.0
                 }
             }
             
-            // Preload app open ad
-            await MainActor.run {
-                adManager.preloadAppOpenAd { isLoaded in
-                    Logger.d("✅ App open ad preload result: \(isLoaded)")
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        showAdAndContinue()
-                    }
-                }
-            }
-        }
-    }
-    
-    private func showAdAndContinue() {
-        guard !hasNavigated else { return } // tránh show lại khi view reload
-        hasNavigated = true
-        
-        adManager.showAppOpenAd { success in
-            Logger.d("✅ App open ad finished (success=\(success)) → Navigate to next screen")
-            
-            // Delay 0.3s để tránh crash UI sau khi ad đóng
+            // Navigate directly to intro (skip language selection and ad)
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // Determine next screen based on user preferences
+                guard !hasNavigated else { return }
+                hasNavigated = true
+                
                 let nextScreen: RootView.AppScreen
                 
                 // Debug: Print current state
-                Logger.d("🔍 Splash: shouldShowLanguageSelection = \(userDefaultsManager.shouldShowLanguageSelection())")
                 Logger.d("🔍 Splash: shouldShowIntro = \(userDefaultsManager.shouldShowIntro())")
                 Logger.d("🔍 Splash: shouldShowBuyCreditPrompt = \(userDefaultsManager.shouldShowBuyCreditPrompt())")
                 
-                if userDefaultsManager.shouldShowLanguageSelection() {
-                    nextScreen = .selectLanguage
-                    Logger.d("🔍 Splash: Navigating to selectLanguage")
-                } else if userDefaultsManager.shouldShowIntro() {
+                if userDefaultsManager.shouldShowIntro() {
                     nextScreen = .intro
                     Logger.d("🔍 Splash: Navigating to intro")
                 } else if userDefaultsManager.shouldShowBuyCreditPrompt() {

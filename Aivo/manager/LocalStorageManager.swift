@@ -132,25 +132,46 @@ final class LocalStorageManager: ObservableObject {
     }
     
     func shouldGrantWeeklyCredits() -> Bool {
-        guard isPremiumUser else { return false }
+        guard isPremiumUser else { 
+            Logger.d("💎 Should not grant credits: user is not premium")
+            return false 
+        }
+        
+        let currentDate = Date()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+        
         guard let lastGrantDate = getLastPremiumCreditGrantDate() else {
             // First time premium user, grant immediately
+            Logger.d("💎 Should grant credits: first time premium user (no last grant date)")
+            Logger.d("💎 Current date: \(dateFormatter.string(from: currentDate))")
             return true
         }
         
+        // Log dates for tracking
+        Logger.d("💎 [Credit Grant Check] Last grant date: \(dateFormatter.string(from: lastGrantDate))")
+        Logger.d("💎 [Credit Grant Check] Current date: \(dateFormatter.string(from: currentDate))")
+        
         // Calculate time difference
-        let timeSinceLastGrant = Date().timeIntervalSince(lastGrantDate)
+        let timeSinceLastGrant = currentDate.timeIntervalSince(lastGrantDate)
         let daysSinceLastGrant = timeSinceLastGrant / 86400.0 // Convert seconds to days
+        let hoursSinceLastGrant = timeSinceLastGrant / 3600.0
+        
+        Logger.d("💎 [Credit Grant Check] Days since last grant: \(String(format: "%.2f", daysSinceLastGrant))")
+        Logger.d("💎 [Credit Grant Check] Hours since last grant: \(String(format: "%.2f", hoursSinceLastGrant))")
         
         // Only grant if at least 7 days have passed
         // Also check minimum 1 hour to avoid multiple grants in same session
-        let hoursSinceLastGrant = timeSinceLastGrant / 3600.0
         guard hoursSinceLastGrant >= 1 else {
-            Logger.d("💎 Should not grant credits: only \(Int(hoursSinceLastGrant)) hours since last grant")
+            Logger.d("💎 Should not grant credits: only \(String(format: "%.2f", hoursSinceLastGrant)) hours since last grant (minimum 1 hour required)")
             return false
         }
         
-        return daysSinceLastGrant >= 7
+        let shouldGrant = daysSinceLastGrant >= 7
+        Logger.d("💎 [Credit Grant Check] Should grant credits: \(shouldGrant) (requires 7 days, current: \(String(format: "%.2f", daysSinceLastGrant)) days)")
+        
+        return shouldGrant
     }
     
     // MARK: - Profile Access (Always Non-Null)

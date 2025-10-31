@@ -124,9 +124,9 @@ struct HomeView: View {
                         if SubscriptionManager.shared.isPremium {
                             LinearGradient(
                                 gradient: Gradient(colors: [
-                                    Color(red: 1.0, green: 0.0,  blue: 0.0),   // đỏ thuần
-                                    Color(red: 1.0, green: 0.15, blue: 0.03),  // đỏ→cam
-                                    Color(red: 1.0, green: 0.38, blue: 0.08)   // cam đậm (ít hơn)
+                                    Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
+                                    Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
+                                    Color(red: 1.0, green: 0.45, blue: 0.1) 
                                 ]),
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing

@@ -4,6 +4,7 @@ import SwiftUI
 struct GenerateSongProcessingScreen: View {
     let requestType: RequestType
     let onComplete: () -> Void
+    let onCancel: (() -> Void)?
     
     @State private var isGenerating = true
     @State private var progress: Double = 0.0
@@ -12,12 +13,14 @@ struct GenerateSongProcessingScreen: View {
     @State private var randomSeed: Double = 0
     @State private var showToast = false
     @State private var toastMessage = ""
+    @State private var showCancelAlert = false
     @Environment(\.dismiss) private var dismiss
     
-    // Initialize with request type only
-    init(requestType: RequestType, onComplete: @escaping () -> Void) {
+    // Initialize with request type, onComplete, and optional onCancel
+    init(requestType: RequestType, onComplete: @escaping () -> Void, onCancel: (() -> Void)? = nil) {
         self.requestType = requestType
         self.onComplete = onComplete
+        self.onCancel = onCancel
     }
     
     var body: some View {
@@ -26,6 +29,8 @@ struct GenerateSongProcessingScreen: View {
             AivoSunsetBackground()
             
             VStack(spacing: 0) {
+                Spacer()
+                
                 // Header
                 headerView
                 
@@ -42,14 +47,8 @@ struct GenerateSongProcessingScreen: View {
                     
                     // Progress Bar
                     //progressView
-                    
-                    Spacer()
-                    
-                    // Cancel Button
-                    cancelButton
                 }
                 .padding(.horizontal, 40)
-                .padding(.top, 60)
                 
                 Spacer()
             }
@@ -84,7 +83,7 @@ struct GenerateSongProcessingScreen: View {
             Spacer()
             
             Button(action: {
-                dismiss()
+                showCancelAlert = true
             }) {
                 Image(systemName: "xmark")
                     .font(.title2)
@@ -94,6 +93,20 @@ struct GenerateSongProcessingScreen: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
+        .alert("Cancel Generation?", isPresented: $showCancelAlert) {
+            Button("Cancel", role: .cancel) {
+                // User cancelled the alert, do nothing
+            }
+            Button("Yes, Cancel", role: .destructive) {
+                // User confirmed cancellation
+                Logger.i("⚠️ [ProcessingScreen] User confirmed cancellation")
+                isGenerating = false
+                onCancel?()
+                dismiss()
+            }
+        } message: {
+            Text("If you exit now, the generation process will be cancelled.")
+        }
     }
     
     // MARK: - Title View
@@ -333,25 +346,6 @@ struct GenerateSongProcessingScreen: View {
             Text("\(Int(progress * 100))%")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.white)
-        }
-    }
-    
-    // MARK: - Cancel Button
-    private var cancelButton: some View {
-        Button(action: {
-            dismiss()
-        }) {
-            Text("Cancel")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Color.gray.opacity(0.3))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
         }
     }
     

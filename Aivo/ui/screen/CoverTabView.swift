@@ -71,6 +71,12 @@ struct CoverTabView: View {
                 requestType: .coverSong,
                 onComplete: {
                     showProcessingScreen = false
+                },
+                onCancel: {
+                    // Cancel cover generation process
+                    Logger.i("⚠️ [CoverTab] Cover generation cancelled by user")
+                    showProcessingScreen = false
+                    showToastMessage("Cover generation cancelled")
                 }
             )
         }
@@ -522,7 +528,7 @@ struct CoverTabView: View {
                             }
                             return
                         }
-                    // Check if song has local audio file
+                    // Check if song has local audio file (for My Songs)
                     } else if let localURL = getLocalAudioURL(for: selectedSong) {
                         Logger.d("📁 [CoverTab] Using local audio file")
                         let fileData = try Data(contentsOf: localURL)
@@ -533,8 +539,9 @@ struct CoverTabView: View {
                             fileName: fileName,
                             modelID: coverModelID
                         )
+                    // Use remote audioUrl directly (for Hot Songs from JSON, similar to YouTube)
                     } else if let audioUrl = selectedSong.audioUrl {
-                        Logger.d("🔗 [CoverTab] Using remote audio URL")
+                        Logger.d("🔗 [CoverTab] Using remote audio URL: \(audioUrl)")
                         resultUrl = await modelsLabService.processVoiceCover(
                             audioUrl: audioUrl,
                             modelID: coverModelID

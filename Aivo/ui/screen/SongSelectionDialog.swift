@@ -54,7 +54,9 @@ private struct SongSelectionDialogCard: View {
     
     @State private var selectedTab: SongTab = .hotSongs
     @State private var downloadedSongs: [SunoData] = []
+    @State private var hotSongs: [SunoData] = []
     @State private var isLoading = false
+    @State private var isLoadingHotSongs = false
     
     enum SongTab {
         case hotSongs, mySongs
@@ -103,6 +105,7 @@ private struct SongSelectionDialogCard: View {
         .shadow(color: .black.opacity(0.35), radius: 24, x: 0, y: 12)
         .onAppear {
             loadDownloadedSongs()
+            loadHotSongs()
         }
     }
     
@@ -272,14 +275,30 @@ private struct SongSelectionDialogCard: View {
     
     // MARK: - Hot Songs View
     private var hotSongsView: some View {
-        ForEach(filteredHotSongs, id: \.id) { song in
-            SelectSongRowView(
-                title: song.title,
-                coverImageUrl: song.coverImageUrl,
-                isRemote: true
-            ) {
-                onSelectSong(song, nil)
-                onClose()
+        Group {
+            if isLoadingHotSongs {
+                loadingView
+            } else if hotSongs.isEmpty {
+                emptyStateView
+            } else {
+                ForEach(filteredHotSongs, id: \.id) { song in
+                    SelectSongRowView(
+                        title: song.title,
+                        coverImageUrl: song.imageUrl.isEmpty ? song.sourceImageUrl : song.imageUrl,
+                        isRemote: true
+                    ) {
+                        // Create SelectedSong from SunoData with audioUrl
+                        let selectedSong = SelectedSong(
+                            id: song.id,
+                            title: song.title,
+                            coverImageUrl: song.imageUrl.isEmpty ? song.sourceImageUrl : song.imageUrl,
+                            audioUrl: song.audioUrl,
+                            sunoData: song
+                        )
+                        onSelectSong(selectedSong, nil)
+                        onClose()
+                    }
+                }
             }
         }
     }
@@ -368,21 +387,47 @@ private struct SongSelectionDialogCard: View {
         }
     }
     
-    private var hotSongsList: [SelectedSong] {
-        [
-            SelectedSong(id: "1", title: "Shape of You", coverImageUrl: "https://i.ibb.co/0jyLzrR/shape-of-you.jpg"),
-            SelectedSong(id: "2", title: "Blinding Lights", coverImageUrl: "https://i.ibb.co/0jyLzrR/blinding-lights.jpg"),
-            SelectedSong(id: "3", title: "Someone Like You", coverImageUrl: "https://i.ibb.co/0jyLzrR/someone-like-you.jpg"),
-            SelectedSong(id: "4", title: "Perfect", coverImageUrl: "https://i.ibb.co/0jyLzrR/perfect.jpg"),
-            SelectedSong(id: "5", title: "Watermelon Sugar", coverImageUrl: "https://i.ibb.co/0jyLzrR/watermelon-sugar.jpg")
-        ]
+    private func loadHotSongs() {
+        isLoadingHotSongs = true
+        Logger.i("🔥 [SongSelection] Loading hot songs from hottest_songs.json...")
+        
+        Task {
+            do {
+                guard let url = Bundle.main.url(forResource: "hottest_songs", withExtension: "json") else {
+                    Logger.e("❌ [SongSelection] Could not find hottest_songs.json")
+                    await MainActor.run {
+                        isLoadingHotSongs = false
+                        hotSongs = []
+                    }
+                    return
+                }
+                
+                let data = try Data(contentsOf: url)
+                let songs = try JSONDecoder().decode([SunoData].self, from: data)
+                
+                await MainActor.run {
+                    self.hotSongs = songs
+                    self.isLoadingHotSongs = false
+                    Logger.i("✅ [SongSelection] Loaded \(songs.count) hot songs")
+                    for song in songs.prefix(5) {
+                        Logger.d("🔥 [SongSelection] - \(song.title) (ID: \(song.id), audioUrl: \(song.audioUrl))")
+                    }
+                }
+            } catch {
+                Logger.e("❌ [SongSelection] Error loading hot songs: \(error)")
+                await MainActor.run {
+                    isLoadingHotSongs = false
+                    hotSongs = []
+                }
+            }
+        }
     }
     
-    private var filteredHotSongs: [SelectedSong] {
+    private var filteredHotSongs: [SunoData] {
         if searchText.isEmpty {
-            return hotSongsList
+            return hotSongs
         }
-        return hotSongsList.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
+        return hotSongs.filter { $0.title.localizedCaseInsensitiveContains(searchText) }
     }
     
     private var filteredDownloadedSongs: [SunoData] {

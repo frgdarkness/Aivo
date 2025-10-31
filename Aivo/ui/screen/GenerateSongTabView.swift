@@ -85,6 +85,12 @@ struct GenerateSongTabView: View {
                 requestType: .generateSong,
                 onComplete: {
                     showGenerateSongScreen = false
+                },
+                onCancel: {
+                    // Cancel generation process
+                    Logger.i("⚠️ [GenerateSong] Generation cancelled by user")
+                    showGenerateSongScreen = false
+                    showToastMessage("Generation cancelled")
                 }
             )
         }
@@ -900,7 +906,7 @@ struct GenerateSongTabView: View {
             if let randomPrompt = prompts.randomElement() {
                 print("💡 [GetInspired] Selected prompt: \(randomPrompt)")
                 songDescription = randomPrompt
-                showToastMessage("Inspiration loaded!")
+                //showToastMessage("Inspiration loaded!")
             } else {
                 print("❌ [GetInspired] No prompts found in file")
                 showToastMessage("No inspiration prompts available")
