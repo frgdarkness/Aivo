@@ -27,7 +27,26 @@ struct GenerateSunoSongResultScreen: View {
     @Environment(\.dismiss) private var dismiss
     
     private var currentSong: SunoData {
-        sunoDataList[selectedSongIndex]
+        guard selectedSongIndex >= 0 && selectedSongIndex < sunoDataList.count else {
+            Logger.e("❌ [SunoResult] Invalid selectedSongIndex: \(selectedSongIndex), list count: \(sunoDataList.count)")
+            // Return first song as fallback, or create a dummy if empty
+            return sunoDataList.first ?? SunoData(
+                id: "error",
+                audioUrl: "",
+                sourceAudioUrl: "",
+                streamAudioUrl: "",
+                sourceStreamAudioUrl: "",
+                imageUrl: "",
+                sourceImageUrl: "",
+                prompt: "",
+                modelName: "Error",
+                title: "Error",
+                tags: "",
+                createTime: 0,
+                duration: 0
+            )
+        }
+        return sunoDataList[selectedSongIndex]
     }
     
     var body: some View {
@@ -50,23 +69,34 @@ struct GenerateSunoSongResultScreen: View {
         }
         .onAppear {
             Logger.d("🎵 [SunoResult] Screen appeared with \(sunoDataList.count) songs")
+            
+            // Always reset to 0 when screen appears to ensure valid index
+            selectedSongIndex = 0
+            
             for (index, song) in sunoDataList.enumerated() {
                 Logger.d("🎵 [SunoResult] Song \(index + 1): \(song.title) - \(song.duration)s")
             }
-            startDownloadAllSongs()
+            
+            if !sunoDataList.isEmpty {
+                startDownloadAllSongs()
+            } else {
+                Logger.e("❌ [SunoResult] sunoDataList is empty!")
+            }
         }
         .onDisappear {
             downloadTask?.cancel()
         }
         .onChange(of: musicPlayer.currentIndex) { newIndex in
             // Sync selectedSongIndex with MusicPlayer's currentIndex
-            if selectedSongIndex != newIndex {
+            if selectedSongIndex != newIndex && newIndex >= 0 && newIndex < sunoDataList.count {
                 Logger.d("🎵 [SunoResult] Syncing selectedSongIndex: \(selectedSongIndex) -> \(newIndex)")
                 selectedSongIndex = newIndex
                 // Load the new song if it's downloaded
-                if newIndex < sunoDataList.count && downloadedFileURLs[sunoDataList[newIndex].id] != nil {
+                if downloadedFileURLs[sunoDataList[newIndex].id] != nil {
                     loadSelectedSong()
                 }
+            } else if newIndex < 0 || newIndex >= sunoDataList.count {
+                Logger.e("❌ [SunoResult] Invalid newIndex from MusicPlayer: \(newIndex), list count: \(sunoDataList.count)")
             }
         }
         .sheet(isPresented: $showExportSheet) {
@@ -195,8 +225,13 @@ struct GenerateSunoSongResultScreen: View {
                                isSavedToDevice: savedToDevice.contains(song.id),
                                onTap: {
                                    if downloadedFileURLs[song.id] != nil {
-                                       selectedSongIndex = index
-                                       loadSelectedSong()
+                                       // Validate index before setting
+                                       if index >= 0 && index < sunoDataList.count {
+                                           selectedSongIndex = index
+                                           loadSelectedSong()
+                                       } else {
+                                           Logger.e("❌ [SunoResult] Invalid index \(index) for song list count \(sunoDataList.count)")
+                                       }
                                    }
                                },
                                onSave: {
