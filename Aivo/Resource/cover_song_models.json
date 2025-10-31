@@ -1,110 +1,71 @@
     [
-      {
-        "id": 0,
-        "modelName": "vegeta",
-        "displayName": "Veg3t4",
-        "thumbUrl": "https://api.homeaidecor.app/storage/files/cover_model_demi_lovato.webp"
-      },
-      {
-        "id": 1,
-        "modelName": "goku",
-        "displayName": "G0kuuu~",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fmodel_cover_goku.jpg?alt=media&token=b80f09bb-f2f7-4f62-b535-90761b10eb96"
-      },
-      {
-        "id": 2,
-        "modelName": "zozo",
-        "displayName": "Z0r0🔥",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_zoro.png?alt=media&token=46e45fad-2433-4158-9732-7adfc47ad3e7"
-      },
-      {
-        "id": 3,
-        "modelName": "edsheeran",
-        "displayName": "Ed 5heeran",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_ed_sheeran.jpg?alt=media&token=f9d984e3-91ee-4068-97d5-2bc1418a50db"
-      },
-      {
-        "id": 4,
-        "modelName": "trump",
-        "displayName": "TruMp💸",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_trump.jpg?alt=media&token=8bacde4f-631c-4f1b-9a36-6f9498e1b66e"
-      },
-      {
-        "id": 5,
-        "modelName": "luffy-e",
-        "displayName": "Luff¥☠️",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_luffy.png?alt=media&token=e9dd3bf3-33d8-4e6d-900a-73f822fa523f"
-      },
-      {
-        "id": 6,
-        "modelName": "satorugojo-yuichinakamura",
-        "displayName": "S4toru G0j0😎",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_gojo%20(1).jpg?alt=media&token=b4b9c004-9214-47f9-86a3-f7736e2854bf"
-      },
-      {
-        "id": 7,
-        "modelName": "kanyev2-redux",
-        "displayName": "K4nye W3$t",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_kayne_west.jpg?alt=media&token=8f23d1d0-3cb8-48a0-9f41-e868d1cd5045"
-      },
-      {
-        "id": 8,
-        "modelName": "taylorswift",
-        "displayName": "T4yl0r 5w1ft💖",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_taylor.jpg?alt=media&token=bcd20c8f-d9e5-44fb-a21d-3549c560a2d8"
-      },
-      {
-        "id": 9,
-        "modelName": "justinbieber",
-        "displayName": "Ju$t1n B!3b3r✨",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_justin_bieber.jpg?alt=media&token=20205a23-0abf-48b3-b8bf-23b165a2540c"
-      },
-      {
-        "id": 10,
-        "modelName": "eminem-e",
-        "displayName": "3m!n3m🔥",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_eminem.jpg?alt=media&token=972dbb22-2b07-4a82-a65b-bf865ad51e0c"
-      },
-      {
-        "id": 11,
-        "modelName": "drake",
-        "displayName": "Dr4k3🐍",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_drake.jpg?alt=media&token=f1028ccc-f7f8-4464-b791-16c2140bc26b"
-      },
-      {
-        "id": 12,
-        "modelName": "arianagrande",
-        "displayName": "4ri@na",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_ariana_grande.jpg?alt=media&token=b4842841-ed02-4468-89c3-e5a40451e649"
-      },
-      {
-        "id": 13,
-        "modelName": "srkmodel",
-        "displayName": "Sh4h RuKh Kh4n",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_shah_rukh_khan.jpg?alt=media&token=7866c01c-8a0b-416c-837c-cdc7b8d0d55a"
-      },
-      {
-        "id": 14,
-        "modelName": "modi",
-        "displayName": "N4rendr4 M0d!",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fmodel_cover_narendra_modi.jpg?alt=media&token=adfb30e7-0373-4111-88f2-386262c48d71"
-      },
-      {
-        "id": 15,
-        "modelName": "biden",
-        "displayName": "J0e B!d3n",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fnew%2Fcover_model_joe_biden.jpg?alt=media&token=8fdbc2b4-016d-4f91-9e9f-d3ab461b68f3"
-      },
-      {
-        "id": 16,
-        "modelName": "billie2019-e",
-        "displayName": "B!llie E!l!5h",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_billie_eilish.jpg?alt=media&token=835bb2b9-15b4-4988-90e5-5452b0fd0753"
-      },
-      {
-        "id": 17,
-        "modelName": "jungkookv7-e",
-        "displayName": "Jun9k00k",
-        "thumbUrl": "https://firebasestorage.googleapis.com/v0/b/interior-ai---ai-home-design.firebasestorage.app/o/Aivo%2Fcover_model_jungkook.jpg?alt=media&token=d1c61259-650f-457a-ac8e-e9c78bb023af"
-      }
+      { "id": 0, "modelName": "arianagrande", "displayName": "ari4n4grand3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_ariana_grande.webp" },
+      { "id": 1, "modelName": "baekhyunmodel", "displayName": "b43khyunmod3l", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/baekhyunmodel.png" },
+      { "id": 2, "modelName": "badbunny", "displayName": "b4dbunny", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/OVvN45P9dhHzI5Z4caYh9AZf4YPJAJ-metaYmFkX0J1bm55X2hvbGRpbmdfYV9taWNfd2l0aF9hX2hvbG9ncmFwaGljX1RyaWFfMzNkMjE0YmYtZWFkYS00MWY4LTkyNWItODEzZjk1Nzc3NDJjXzAucG5n-.png" },
+      { "id": 3, "modelName": "beyonce", "displayName": "bey0nc3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_beyonce.webp" },
+      { "id": 4, "modelName": "biden", "displayName": "b1d3n", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_joe_biden.webp" },
+      { "id": 5, "modelName": "billie2019-e.", "displayName": "bi1li3-2019-3.", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_billie_eilish.webp" },
+      { "id": 6, "modelName": "blackpinkjennie", "displayName": "bl4ckpinkj3nni3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_jennie.webp" },
+      { "id": 7, "modelName": "blackpinkjisoo", "displayName": "bl4ckpinkjis0o", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_jisoo.webp" },
+      { "id": 8, "modelName": "blackpinklisa", "displayName": "bl4ckpinkli$4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_lisa.webp" },
+      { "id": 9, "modelName": "bobesponja-e", "displayName": "b0b3$ponj4-3", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/bobesponja-e.png" },
+      { "id": 10, "modelName": "brunomars", "displayName": "brun0m4r$", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_bruno_mars.webp" },
+      { "id": 11, "modelName": "britneyspears", "displayName": "britn3y$pe4r$", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_britney_spears.webp" },
+      { "id": 12, "modelName": "celinedion-e", "displayName": "c3lin3di0n-3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_celine_dion.webp" },
+      { "id": 13, "modelName": "charlie-puth", "displayName": "ch4r1i3-puth", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_charlie_puth.webp" },
+      { "id": 14, "modelName": "chrisbrown", "displayName": "chri$brown", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_chris_brown.webp" },
+      { "id": 15, "modelName": "chester-bennington", "displayName": "ch3$ter-b3nnington", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/ibjPYbDTXbBE15c1g6WaQ7cWw7Rxlw-metaQ2hlc3Rlcl9CZW5uaW5ndG9uX3NpbmdpbmdfYXNfYV9tYW5nYV9jaGFyYWN0ZXJfZV9mYjVkYmFhYi0zOGJlLTQ5NzItYTExZS05OTMyMzNkNWUyN2FfMC5wbmc=-.png" },
+      { "id": 16, "modelName": "demilovato", "displayName": "d3m1lov4t0", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_demi_lovato.webp" },
+      { "id": 17, "modelName": "donaldduck", "displayName": "d0n4ldduck", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/donaldduck.png" },
+      { "id": 18, "modelName": "dora", "displayName": "d0r4", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/ymho7kRvB3bGKkLve4zN1Ku1lKyP5n-metaZG9yYV9jYXJ0b29uX2hvbGRpbmdfYV9taWNfLS1hcl8xNjlfYjc4MzFlNjctNTJmOS00NmE5LTk1MDAtMzVkMjFhNmZkMjAwXzAucG5n-.png" },
+      { "id": 19, "modelName": "drake", "displayName": "dr4k3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_drake.webp" },
+      { "id": 20, "modelName": "edsheeran", "displayName": "3d$h33r4n", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_ed_sheeran.webp" },
+      { "id": 21, "modelName": "eminem-e", "displayName": "3m!n3m", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_eminem.webp" },
+      { "id": 22, "modelName": "felixdeep", "displayName": "f3l1xd33p", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/felixdeep.png" },
+      { "id": 23, "modelName": "frieza-eng", "displayName": "fri3z4-3ng", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/frieza-eng.png" },
+      { "id": 24, "modelName": "goku", "displayName": "g0ku", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/model_cover_goku.webp" },
+      { "id": 25, "modelName": "gummibar", "displayName": "gumm1b4r", "thumbUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQXGuXcF7XeDqFhd-7zskSnFyWFSaGZIm4EQw&s" },
+      { "id": 26, "modelName": "gura", "displayName": "gvr4", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/eFLWx9pdtWAoJ4gWcFHSniud3WkXtr-metaR2F3cl9HdXJhX2FuaW1lX2NoYXJhY3Rlcl9ob2xkaW5nX2FfbWljXy0tYXJfMTY5X18yYzc1ZWFjYi03ZTc2LTRkOWUtYjZiYy1kMTMwNTQyY2RhYzdfMS5wbmc=-.png" },
+      { "id": 27, "modelName": "harry-styles", "displayName": "h4rry-$tyl3s", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_harry_styles.webp" },
+      { "id": 28, "modelName": "homero-lat", "displayName": "h0m3r0-l4t", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/7lb3II4bxRkiZZRrSE12SxiEkAxwIu-metaSG9tZXJvX2NhcnRvb25fY2hhcmFjdGVyX2hvbGRpbmdfYV9taWNfLS1hcl8xNjlfLV8zMzhkODc5Mi02NDM4LTRlZWYtODViMS1kMGEyM2E3ZGM2OGRfMC5wbmc=-.png" },
+      { "id": 29, "modelName": "ishowspeed", "displayName": "i$h0w$pe3d", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_ishowspeed.webp" },
+      { "id": 30, "modelName": "jungkookv7-e", "displayName": "jungk00kv7-3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_jungkook.webp" },
+      { "id": 31, "modelName": "justinbieber", "displayName": "ju$tinbi3b3r", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_justin_bieber.webp" },
+      { "id": 32, "modelName": "kanyev2-redux", "displayName": "k4ny3v2-r3dux", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_kayne_west.webp" },
+      { "id": 33, "modelName": "kylian-mbapp", "displayName": "ky1i4n-mb4pp", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_mbappe.webp" },
+      { "id": 34, "modelName": "ladygaga", "displayName": "l4dyg4g4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_lady_gaga.webp" },
+      { "id": 35, "modelName": "lanadelrey", "displayName": "l4n4d3lr3y", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_lanadelrey.webp" },
+      { "id": 36, "modelName": "luffy-e", "displayName": "luffy-3", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_luffy.webp" },
+      { "id": 37, "modelName": "meguminv2d-e", "displayName": "m3guminv2d-3", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/bKEF2M1ovXye8etfnT5h8aMWsCveBN-metaTWVndW1pbl9hbmltZV9jaGFyYWN0ZXJfaG9sZGluZ19hX21pY19hbmltZV9zdHlsZV8zNDYzNWUxYi1kY2FjLTQ5N2EtOGQ0MS0zYWUwMTI5MjJjODFfMC5wbmc=-.png" },
+      { "id": 38, "modelName": "michaeljacksonv", "displayName": "micha3ljack$0nv", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_micheal_jackson.webp" },
+      { "id": 39, "modelName": "mickeymouse", "displayName": "m1ck3ym0u$e", "thumbUrl": "https://img.freepik.com/premium-photo/mickey-mouse-ai-image_1209683-14515.jpg" },
+      { "id": 40, "modelName": "mileycyrus", "displayName": "mil3ycyru$", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_miley.webp" },
+      { "id": 41, "modelName": "modi", "displayName": "m0d1", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/model_cover_narendra_modi.webp" },
+      { "id": 42, "modelName": "mordecaiv", "displayName": "m0rd3c4iv", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/yQ58vW1us4uVLMued01z6Wmxhcg1Hw-metabW9yZGVjYWlfaG9sZGluZ19hX21pY19jYXJ0b29uXy0tYXJfMTY5Xy0tdl82Xzg3ZjI5NjE0LTU4ZjMtNDg1MC04NzA4LWU3YzY4MmM0OGZmY18yLnBuZw==-.png" },
+      { "id": 43, "modelName": "mrkrabs", "displayName": "mrkr4b$", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/IK6wQ2pvS5eJRBIZSJcxcCZ9u7aVnT-metaTXIuX0tyYWJzX3Npbmdpbmdfb25fYV9taWNfdWx0cmEtcmVhbGlzdGljX2Nsb3NldV8zMWNiYjkwZi1kMTQyLTQ4NTYtYTk1Ny04ZTkzM2U2MTcxNDFfMS5wbmc=-.png" },
+      { "id": 44, "modelName": "nayeon", "displayName": "n4y30n", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_nayeon.webp" },
+      { "id": 45, "modelName": "neko-arc", "displayName": "n3k0-4rc", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/neko-arc.png" },
+      { "id": 46, "modelName": "optimus", "displayName": "0p7imv$", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/optimus.png" },
+      { "id": 47, "modelName": "petergriffin", "displayName": "p3t3rgr1ffin", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/fe4G1nkOBQXb79kpOzHLNqOmchvPto-metacGV0ZXJfZ3JpZmZpbl9ob2xkaW5nX2FfbWljXy0tYXJfMTY5X2U4MTM1ZjE4LTUyYTItNGY2Yi05MDkyLWZhZTMxM2IwZjg2Yl8wLnBuZw==-.png" },
+      { "id": 48, "modelName": "rihanna", "displayName": "rih4nn4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_rihanna.webp" },
+      { "id": 49, "modelName": "rick-sanchez", "displayName": "rick-$4nch3z", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/rick-sanchez.png" },
+      { "id": 50, "modelName": "ronaldo", "displayName": "r0n4ld0", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_ronaldo.webp" },
+      { "id": 51, "modelName": "rose", "displayName": "r0$e", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_rose.webp" },
+      { "id": 52, "modelName": "ruikamishirorvc", "displayName": "rvik4mi$hir0rvc", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/ue6UvawPVGDrLoHGdcREqOGuT9503E-metaS2FtaXNoaXJvX1J1aV9hbmltZV9hcnRpc3RfaG9sZGluZ19hX21pY18tLWFyXzE2OV9jMWQ0OWQxNy0zZTUxLTQ2YmEtOGE5MS0wMzk4ZjY3ZGFjMzBfMC5wbmc=-.png" },
+      { "id": 53, "modelName": "satorugojo-yuichinakamura", "displayName": "s4t0rugojo-yu1chin4k4mur4", "thumbUrl": "https://i.pinimg.com/736x/b4/e8/78/b4e87856827cee1a7a391a962b0151f2.jpg" },
+      { "id": 54, "modelName": "senko-san", "displayName": "s3nk0-$an", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/senko-san.png" },
+      { "id": 55, "modelName": "selenagomez", "displayName": "s3l3n4g0m3z", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_selena_gomez.webp" },
+      { "id": 56, "modelName": "shakira", "displayName": "$h4k1r4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_shakira.webp" },
+      { "id": 57, "modelName": "sia", "displayName": "$i4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_sia.webp" },
+      { "id": 58, "modelName": "snoop-dogg", "displayName": "sn00p-d0gg", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_snoop_dogg.webp" },
+      { "id": 59, "modelName": "spongebob", "displayName": "$p0ng3b0b", "thumbUrl": "https://media.vanityfair.com/photos/5bfdceb0b44a1a2d726093e4/1:1/w_790,h_790,c_limit/t-Spongebob-Squarepants-Band-Geeks.jpg" },
+      { "id": 60, "modelName": "squidwardtentacles", "displayName": "squidw4rd7ent4cl3$", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/Jds1tTBcgqFUfCQzbc6Eoqq5M2ZPAD-metaU3F1aWR3YXJkX29mX1Nwb25nZV9Cb2JfX2hvbGRpbmdfYV9taWNfX3JlYWxpc3RpY19kNmRhMGRjMC04MDY0LTQyZjgtOTZmMy1kZDNkMjBjM2U2NTJfMC5wbmc=-.png" },
+      { "id": 61, "modelName": "srkmodel", "displayName": "$rkmod3l", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_shah_rukh_khan.webp" },
+      { "id": 62, "modelName": "taylorswift", "displayName": "tayl0r$wif7", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_taylor.webp" },
+      { "id": 63, "modelName": "travisscott", "displayName": "7rav1$sc07t", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_travis_scott.webp" },
+      { "id": 64, "modelName": "trump", "displayName": "7r0mp", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_trump.webp" },
+      { "id": 65, "modelName": "tsukasatenmarvc-e", "displayName": "7$uk4$atenm4rvc-3", "thumbUrl": "https://images.modelslab.com/?Image=https://pub-3626123a908346a7a8be8d9295f44e26.r2.dev/livewire-tmp/ocuCS34AQ9hZ4bxGwStqjEyZwhnCKQ-metadHN1a2FzYV90ZW5tYV9hbmltZV9ob2xkaW5nX2FfbWljXy0tYXJfMTY5XzY0NmUwNWQ5LWJlNjAtNDI0Zi1iZDMzLThkYjA0NDNhMmI5MF8wLnBuZw==-.png" },
+      { "id": 66, "modelName": "vegeta", "displayName": "v3g3t4", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_vegeta.webp" },
+      { "id": 67, "modelName": "yamiyugi", "displayName": "y4m1yvg1", "thumbUrl": "https://images.modelslab.com/?Image=https://assets.modelslab.ai/audio/Thumbnail1024/yamiyugi.png" },
+      { "id": 68, "modelName": "zozo", "displayName": "z0z0", "thumbUrl": "https://api.homeaidecor.app/storage/files/aivo/cover_model/cover_model_zoro.webp" }
     ]

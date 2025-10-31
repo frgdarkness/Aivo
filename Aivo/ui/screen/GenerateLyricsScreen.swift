@@ -1,31 +1,118 @@
 import SwiftUI
 
+// MARK: - Multiline Prompt (iOS 15+ compatible)
+struct PromptInput: View {
+    @Binding var text: String
+    let maxChars: Int
+    let minLines: Int
+    let maxLines: Int
+    let placeholder: String
+
+    // style chung
+    private var bg: some View {
+        RoundedRectangle(cornerRadius: 12)
+            .fill(Color.black.opacity(0.3))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+            )
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottomTrailing) {
+            if #available(iOS 16.0, *) {
+                ZStack(alignment: .topLeading) {
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.55)) // hint sáng hơn
+                            .padding(12)
+                    }
+
+                    TextField("", text: $text, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                        .padding(12)
+                        .padding(.bottom, 28) // chừa chỗ cho counter
+                        .background(bg)
+                        .lineLimit(minLines...maxLines)
+                        .onChange(of: text) { newValue in
+                            if newValue.count > maxChars {
+                                text = String(newValue.prefix(maxChars))
+                            }
+                        }
+                }
+            } else {
+                // iOS 15 fallback: TextEditor + placeholder thủ công
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $text)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                        .padding(8) // TextEditor có inset riêng
+                        .frame(
+                            minHeight: estimatedHeight(lines: minLines),
+                            maxHeight: estimatedHeight(lines: maxLines)
+                        )
+                        .background(bg)
+                        .onChange(of: text) { newValue in
+                            if newValue.count > maxChars {
+                                text = String(newValue.prefix(maxChars))
+                            }
+                        }
+
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .font(.system(size: 16))
+                            .foregroundColor(.white.opacity(0.55))
+                            .padding(14)
+                    }
+                }
+                .padding(.bottom, 28) // chừa chỗ cho counter
+            }
+
+            // Counter chung
+            Text("\(text.count) / \(maxChars)")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.6))
+                .padding(.trailing, 8)
+                .padding(.bottom, 8)
+        }
+    }
+
+    // Ước lượng chiều cao theo số dòng cho iOS 15 (TextEditor không có lineLimit)
+    private func estimatedHeight(lines: Int) -> CGFloat {
+        let lineHeight: CGFloat = 20.5 // ~line height cho font 16
+        return lineHeight * CGFloat(lines) + 16 // +padding
+    }
+}
+
 // MARK: - Generate Lyrics Screen
 struct GenerateLyricsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var lyricsText: String
-    
+
     @State private var prompt: String = ""
     @State private var isGenerating: Bool = false
     @State private var lyricsResults: [LyricsResult] = []
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var progress: Double = 0.0
-    
+
     var body: some View {
         ZStack {
             // Background
             AivoSunsetBackground()
-            
+
             VStack(spacing: 0) {
                 // Header
                 headerView
-                
+
                 ScrollView {
                     VStack(spacing: 24) {
                         // Input Section (always shown)
                         inputSection
-                        
+
                         // Results Section (shown after generation)
                         if !isGenerating && !lyricsResults.isEmpty {
                             resultsSection
@@ -56,7 +143,7 @@ struct GenerateLyricsScreen: View {
             }
         )
     }
-    
+
     // MARK: - Header
     private var headerView: some View {
         HStack {
@@ -64,12 +151,10 @@ struct GenerateLyricsScreen: View {
                 .font(.title2)
                 .fontWeight(.bold)
                 .foregroundColor(.white)
-            
+
             Spacer()
-            
-            Button(action: {
-                dismiss()
-            }) {
+
+            Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
                     .font(.title3)
                     .foregroundColor(.white)
@@ -82,7 +167,7 @@ struct GenerateLyricsScreen: View {
         .padding(.top, 10)
         .padding(.bottom, 16)
     }
-    
+
     // MARK: - Input Section
     private var inputSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -91,53 +176,18 @@ struct GenerateLyricsScreen: View {
                 Text("Describe Your Song")
                     .font(.headline)
                     .foregroundColor(.white)
-                
-                ZStack(alignment: .topLeading) {
-                    if prompt.isEmpty {
-                        Text("Enter a prompt for the lyrics...")
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.5))  // ✅ Brighter hint color
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 14)
-                    }
-                    
-                    ZStack(alignment: .bottomTrailing) {
-                        TextField("", text: $prompt, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                            .padding(12)
-                            .padding(.bottom, 28) // Space for counter
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.black.opacity(0.3))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
-                                    )
-                            )
-                            .lineLimit(5...10)
-                            .onChange(of: prompt) { newValue in
-                                // Limit to 200 characters
-                                if newValue.count > 200 {
-                                    prompt = String(newValue.prefix(200))
-                                }
-                            }
-                        
-                        // Character counter
-                        Text("\(prompt.count) / 200")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
-                            .padding(.trailing, 8)
-                            .padding(.bottom, 8)
-                    }
-                }
+
+                PromptInput(
+                    text: $prompt,
+                    maxChars: 200,
+                    minLines: 5,
+                    maxLines: 10,
+                    placeholder: "Enter a prompt for the lyrics..."
+                )
             }
-            
+
             // Generate Button
-            Button(action: {
-                generateLyrics()
-            }) {
+            Button(action: { generateLyrics() }) {
                 HStack(spacing: 12) {
                     if isGenerating {
                         ProgressView()
@@ -147,7 +197,7 @@ struct GenerateLyricsScreen: View {
                         Image(systemName: "wand.and.stars")
                             .font(.system(size: 18, weight: .semibold))
                     }
-                    
+
                     Text(isGenerating ? "Generating..." : "Generate Lyrics")
                         .font(.headline)
                         .fontWeight(.bold)
@@ -163,14 +213,14 @@ struct GenerateLyricsScreen: View {
             }
             .disabled(prompt.isEmpty || isGenerating)
             .opacity((prompt.isEmpty || isGenerating) ? 0.5 : 1.0)
-            
+
             // Generating Animation (shown below button)
             if isGenerating {
                 generatingAnimation
             }
         }
     }
-    
+
     // MARK: - Generating Animation
     private var generatingAnimation: some View {
         VStack(spacing: 16) {
@@ -179,12 +229,12 @@ struct GenerateLyricsScreen: View {
                 Circle()
                     .stroke(Color.white.opacity(0.18), lineWidth: 2)
                     .frame(width: 220, height: 220)
-                
+
                 LottieView(name: "lottie_wave_loop", loopMode: .loop, speed: 2.0)
                     .frame(width: 200, height: 200)
                     .clipShape(Circle())
                     .shadow(color: .yellow.opacity(0.4), radius: 10, x: 0, y: 0)
-                
+
                 Circle()
                     .stroke(
                         LinearGradient(colors: [.yellow.opacity(0.8), .orange.opacity(0.4)],
@@ -193,13 +243,13 @@ struct GenerateLyricsScreen: View {
                     )
                     .frame(width: 220, height: 220)
             }
-            
+
             // Status
             VStack(spacing: 4) {
                 Text("Generating...")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.white.opacity(0.9))
-                
+
                 Text("AI is creating your lyrics")
                     .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.6))
@@ -209,7 +259,7 @@ struct GenerateLyricsScreen: View {
         .frame(maxWidth: .infinity)
         .padding(.top, 24)
     }
-    
+
     // MARK: - Results Section
     private var resultsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -217,12 +267,10 @@ struct GenerateLyricsScreen: View {
                 Text("Generated Lyrics")
                     .font(.headline)
                     .foregroundColor(.white)
-                
+
                 Spacer()
-                
-                Button(action: {
-                    copyAllLyrics()
-                }) {
+
+                Button(action: { copyAllLyrics() }) {
                     HStack(spacing: 6) {
                         Image(systemName: "doc.on.doc")
                         Text("Copy All")
@@ -237,13 +285,13 @@ struct GenerateLyricsScreen: View {
                     )
                 }
             }
-            
+
             ForEach(lyricsResults) { result in
                 lyricsCard(for: result)
             }
         }
     }
-    
+
     // MARK: - Lyrics Card
     private func lyricsCard(for result: LyricsResult) -> some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -251,17 +299,15 @@ struct GenerateLyricsScreen: View {
             Text(result.title)
                 .font(.headline)
                 .foregroundColor(AivoTheme.Primary.orange)
-            
+
             // Lyrics Text
             Text(result.text)
                 .font(.system(size: 15))
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(6)
-            
+
             // Copy Button
-            Button(action: {
-                copyLyrics(result.text, title: result.title)
-            }) {
+            Button(action: { copyLyrics(result.text, title: result.title) }) {
                 HStack(spacing: 6) {
                     Image(systemName: "doc.on.doc")
                     Text("Copy")
@@ -287,30 +333,29 @@ struct GenerateLyricsScreen: View {
                 )
         )
     }
-    
+
     // MARK: - Helper Methods
     private func generateLyrics() {
         guard !prompt.isEmpty else { return }
-        
+
         isGenerating = true
         lyricsResults = []
-        
+
         Logger.i("📝 [GenerateLyrics] Starting lyrics generation...")
         Logger.d("📝 [GenerateLyrics] Prompt: \(prompt)")
-        
+
         Task {
             do {
                 let sunoService = SunoAiMusicService.shared
                 let results = try await sunoService.generateLyricsWithRetry(prompt: prompt)
-                
+
                 Logger.i("✅ [GenerateLyrics] Generated \(results.count) lyrics variations")
-                
+
                 await MainActor.run {
                     isGenerating = false
                     lyricsResults = results
                     showToastMessage("Lyrics generated successfully!")
                 }
-                
             } catch {
                 Logger.e("❌ [GenerateLyrics] Error: \(error)")
                 await MainActor.run {
@@ -320,24 +365,25 @@ struct GenerateLyricsScreen: View {
             }
         }
     }
-    
+
     private func copyLyrics(_ text: String, title: String) {
         UIPasteboard.general.string = text
         lyricsText = "[\(title)]\n\n\(text)"
         showToastMessage("Lyrics copied to clipboard!")
     }
-    
+
     private func copyAllLyrics() {
-        let allText = lyricsResults.map { "[\($0.title)]\n\n\($0.text)" }.joined(separator: "\n\n---\n\n")
+        let allText = lyricsResults.map { "[\($0.title)]\n\n\($0.text)" }
+            .joined(separator: "\n\n---\n\n")
         UIPasteboard.general.string = allText
         lyricsText = allText
         showToastMessage("All lyrics copied!")
     }
-    
+
     private func showToastMessage(_ message: String) {
         toastMessage = message
         showToast = true
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
             showToast = false
         }
@@ -350,4 +396,3 @@ struct GenerateLyricsScreen_Previews: PreviewProvider {
         GenerateLyricsScreen(lyricsText: .constant(""))
     }
 }
-
