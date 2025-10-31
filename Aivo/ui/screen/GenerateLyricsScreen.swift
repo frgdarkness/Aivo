@@ -90,6 +90,7 @@ struct PromptInput: View {
 // MARK: - Generate Lyrics Screen
 struct GenerateLyricsScreen: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var creditManager = CreditManager.shared
     @Binding var lyricsText: String
 
     @State private var prompt: String = ""
@@ -193,14 +194,28 @@ struct GenerateLyricsScreen: View {
                         ProgressView()
                             .tint(.black)
                             .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 18, weight: .semibold))
                     }
 
                     Text(isGenerating ? "Generating..." : "Generate Lyrics")
                         .font(.headline)
                         .fontWeight(.bold)
+                    
+                    // Credit cost display (only show when not generating)
+                    if !isGenerating {
+                        HStack(spacing: 2) {
+                            Text("(-4")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                            Image("icon_coin")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 17, height: 17)
+                            Text(")")
+                                .font(.headline)
+                                .fontWeight(.bold)
+                        }
+                        .foregroundColor(.black.opacity(0.8))
+                    }
                 }
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
@@ -211,8 +226,8 @@ struct GenerateLyricsScreen: View {
                 )
                 .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
             }
-            .disabled(prompt.isEmpty || isGenerating)
-            .opacity((prompt.isEmpty || isGenerating) ? 0.5 : 1.0)
+            .disabled(prompt.isEmpty || isGenerating || !hasEnoughCreditsForLyrics)
+            .opacity((prompt.isEmpty || isGenerating || !hasEnoughCreditsForLyrics) ? 0.5 : 1.0)
 
             // Generating Animation (shown below button)
             if isGenerating {
@@ -335,8 +350,18 @@ struct GenerateLyricsScreen: View {
     }
 
     // MARK: - Helper Methods
+    private var hasEnoughCreditsForLyrics: Bool {
+        return creditManager.credits >= 4
+    }
+    
     private func generateLyrics() {
         guard !prompt.isEmpty else { return }
+        
+        // Check credits before starting
+        guard creditManager.credits >= 4 else {
+            showToastMessage("Not enough credits! You need 4 credits to generate lyrics.")
+            return
+        }
 
         isGenerating = true
         lyricsResults = []
@@ -355,6 +380,12 @@ struct GenerateLyricsScreen: View {
                     isGenerating = false
                     lyricsResults = results
                     showToastMessage("Lyrics generated successfully!")
+                    
+                    // Deduct credits only after successful generation
+                    Task {
+                        await CreditManager.shared.deductForSuccessfulRequest(count: 4)
+                        Logger.i("📝 [GenerateLyrics] Deducted 4 credits for successful lyrics generation")
+                    }
                 }
             } catch {
                 Logger.e("❌ [GenerateLyrics] Error: \(error)")

@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Main Home View (Container)
 struct HomeView: View {
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedTab: TabItem = .home
     @State private var showGenerateSongResult = false
     @State private var showSunoSongResult = false
@@ -98,34 +99,60 @@ struct HomeView: View {
     // MARK: - Header View
     private var headerView: some View {
         HStack {
-            Text("Aivo - AI MUSIC")
+            Text("Aivo Music")
                 .font(.system(size: 24, weight: .black, design: .monospaced))
                 .foregroundColor(.white)
             
             Spacer()
-            
+            //SubscriptionManager.shared.isPremium
             // VIP Button
             Button(action: { showSubscription = true }) {
                 HStack(spacing: 4) {
                     Image(systemName: "crown.fill")
                         .font(.caption)
-                        .foregroundColor(.yellow)
+                        .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
                     Text("VIP")
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(.white)
+                        .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                // NỀN: chỉ có khi VIP
                 .background(
-                    Capsule()
-                        .fill(Color.gray.opacity(0.3))
-                        .overlay(
-                            Capsule()
-                                .stroke(Color.yellow.opacity(0.5), lineWidth: 1)
-                        )
+                    Group {
+                        if SubscriptionManager.shared.isPremium {
+                            LinearGradient(
+                                gradient: Gradient(colors: [
+                                    Color(red: 1.0, green: 0.0,  blue: 0.0),   // đỏ thuần
+                                    Color(red: 1.0, green: 0.15, blue: 0.03),  // đỏ→cam
+                                    Color(red: 1.0, green: 0.38, blue: 0.08)   // cam đậm (ít hơn)
+                                ]),
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                            .clipShape(Capsule())
+                        } else {
+                            Color.clear.clipShape(Capsule())
+                        }
+                    }
                 )
+                // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
+                .overlay(
+                    Capsule().stroke(
+                        SubscriptionManager.shared.isPremium
+                        ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                        : Color.white.opacity(0.5),
+                        lineWidth: 1
+                    )
+                )
+                // Bóng nhẹ chỉ khi VIP để nổi bật
+                .shadow(color: SubscriptionManager.shared.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                        radius: 8, x: 0, y: 3)
             }
+            
+            // Credit Badge View
+            CreditBadgeView()
             
             // Settings
             Button(action: {

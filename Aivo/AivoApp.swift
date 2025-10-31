@@ -51,6 +51,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Initialize CreditStoreManager and fetch products
         DispatchQueue.main.async {
             CreditStoreManager.shared.fetchProducts()
+            // Initialize SubscriptionManager (it auto-fetches products and checks status on init)
+            _ = SubscriptionManager.shared
         }
         
         // Initialize profile with local-first approach
@@ -58,6 +60,12 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             do {
                 let profile = await ProfileSyncManager.shared.loadProfileOnStartup()
                 Logger.d("✅ Profile loaded on startup: \(profile.profileID)")
+                
+                // Check subscription status on app startup and update premium status
+                await SubscriptionManager.shared.checkSubscriptionStatus()
+                
+                // Check and grant bonus credits for subscription (separate from purchase flow)
+                await SubscriptionManager.shared.checkBonusCreditForSubscription()
             } catch {
                 Logger.d("❌ Failed to load profile on startup: \(error)")
             }

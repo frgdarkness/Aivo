@@ -5,6 +5,7 @@ class CreditManager: ObservableObject {
     static let shared = CreditManager()
     
     @Published var credits: Int
+    @Published var isPremiumUser: Bool = false
     
     private let profileSyncManager = ProfileSyncManager.shared
     private let localStorage = LocalStorageManager.shared
@@ -12,6 +13,42 @@ class CreditManager: ObservableObject {
     private init() {
         // Load credits from local storage
         credits = localStorage.getCurrentCredits()
+        // Load premium status
+        isPremiumUser = localStorage.isPremiumUser
+        
+        // Note: Weekly credit checking is now handled by SubscriptionManager.checkBonusCreditForSubscription()
+        // This is called on app startup and after subscription status checks
+    }
+    
+    /// Grant weekly credits to premium users
+    /// This is called by SubscriptionManager after checking eligibility
+    func grantWeeklyPremiumCredits(amount: Int = 1000) async {
+        Logger.d("💎 Granting weekly premium credits (\(amount))")
+        await increaseCredits(by: amount)
+        localStorage.setLastPremiumCreditGrantDate(Date())
+        
+        // Log event
+        FirebaseLogger.shared.logEventWithBundle("event_premium_weekly_credits_granted", parameters: [
+            "credits_granted": amount,
+            "total_credits": credits,
+            "source": "premium_subscription"
+        ])
+    }
+    
+    /// Update premium status
+    /// - Parameters:
+    ///   - isPremium: Premium status
+    ///   - period: Subscription period
+    ///   - skipInitialGrant: If true, skip automatic initial credit grant (used when credits already granted elsewhere)
+    /// Note: Weekly credit checking is now handled by SubscriptionManager.checkBonusCreditForSubscription()
+    func updatePremiumStatus(_ isPremium: Bool, period: SubscriptionInfo.SubscriptionPeriod? = nil, skipInitialGrant: Bool = false) {
+        localStorage.setIsPremiumUser(isPremium, period: period)
+        isPremiumUser = isPremium
+        
+        Logger.d("💎 CreditManager: Premium status updated - isPremium: \(isPremium), period: \(period?.rawValue ?? "none")")
+        
+        // Note: Weekly credits are now handled separately by SubscriptionManager.checkBonusCreditForSubscription()
+        // This method only updates the premium status flag
     }
     
     // Kiểm tra đủ credit cho một request

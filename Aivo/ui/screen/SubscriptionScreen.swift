@@ -1,11 +1,18 @@
 import SwiftUI
+import StoreKit
 
 struct SubscriptionScreen: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedPlan: Plan = .professional
-    @State private var autoRenewal: Bool = true
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var creditManager = CreditManager.shared
+    @State private var selectedPlan: Plan = .yearly
+    @State private var isPurchasing = false
+    @State private var showPurchaseError = false
+    @State private var purchaseErrorMessage = ""
+    @State private var showAlreadySubscribedAlert = false
+    @State private var alreadySubscribedMessage = ""
 
-    enum Plan { case professional, team }
+    enum Plan { case yearly, weekly }
 
     var body: some View {
         ZStack {
@@ -14,13 +21,15 @@ struct SubscriptionScreen: View {
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 20)
-                title
-                features
-                //Spacer(minLength: 12)
-                planCards
-                autoRenewalView
-                //Spacer(minLength: 8)
-                ctaButton
+                
+                if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
+                    // Active subscription view
+                    activeSubscriptionView(subscription: currentSub)
+                } else {
+                    // Purchase view
+                    purchaseView
+                }
+                
                 footer
             }
             .padding(.horizontal, 20)
@@ -28,6 +37,49 @@ struct SubscriptionScreen: View {
         }
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
+        .onAppear {
+            subscriptionManager.fetchProducts()
+            subscriptionManager.checkSubscriptionStatus()
+        }
+        .alert("Purchase Error", isPresented: $showPurchaseError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(purchaseErrorMessage)
+        }
+        .alert("Already Subscribed", isPresented: $showAlreadySubscribedAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(alreadySubscribedMessage)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseSuccess"))) { _ in
+            // Handle successful purchase
+            isPurchasing = false
+            dismiss()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseFailed"))) { _ in
+            // Handle failed purchase
+            isPurchasing = false
+            if let errorMsg = subscriptionManager.errorMessage, !errorMsg.isEmpty {
+                purchaseErrorMessage = errorMsg
+                showPurchaseError = true
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionAlreadyActive"))) { notification in
+            // Handle already subscribed case
+            isPurchasing = false
+            if let userInfo = notification.userInfo,
+               let period = userInfo["period"] as? String,
+               let expiryDate = userInfo["expiryDate"] as? String {
+                alreadySubscribedMessage = "You already have an active \(period) subscription.\nIt expires on \(expiryDate)."
+            } else {
+                alreadySubscribedMessage = "You already have an active subscription. Please check your subscription status."
+            }
+            showAlreadySubscribedAlert = true
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseCancelled"))) { _ in
+            // Handle cancelled purchase
+            isPurchasing = false
+        }
     }
 
     // MARK: - Background giống PlayMySongScreen (nửa trên ảnh, dưới đen, overlay gradient)
@@ -94,6 +146,54 @@ struct SubscriptionScreen: View {
         .padding(.top, 50)
     }
 
+    // MARK: - Active Subscription View
+    private func activeSubscriptionView(subscription: SubscriptionInfo) -> some View {
+        VStack(spacing: 0) {
+            // Title showing subscription plan
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("\(subscription.period.displayName) Premium")
+                        .font(.system(size: 28, weight: .heavy))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
+                    Spacer()
+                }
+                
+                // Expiry date
+                if let expiryDate = subscription.expiryDate {
+                    HStack {
+                        Text("Expires on \(formatDate(expiryDate))")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.white.opacity(0.75))
+                        Spacer()
+                    }
+                }
+            }
+            .padding(.top, 8)
+            
+            // Keep features list
+            features
+            
+            // Credit display (similar to CreditDialogModifier)
+            creditInfoView
+                .padding(.top, 18)
+                .padding(.bottom, 12)
+            
+            //Spacer()
+        }
+    }
+    
+    // MARK: - Purchase View
+    private var purchaseView: some View {
+        VStack(spacing: 0) {
+            title
+            features
+            planCards
+            autoRenewalView
+            ctaButton
+        }
+    }
+    
     private var title: some View {
         HStack { Text("Upgrade to Premium")
                 .font(.system(size: 28, weight: .heavy))
@@ -103,12 +203,63 @@ struct SubscriptionScreen: View {
         }
         .padding(.top, 8)
     }
+    
+    // MARK: - Credit Info View (from CreditDialogModifier)
+    private var creditInfoView: some View {
+        VStack(spacing: 16) {
+            // Coin icon + Credits count
+            VStack(spacing: 12) {
+//                HStack(spacing: 8) {
+//                    Text("Your credit:")
+//                        .font(.system(size: 16, weight: .medium))
+//                        .foregroundColor(.white)
+//                        .padding(.leading, 12)
+//                        //.padding(.top, 8)
+//                    Spacer()
+//                }
+                Image("icon_coin_512")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 80, height: 80)
+                    .shadow(radius: 8, y: 4)
+                
+                HStack(spacing: 8) {
+                    Text("\(creditManager.credits)")
+                        .font(.system(size: 42, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("Credits")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.9))
+                }
+            }
+            //.padding(.top, 20)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.bottom, 28)
+        .padding(.top, 28)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.06))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
+    }
+    
+    // Helper function to format date
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
 
     private var features: some View {
         VStack(alignment: .leading, spacing: 16) {
-            featureRow("1000 credits")
+            featureRow("1000 credits per week")
             featureRow("Access to All Features")
-            featureRow("Remove all Ads")
+            featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
             featureRow("Unlimited downloads")
         }
@@ -133,23 +284,51 @@ struct SubscriptionScreen: View {
 
     private var planCards: some View {
         VStack(spacing: 14) {
-            planCard(
-                title: "Yearly",
-                subtitle: "1200 credit per week",
-                price: "$119.99",
-                per: "/Year",
-                isSelected: selectedPlan == .professional,
-                showTag: true
-            ) { selectedPlan = .professional }
+            // Yearly plan
+            if let yearlyProduct = subscriptionManager.getProduct(for: .premiumYearly) {
+                planCard(
+                    title: "Yearly",
+                    subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: yearlyProduct)) credits per week",
+                    price: yearlyProduct.displayPrice,
+                    per: "/Year",
+                    isSelected: selectedPlan == .yearly,
+                    showTag: true
+                ) { selectedPlan = .yearly }
+            } else {
+                // Fallback loading state
+                planCard(
+                    title: "Yearly",
+                    subtitle: "1200 credits per week",
+                    price: "Loading...",
+                    per: "/Year",
+                    isSelected: selectedPlan == .yearly,
+                    showTag: true
+                ) { selectedPlan = .yearly }
+                    .opacity(0.6)
+            }
 
-            planCard(
-                title: "Weekly",
-                subtitle: "1000 credits per week",
-                price: "$8.99",
-                per: "/Week",
-                isSelected: selectedPlan == .team,
-                showTag: false
-            ) { selectedPlan = .team }
+            // Weekly plan
+            if let weeklyProduct = subscriptionManager.getProduct(for: .premiumWeekly) {
+                planCard(
+                    title: "Weekly",
+                    subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
+                    price: weeklyProduct.displayPrice,
+                    per: "/Week",
+                    isSelected: selectedPlan == .weekly,
+                    showTag: false
+                ) { selectedPlan = .weekly }
+            } else {
+                // Fallback loading state
+                planCard(
+                    title: "Weekly",
+                    subtitle: "1200 credits per week",
+                    price: "Loading...",
+                    per: "/Week",
+                    isSelected: selectedPlan == .weekly,
+                    showTag: false
+                ) { selectedPlan = .weekly }
+                    .opacity(0.6)
+            }
         }
         .padding(.top, 28)
     }
@@ -232,18 +411,65 @@ struct SubscriptionScreen: View {
     }
 
     private var ctaButton: some View {
-        Button(action: { /* open purchase flow */ }) {
-            Text("Continue For Payment")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 58)
-                .background(
-                    Capsule()
-                        .fill(AivoTheme.Primary.orange)
-                )
+        Button(action: handlePurchase) {
+            HStack {
+                if isPurchasing {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .padding(.trailing, 8)
+                }
+                Text(isPurchasing ? "Processing..." : "Continue For Payment")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 58)
+            .background(
+                Capsule()
+                    .fill(isPurchasing ? AivoTheme.Primary.orange.opacity(0.6) : AivoTheme.Primary.orange)
+            )
         }
+        .disabled(isPurchasing || subscriptionManager.isLoading)
         .padding(.top, 18)
+    }
+    
+    private func handlePurchase() {
+        guard !isPurchasing else { return }
+        
+        let productID: SubscriptionManager.ProductIdentifier = selectedPlan == .yearly ? .premiumYearly : .premiumWeekly
+        
+        guard let product = subscriptionManager.getProduct(for: productID) else {
+            purchaseErrorMessage = "Product not available. Please try again later."
+            showPurchaseError = true
+            return
+        }
+        
+        isPurchasing = true
+        Logger.i("📱 [SubscriptionScreen] Starting purchase for product: \(product.id)")
+        
+        Task {
+            do {
+                let success = try await subscriptionManager.purchaseSubscription(product)
+                await MainActor.run {
+                    isPurchasing = false
+                    if !success {
+                        // If purchase was cancelled or failed, error will be handled via notification
+                        // But if it returned false due to already subscribed, show alert
+                        if let errorMsg = subscriptionManager.errorMessage,
+                           errorMsg.contains("already have an active") {
+                            alreadySubscribedMessage = errorMsg
+                            showAlreadySubscribedAlert = true
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isPurchasing = false
+                    purchaseErrorMessage = "Purchase failed: \(error.localizedDescription)"
+                    showPurchaseError = true
+                }
+            }
+        }
     }
 
     // MARK: - Auto Renewal
@@ -264,16 +490,27 @@ struct SubscriptionScreen: View {
     private var footer: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
-                Text("Terms of use")
+                Button("Terms of use") {
+                    // Open terms
+                }
                 Text("|")
-                Text("Privacy Policy")
+                Button("Privacy Policy") {
+                    // Open privacy
+                }
                 Text("|")
-                Text("Restore")
+                Button("Restore") {
+                    handleRestore()
+                }
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.white.opacity(0.7))
             .padding(.top, 10)
         }
+    }
+    
+    private func handleRestore() {
+        Logger.i("📱 [SubscriptionScreen] Restoring purchases")
+        subscriptionManager.restorePurchases()
     }
 }
 

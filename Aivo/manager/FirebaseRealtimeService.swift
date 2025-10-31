@@ -32,6 +32,8 @@ final class FirebaseRealtimeService: ObservableObject {
     private func userProfilePath(_ profileID: String) -> String { "\(userRoot(profileID))/profile" }
     private func userPurchasesRoot(_ profileID: String) -> String { "\(userRoot(profileID))/purchases" }
     private func purchasePath(_ profileID: String, _ purchaseID: String) -> String { "\(userPurchasesRoot(profileID))/\(purchaseID)" }
+    private func userSubscriptionsRoot(_ profileID: String) -> String { "\(userRoot(profileID))/subscriptions" }
+    private func subscriptionPath(_ profileID: String, _ subscriptionID: String) -> String { "\(userSubscriptionsRoot(profileID))/\(subscriptionID)" }
 
     // MARK: - Ensure Firebase Configured
     private func ensureFirebaseConfigured() {
@@ -182,6 +184,58 @@ final class FirebaseRealtimeService: ObservableObject {
                     Logger.d("✅ Purchase saved: \(purchase.purchaseID)")
                     cont.resume(returning: ())
                 }
+            }
+        }
+    }
+    
+    /// Save subscription to Firebase
+    func saveSubscription(_ subscription: SubscriptionInfo) async throws {
+        ensureFirebaseConfigured()
+        
+        let path = subscriptionPath(subscription.profileID, subscription.subscriptionID)
+        let enc = JSONEncoder()
+        enc.dateEncodingStrategy = .secondsSince1970
+        let data = try enc.encode(subscription)
+        let json = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            dbRef.child(path).setValue(json) { err, _ in
+                if let err = err { cont.resume(throwing: err) }
+                else {
+                    Logger.d("✅ Subscription saved: \(subscription.subscriptionID)")
+                    cont.resume(returning: ())
+                }
+            }
+        }
+    }
+    
+    /// Get all subscriptions for a profile
+    func getSubscriptions(profileID: String) async throws -> [SubscriptionInfo] {
+        ensureFirebaseConfigured()
+        
+        let path = userSubscriptionsRoot(profileID)
+        
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[SubscriptionInfo], Error>) in
+            dbRef.child(path).observeSingleEvent(of: .value) { snapshot in
+                guard let value = snapshot.value as? [String: [String: Any]] else {
+                    Logger.d("📭 No subscriptions found for profile: \(profileID)")
+                    cont.resume(returning: [])
+                    return
+                }
+                
+                var subscriptions: [SubscriptionInfo] = []
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .secondsSince1970
+                
+                for (_, subscriptionData) in value {
+                    if let data = try? JSONSerialization.data(withJSONObject: subscriptionData),
+                       let subscription = try? decoder.decode(SubscriptionInfo.self, from: data) {
+                        subscriptions.append(subscription)
+                    }
+                }
+                
+                Logger.d("✅ Found \(subscriptions.count) subscriptions for profile: \(profileID)")
+                cont.resume(returning: subscriptions)
             }
         }
     }

@@ -7,13 +7,19 @@ final class LocalStorageManager: ObservableObject {
     private let userDefaults = UserDefaults.standard
     private let profileKey = "LocalUserProfile"
     private let hasRemoteProfileKey = "HasRemoteProfile"
+    private let isPremiumUserKey = "IsPremiumUser"
+    private let subscriptionPeriodKey = "SubscriptionPeriod"
+    private let lastCreditGrantDateKey = "LastPremiumCreditGrantDate"
     
     @Published var localProfile: UserProfile?
     @Published var hasRemoteProfile = false
+    @Published var isPremiumUser = false
+    @Published var subscriptionPeriod: SubscriptionInfo.SubscriptionPeriod?
     
     private init() {
         loadLocalProfile()
         loadRemoteProfileStatus()
+        loadPremiumStatus()
         
         // Ensure localProfile is never null
         if localProfile == nil {
@@ -76,6 +82,75 @@ final class LocalStorageManager: ObservableObject {
     func loadRemoteProfileStatus() {
         hasRemoteProfile = userDefaults.bool(forKey: hasRemoteProfileKey)
         Logger.d("🌐 Remote profile status loaded: \(hasRemoteProfile)")
+    }
+    
+    // MARK: - Premium Status Management
+    
+    func setIsPremiumUser(_ isPremium: Bool, period: SubscriptionInfo.SubscriptionPeriod? = nil) {
+        userDefaults.set(isPremium, forKey: isPremiumUserKey)
+        isPremiumUser = isPremium
+        
+        if let period = period {
+            userDefaults.set(period.rawValue, forKey: subscriptionPeriodKey)
+            self.subscriptionPeriod = period
+        } else if !isPremium {
+            userDefaults.removeObject(forKey: subscriptionPeriodKey)
+            self.subscriptionPeriod = nil
+        }
+        
+        Logger.d("💎 Premium status updated: \(isPremium), period: \(period?.rawValue ?? "none")")
+    }
+    
+    func loadPremiumStatus() {
+        isPremiumUser = userDefaults.bool(forKey: isPremiumUserKey)
+        
+        if let periodString = userDefaults.string(forKey: subscriptionPeriodKey),
+           let period = SubscriptionInfo.SubscriptionPeriod(rawValue: periodString) {
+            subscriptionPeriod = period
+        } else {
+            subscriptionPeriod = nil
+        }
+        
+        Logger.d("💎 Premium status loaded: \(isPremiumUser), period: \(subscriptionPeriod?.rawValue ?? "none")")
+    }
+    
+    func getPremiumStatus() -> (isPremium: Bool, period: SubscriptionInfo.SubscriptionPeriod?) {
+        return (isPremiumUser, subscriptionPeriod)
+    }
+    
+    // MARK: - Premium Credit Grant Management
+    
+    func setLastPremiumCreditGrantDate(_ date: Date) {
+        userDefaults.set(date.timeIntervalSince1970, forKey: lastCreditGrantDateKey)
+        Logger.d("💎 Last premium credit grant date saved: \(date)")
+    }
+    
+    func getLastPremiumCreditGrantDate() -> Date? {
+        let timestamp = userDefaults.double(forKey: lastCreditGrantDateKey)
+        guard timestamp > 0 else { return nil }
+        return Date(timeIntervalSince1970: timestamp)
+    }
+    
+    func shouldGrantWeeklyCredits() -> Bool {
+        guard isPremiumUser else { return false }
+        guard let lastGrantDate = getLastPremiumCreditGrantDate() else {
+            // First time premium user, grant immediately
+            return true
+        }
+        
+        // Calculate time difference
+        let timeSinceLastGrant = Date().timeIntervalSince(lastGrantDate)
+        let daysSinceLastGrant = timeSinceLastGrant / 86400.0 // Convert seconds to days
+        
+        // Only grant if at least 7 days have passed
+        // Also check minimum 1 hour to avoid multiple grants in same session
+        let hoursSinceLastGrant = timeSinceLastGrant / 3600.0
+        guard hoursSinceLastGrant >= 1 else {
+            Logger.d("💎 Should not grant credits: only \(Int(hoursSinceLastGrant)) hours since last grant")
+            return false
+        }
+        
+        return daysSinceLastGrant >= 7
     }
     
     // MARK: - Profile Access (Always Non-Null)

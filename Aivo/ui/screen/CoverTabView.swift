@@ -3,6 +3,7 @@ import Kingfisher
 
 // MARK: - Cover Tab View
 struct CoverTabView: View {
+    @ObservedObject private var creditManager = CreditManager.shared
     @State private var selectedSong = ""
     @State private var songName = ""  // Add song name state
     @State private var lyric: String = ""
@@ -410,24 +411,44 @@ struct CoverTabView: View {
             }
         }) {
             HStack(spacing: 8) {
-                Text("Generate")
+//                Image(systemName: "mic.fill")
+//                    .font(.title3)
+//                    .foregroundColor(.black)
+                Text("Generate Cover")
                     .font(.headline)
                     .fontWeight(.bold)
                     .foregroundColor(.black)
 
-                Image(systemName: "mic.fill")
-                    .font(.title3)
-                    .foregroundColor(.black)
+                // Credit cost display
+                HStack(spacing: 2) {
+                    Text("(-10")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    Image("icon_coin")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                    Text(")")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                }
+                .foregroundColor(.black.opacity(0.8))
+
+                
             }
             .frame(maxWidth: .infinity)
             .frame(height: 56)
             .background(AivoTheme.Primary.orange)
             .cornerRadius(12)
-            .disabled(!isGenerateEnabled)
-            .opacity(isGenerateEnabled ? 1.0 : 0.5)
-            .shadow(color: isGenerateEnabled ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
+            .disabled(!isGenerateEnabled || !hasEnoughCreditsForCover)
+            .opacity((!isGenerateEnabled || !hasEnoughCreditsForCover) ? 0.5 : 1.0)
+            .shadow(color: (isGenerateEnabled && hasEnoughCreditsForCover) ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
         }
-        .disabled(!isGenerateEnabled)
+        .disabled(!isGenerateEnabled || !hasEnoughCreditsForCover)
+    }
+    
+    private var hasEnoughCreditsForCover: Bool {
+        return creditManager.credits >= 10
     }
     
     // MARK: - Helper Properties
@@ -442,6 +463,12 @@ struct CoverTabView: View {
 
     // MARK: - Actions
     private func generateCoverSong() {
+        // Check credits before starting
+        guard creditManager.credits >= 10 else {
+            showToastMessage("Not enough credits! You need 10 credits to generate a cover song.")
+            return
+        }
+        
         Logger.i("🎤 [CoverTab] Starting cover song generation...")
         Logger.d("🎤 [CoverTab] Source: \(selectedSource == .song ? "Song" : "YouTube")")
         Logger.d("🎤 [CoverTab] Song Name: \(songName)")
@@ -552,6 +579,12 @@ struct CoverTabView: View {
                         cachedSunoData = createSunoDataFromCoverResult(audioUrl: resultUrl)
                         //resultAudioUrl = resultUrl
                         showToastMessage("Cover song generated successfully!")
+                        
+                        // Deduct credits only after successful generation
+                        Task {
+                            await CreditManager.shared.deductForSuccessfulRequest(count: 10)
+                            Logger.i("🎤 [CoverTab] Deducted 10 credits for successful cover generation")
+                        }
                         
                         Logger.i("🎵 [CoverTab] Opening GenerateSunoSongResultScreen with cover result")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {

@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Generate Song Tab View
 struct GenerateSongTabView: View {
+    @ObservedObject private var creditManager = CreditManager.shared
     @State private var selectedInputType: InputType = .description
     @State private var songDescription = ""
     @State private var songLyrics = ""
@@ -644,14 +645,20 @@ struct GenerateSongTabView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.black)
                 
+                // Credit cost display
                 HStack(spacing: 2) {
-                    Text("♪")
-                        .font(.system(size: 14))
-                    Text("♪")
-                        .font(.system(size: 14))
-                    Text("♪")
-                        .font(.system(size: 14))
+                    Text("(-20")
+                        .font(.system(size: 16, weight: .semibold))
+                    Image("icon_coin")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                    Text(")")
+                        .font(.system(size: 16, weight: .semibold))
+                    
                 }
+                .foregroundColor(.black.opacity(0.8))
+                
                 .foregroundColor(.black)
             }
             .frame(maxWidth: .infinity)
@@ -661,8 +668,12 @@ struct GenerateSongTabView: View {
                     .fill(AivoTheme.Primary.orange)
             )
         }
-        .disabled(!isCreateButtonEnabled)
-        .opacity(isCreateButtonEnabled ? 1.0 : 0.5)
+        .disabled(!isCreateButtonEnabled || !hasEnoughCreditsForGenerate)
+        .opacity((!isCreateButtonEnabled || !hasEnoughCreditsForGenerate) ? 0.5 : 1.0)
+    }
+    
+    private var hasEnoughCreditsForGenerate: Bool {
+        return creditManager.credits >= 20
     }
     
     private var isCreateButtonEnabled: Bool {
@@ -675,6 +686,12 @@ struct GenerateSongTabView: View {
     
     // MARK: - Helper Methods
     private func generateSong() {
+        // Check credits before starting
+        guard creditManager.credits >= 20 else {
+            showToastMessage("Not enough credits! You need 20 credits to generate a song.")
+            return
+        }
+        
         print("🎵 [GenerateSong] Starting song generation...")
         print("🎵 [GenerateSong] Input type: \(selectedInputType.rawValue)")
         print("🎵 [GenerateSong] Description: \(songDescription)")
@@ -743,6 +760,12 @@ struct GenerateSongTabView: View {
                     resultSunoDataList = generatedSongs
                     showToastMessage("Songs generated successfully!")
                     print("🎵 [GenerateSong] Showing result screen...")
+                    
+                    // Deduct credits only after successful generation
+                    Task {
+                        await CreditManager.shared.deductForSuccessfulRequest(count: 20)
+                        Logger.i("🎵 [GenerateSong] Deducted 20 credits for successful generation")
+                    }
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         showSunoResultScreen = true

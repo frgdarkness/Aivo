@@ -7,13 +7,13 @@ struct CreditBadgeView: View {
         HStack(spacing: 4) {
             Image("icon_coin")
                 .foregroundColor(Color.yellow)
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: 14, weight: .bold))
             Text("\(creditManager.credits)")
                 .foregroundColor(.white)
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 18, weight: .semibold))
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(Color.black.opacity(0.85))
         .clipShape(Capsule())
         .accessibilityLabel("User Credits")
