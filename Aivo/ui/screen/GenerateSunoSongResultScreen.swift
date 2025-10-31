@@ -73,6 +73,16 @@ struct GenerateSunoSongResultScreen: View {
             // Always reset to 0 when screen appears to ensure valid index
             selectedSongIndex = 0
             
+            // Stop any currently playing song from previous screen to avoid showing wrong seekbar progress
+            if musicPlayer.isPlaying {
+                Logger.d("🛑 [SunoResult] Stopping current playback to avoid showing wrong seekbar")
+                musicPlayer.pause()
+            }
+            
+            // Reset scrub time
+            isScrubbing = false
+            scrubTime = 0
+            
             for (index, song) in sunoDataList.enumerated() {
                 Logger.d("🎵 [SunoResult] Song \(index + 1): \(song.title) - \(song.duration)s")
             }
@@ -256,16 +266,28 @@ struct GenerateSunoSongResultScreen: View {
     
     // MARK: - Seek Bar View
     private var seekBarView: some View {
-        VStack(spacing: 8) {
+        let isDownloadingCurrentSong = downloadingSongs.contains(currentSong.id)
+        let isCurrentSongDownloaded = downloadedFileURLs[currentSong.id] != nil
+        let isSongReady = !isDownloadingCurrentSong && isCurrentSongDownloaded && musicPlayer.duration > 0
+        
+        return VStack(spacing: 8) {
             Slider(
                 value: Binding(
-                    get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
+                    get: { 
+                        // If downloading or not ready, return 0, otherwise use normal logic
+                        if !isSongReady {
+                            return 0
+                        }
+                        return isScrubbing ? scrubTime : musicPlayer.currentTime
+                    },
                     set: { newVal in
+                        if !isSongReady { return } // Prevent changes when not ready
                         if isScrubbing { scrubTime = newVal } else { musicPlayer.currentTime = newVal }
                     }
                 ),
-                in: 0...max(0.1, musicPlayer.duration),
+                in: 0...max(0.1, isSongReady ? musicPlayer.duration : 1.0),
                 onEditingChanged: { editing in
+                    if !isSongReady { return }
                     if editing {
                         isScrubbing = true
                         scrubTime = musicPlayer.currentTime
@@ -276,14 +298,16 @@ struct GenerateSunoSongResultScreen: View {
                 }
             )
             .accentColor(AivoTheme.Primary.orange)
+            .disabled(!isSongReady)
+            .opacity(isSongReady ? 1.0 : 0.5)
             .padding(.horizontal, 20)
             
             HStack {
-                Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))
+                Text(formatTime(isSongReady ? (isScrubbing ? scrubTime : musicPlayer.currentTime) : 0))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
                 Spacer()
-                Text(formatTime(musicPlayer.duration))
+                Text(formatTime(isSongReady ? musicPlayer.duration : currentSong.duration))
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.8))
             }

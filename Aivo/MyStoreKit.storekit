@@ -113,7 +113,71 @@
     ]
   },
   "subscriptionGroups" : [
+    {
+      "id" : "BD6FC9E2",
+      "localizations" : [
 
+      ],
+      "name" : "vip_group",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "5.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "7E075F46",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "aivo.premium.weekly",
+          "recurringSubscriptionPeriod" : "P1W",
+          "referenceName" : "AIVO Premium Weekly",
+          "subscriptionGroupID" : "BD6FC9E2",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "89.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "89761B87",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "",
+              "displayName" : "",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "aivo.premium.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "AIVO Premium Yearly",
+          "subscriptionGroupID" : "BD6FC9E2",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
   ],
   "version" : {
     "major" : 4,
