@@ -3,6 +3,7 @@ import SwiftUI
 // MARK: - Generate Song Tab View
 struct GenerateSongTabView: View {
     @ObservedObject private var creditManager = CreditManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedInputType: InputType = .description
     @State private var songDescription = ""
     @State private var songLyrics = ""
@@ -26,6 +27,8 @@ struct GenerateSongTabView: View {
     @State private var isBPMEnabled: Bool = false
     @State private var bpmValue: Double = 100
     @State private var generationTask: Task<Void, Never>?
+    @State private var showPremiumAlert = false
+    @State private var showSubscriptionScreen = false
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -113,6 +116,17 @@ struct GenerateSongTabView: View {
         }
         .fullScreenCover(isPresented: $showGenerateLyricsScreen) {
             GenerateLyricsScreen(lyricsText: $generatedLyrics)
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
+        }
+        .alert("Premium Feature", isPresented: $showPremiumAlert) {
+            Button("Upgrade Now") {
+                showSubscriptionScreen = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
         }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
@@ -701,6 +715,12 @@ struct GenerateSongTabView: View {
     
     // MARK: - Helper Methods
     private func generateSong() {
+        // Check subscription first
+        guard subscriptionManager.isPremium else {
+            showPremiumAlert = true
+            return
+        }
+        
         // Check credits before starting
         guard creditManager.credits >= 20 else {
             showToastMessage("Not enough credits! You need 20 credits to generate a song.")

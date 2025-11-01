@@ -4,6 +4,7 @@ import Kingfisher
 // MARK: - Cover Tab View
 struct CoverTabView: View {
     @ObservedObject private var creditManager = CreditManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedSong = ""
     @State private var songName = ""  // Add song name state
     @State private var lyric: String = ""
@@ -26,6 +27,8 @@ struct CoverTabView: View {
     @State private var selectedAudioFileURL: URL? = nil
     @State private var showModelSelectionScreen = false
     @State private var coverGenerationTask: Task<Void, Never>?
+    @State private var showPremiumAlert = false
+    @State private var showSubscriptionScreen = false
     
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
@@ -100,6 +103,17 @@ struct CoverTabView: View {
                     }
                 )
             }
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
+        }
+        .alert("Premium Feature", isPresented: $showPremiumAlert) {
+            Button("Upgrade Now") {
+                showSubscriptionScreen = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
         }
         .fullScreenCover(isPresented: $showModelSelectionScreen) {
             SelectModelScreen(
@@ -478,6 +492,12 @@ struct CoverTabView: View {
 
     // MARK: - Actions
     private func generateCoverSong() {
+        // Check subscription first
+        guard subscriptionManager.isPremium else {
+            showPremiumAlert = true
+            return
+        }
+        
         // Check credits before starting
         guard creditManager.credits >= 10 else {
             showToastMessage("Not enough credits! You need 10 credits to generate a cover song.")

@@ -2,15 +2,21 @@ import SwiftUI
 import StoreKit
 
 struct SubscriptionScreen: View {
+    let onDismiss: (() -> Void)?
+    
     @Environment(\.dismiss) private var dismiss
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject private var creditManager = CreditManager.shared
     @State private var selectedPlan: Plan = .yearly
     @State private var isPurchasing = false
     @State private var showPurchaseError = false
-    @State private var purchaseErrorMessage = ""
     @State private var showAlreadySubscribedAlert = false
     @State private var alreadySubscribedMessage = ""
+    @State private var purchaseErrorMessage = ""
+
+    init(onDismiss: (() -> Void)? = nil) {
+        self.onDismiss = onDismiss
+    }
 
     enum Plan { case yearly, weekly }
 
@@ -54,6 +60,9 @@ struct SubscriptionScreen: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseSuccess"))) { _ in
             // Handle successful purchase
             isPurchasing = false
+            // Mark subscription prompt as shown since user now has subscription
+            UserDefaultsManager.shared.markSubscriptionPromptShown()
+            onDismiss?()
             dismiss()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseFailed"))) { _ in
@@ -134,7 +143,10 @@ struct SubscriptionScreen: View {
     private var header: some View {
         HStack {
             Spacer()
-            Button(action: { dismiss() }) {
+            Button(action: {
+                onDismiss?()
+                dismiss()
+            }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(.white)
@@ -497,10 +509,10 @@ struct SubscriptionScreen: View {
                 Button("Privacy Policy") {
                     // Open privacy
                 }
-                Text("|")
-                Button("Restore") {
-                    handleRestore()
-                }
+//                Text("|")
+//                Button("Restore") {
+//                    handleRestore()
+//                }
             }
             .font(.system(size: 12, weight: .medium))
             .foregroundColor(.white.opacity(0.7))

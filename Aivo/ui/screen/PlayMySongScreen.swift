@@ -16,6 +16,7 @@ struct PlayMySongScreen: View {
     @Environment(\.dismiss) private var dismiss
 
     @StateObject private var musicPlayer = MusicPlayer.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
     @State private var isFavorite = false
@@ -29,6 +30,8 @@ struct PlayMySongScreen: View {
     @State private var rotationAngle: Double = 0
     @State private var headerHeight: CGFloat = 0   // <- chiều cao header
     @State private var showEditSheet = false
+    @State private var showPremiumAlert = false
+    @State private var showSubscriptionScreen = false
 
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
@@ -61,13 +64,20 @@ struct PlayMySongScreen: View {
                     // blocker để bắt tap ngoài menu
                     Color.black.opacity(0.001)
                         .ignoresSafeArea()
-                        .onTapGesture { showMenu = false }
+                        .onTapGesture { 
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                                showMenu = false
+                            }
+                        }
 
                     menuView
                         .padding(.top, headerHeight + 8 + 50) // đặt dưới header
                         .padding(.trailing, 20)
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
                 .zIndex(2)
             }
         }
@@ -80,6 +90,17 @@ struct PlayMySongScreen: View {
             Button("Delete", role: .destructive) { deleteCurrentSong() }
         } message: {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
+        }
+        .alert("Premium Feature", isPresented: $showPremiumAlert) {
+            Button("Upgrade Now") {
+                showSubscriptionScreen = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
         }
         .overlay {
             if showEditSheet, let song = currentSong {
@@ -195,7 +216,11 @@ struct PlayMySongScreen: View {
                         .clipShape(Circle())
                 }
 
-                Button(action: { withAnimation(.spring(response: 0.25)) { showMenu.toggle() } }) {
+                Button(action: { 
+                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { 
+                        showMenu.toggle() 
+                    } 
+                }) {
                     Image(systemName: "ellipsis")
                         .font(.title2).foregroundColor(.white)
                         .frame(width: 44, height: 44)
@@ -220,8 +245,12 @@ struct PlayMySongScreen: View {
     private var menuView: some View {
         VStack(alignment: .leading, spacing: 0) {         // <- căn trái toàn bộ
             Button {
-                showEditSheet = true
-                showMenu = false
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showEditSheet = true
+                }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "pencil").font(.system(size: 16))
@@ -238,7 +267,9 @@ struct PlayMySongScreen: View {
 
             Button {
                 exportCurrentSong()
-                showMenu = false
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "square.and.arrow.up").font(.system(size: 16))
@@ -254,8 +285,12 @@ struct PlayMySongScreen: View {
             Divider().background(Color.white.opacity(0.2))
 
             Button {
-                showDeleteAlert = true
-                showMenu = false
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showDeleteAlert = true
+                }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "trash").font(.system(size: 16))
@@ -503,6 +538,12 @@ struct PlayMySongScreen: View {
     }
 
     private func exportCurrentSong() {
+        // Check subscription first
+        guard subscriptionManager.isPremium else {
+            showPremiumAlert = true
+            return
+        }
+        
         guard let song = currentSong else { return }
         let localFilePath = getLocalFilePath(for: song)
         if FileManager.default.fileExists(atPath: localFilePath.path) {

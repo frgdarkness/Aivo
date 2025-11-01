@@ -91,6 +91,7 @@ struct PromptInput: View {
 struct GenerateLyricsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var creditManager = CreditManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @Binding var lyricsText: String
 
     @State private var prompt: String = ""
@@ -99,6 +100,8 @@ struct GenerateLyricsScreen: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var progress: Double = 0.0
+    @State private var showPremiumAlert = false
+    @State private var showSubscriptionScreen = false
 
     var body: some View {
         ZStack {
@@ -143,6 +146,17 @@ struct GenerateLyricsScreen: View {
                 }
             }
         )
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
+        }
+        .alert("Premium Feature", isPresented: $showPremiumAlert) {
+            Button("Upgrade Now") {
+                showSubscriptionScreen = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
+        }
     }
 
     // MARK: - Header
@@ -356,6 +370,12 @@ struct GenerateLyricsScreen: View {
     
     private func generateLyrics() {
         guard !prompt.isEmpty else { return }
+        
+        // Check subscription first
+        guard subscriptionManager.isPremium else {
+            showPremiumAlert = true
+            return
+        }
         
         // Check credits before starting
         guard creditManager.credits >= 4 else {

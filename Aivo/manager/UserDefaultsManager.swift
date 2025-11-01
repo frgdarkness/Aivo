@@ -19,9 +19,9 @@ class UserDefaultsManager: ObservableObject {
         static let isIntroShowed = "isIntroShowed"
         static let selectedLanguageCode = "selectedLanguageCode"
         static let selectedLanguageName = "selectedLanguageName"
-        static let lastBuyCreditPromptDate = "lastBuyCreditPromptDate"
+        static let lastSubscriptionPromptDate = "lastSubscriptionPromptDate"
         static let userCredits = "userCredits"
-        static let dailySuggestBuyCredit = "dailySuggestBuyCredit"
+        static let dailySuggestSubscription = "dailySuggestSubscription"
         // Free credit states
         static let lastDailyRewardDate = "lastDailyRewardDate"
         static let dailyVideoCreditUsedCount = "dailyVideoCreditUsedCount"
@@ -109,8 +109,8 @@ class UserDefaultsManager: ObservableObject {
         
         // Reset các giá trị khác về mặc định
         userCredits = 0
-        dailySuggestBuyCredit = false
-        lastBuyCreditPromptDate = nil
+        dailySuggestSubscription = false
+        lastSubscriptionPromptDate = nil
         // Reset free credit related
         lastDailyRewardDate = nil
         dailyVideoCreditUsedCount = 0
@@ -145,25 +145,27 @@ class UserDefaultsManager: ObservableObject {
         }
     }
     
-    var lastBuyCreditPromptDate: Date? {
+    var lastSubscriptionPromptDate: Date? {
         get {
-            UserDefaults.standard.object(forKey: Keys.lastBuyCreditPromptDate) as? Date
+            UserDefaults.standard.object(forKey: Keys.lastSubscriptionPromptDate) as? Date
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: Keys.lastBuyCreditPromptDate)
+            UserDefaults.standard.set(newValue, forKey: Keys.lastSubscriptionPromptDate)
         }
     }
     
-    func shouldShowBuyCreditPrompt() -> Bool {
-        // Kiểm tra nếu credit >= 30 thì không show
-        resetDailySuggestBuyCredit()
-        guard userCredits < 30 else { return false }
+    func shouldShowSubscriptionPrompt() -> Bool {
+        // Kiểm tra subscription status - chỉ show nếu chưa có subscription
+        // Note: Subscription status được check từ SubscriptionManager, không cần check credit
         
-        // Kiểm tra flag dailySuggestBuyCredit
-        guard !dailySuggestBuyCredit else { return false }
+        // Reset flag mỗi ngày mới
+        resetDailySuggestSubscription()
+        
+        // Kiểm tra flag dailySuggestSubscription
+        guard !dailySuggestSubscription else { return false }
         
         // Kiểm tra xem đã hiển thị hôm nay chưa
-        if let lastPromptDate = lastBuyCreditPromptDate {
+        if let lastPromptDate = lastSubscriptionPromptDate {
             let calendar = Calendar.current
             if calendar.isDateInToday(lastPromptDate) {
                 return false
@@ -174,27 +176,27 @@ class UserDefaultsManager: ObservableObject {
         return true
     }
     
-    var dailySuggestBuyCredit: Bool {
+    var dailySuggestSubscription: Bool {
         get {
-            UserDefaults.standard.bool(forKey: Keys.dailySuggestBuyCredit)
+            UserDefaults.standard.bool(forKey: Keys.dailySuggestSubscription)
         }
         set {
-            UserDefaults.standard.set(newValue, forKey: Keys.dailySuggestBuyCredit)
+            UserDefaults.standard.set(newValue, forKey: Keys.dailySuggestSubscription)
             objectWillChange.send()
         }
     }
     
-    func markBuyCreditPromptShown() {
-        lastBuyCreditPromptDate = Date()
-        dailySuggestBuyCredit = true
+    func markSubscriptionPromptShown() {
+        lastSubscriptionPromptDate = Date()
+        dailySuggestSubscription = true
     }
     
-    func resetDailySuggestBuyCredit() {
+    func resetDailySuggestSubscription() {
         // Reset flag mỗi ngày mới
-        if let lastPromptDate = lastBuyCreditPromptDate {
+        if let lastPromptDate = lastSubscriptionPromptDate {
             let calendar = Calendar.current
             if !calendar.isDateInToday(lastPromptDate) {
-                dailySuggestBuyCredit = false
+                dailySuggestSubscription = false
             }
         }
     }

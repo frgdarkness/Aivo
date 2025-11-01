@@ -18,7 +18,7 @@ struct RootView: View {
         case splash
         case selectLanguage
         case intro
-        case buyCredit
+        case subscription
         case home
     }
     
@@ -53,8 +53,9 @@ struct RootView: View {
                 }
                 .transition(.pushFromRight)
                 
-            case .buyCredit:
-                BuyCreditScreen {
+            case .subscription:
+                SubscriptionScreen {
+                    // When subscription screen is dismissed, navigate to home
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentScreen = .home
                     }
@@ -75,6 +76,7 @@ struct SplashScreenView: View {
     @StateObject private var remoteConfigManager = RemoteConfigManager.shared
     @StateObject private var adManager = AdManager.shared
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var progress: Double = 0.0
     @State private var isInitialized = false
     @State private var hasNavigated = false
@@ -157,6 +159,10 @@ extension SplashScreenView {
                 Logger.d("✅ Firebase already configured")
             }
             
+            // Check subscription status first
+            Logger.d("🔄 Checking Subscription Status...")
+            await subscriptionManager.checkSubscriptionStatus()
+            
             // Fetch remote config
             Logger.d("🔄 Fetching Remote Config...")
             await remoteConfigManager.fetchRemoteConfig()
@@ -177,15 +183,16 @@ extension SplashScreenView {
                 
                 // Debug: Print current state
                 Logger.d("🔍 Splash: shouldShowIntro = \(userDefaultsManager.shouldShowIntro())")
-                Logger.d("🔍 Splash: shouldShowBuyCreditPrompt = \(userDefaultsManager.shouldShowBuyCreditPrompt())")
+                Logger.d("🔍 Splash: shouldShowSubscriptionPrompt = \(userDefaultsManager.shouldShowSubscriptionPrompt())")
+                Logger.d("🔍 Splash: isPremium = \(SubscriptionManager.shared.isPremium)")
                 
                 if userDefaultsManager.shouldShowIntro() {
                     nextScreen = .intro
                     Logger.d("🔍 Splash: Navigating to intro")
-                } else if userDefaultsManager.shouldShowBuyCreditPrompt() {
-                    userDefaultsManager.markBuyCreditPromptShown()
-                    nextScreen = .buyCredit
-                    Logger.d("🔍 Splash: Navigating to buyCredit")
+                } else if !SubscriptionManager.shared.isPremium && userDefaultsManager.shouldShowSubscriptionPrompt() {
+                    userDefaultsManager.markSubscriptionPromptShown()
+                    nextScreen = .subscription
+                    Logger.d("🔍 Splash: Navigating to subscription")
                 } else {
                     nextScreen = .home
                     Logger.d("🔍 Splash: Navigating to home")

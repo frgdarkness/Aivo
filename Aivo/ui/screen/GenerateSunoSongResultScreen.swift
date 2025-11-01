@@ -13,6 +13,7 @@ struct GenerateSunoSongResultScreen: View {
     @State private var downloadTask: Task<Void, Never>?
     
     @StateObject private var musicPlayer = MusicPlayer.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     
     // Download states for each song
     @State private var downloadedFileURLs: [String: URL] = [:]
@@ -23,6 +24,13 @@ struct GenerateSunoSongResultScreen: View {
     @State private var showExportSheet = false
     @State private var showShareSheet = false
     @State private var currentFileURL: URL?
+    
+    // Download warning alert
+    @State private var showDownloadAlert = false
+    
+    // Premium alert for export
+    @State private var showPremiumAlert = false
+    @State private var showSubscriptionScreen = false
     
     @Environment(\.dismiss) private var dismiss
     
@@ -119,6 +127,30 @@ struct GenerateSunoSongResultScreen: View {
                 ActivityView(items: [url])
             }
         }
+        .alert("Download in Progress", isPresented: $showDownloadAlert) {
+            Button("Still Exit", role: .destructive) {
+                // Force exit even while downloading
+                cancelAllDownloads()
+                onClose()
+                dismiss()
+            }
+            Button("Cancel", role: .cancel) {
+                // Stay on screen, continue downloading
+            }
+        } message: {
+            Text("\(downloadingSongs.count) song(s) are still downloading. Do you want to exit anyway?")
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
+        }
+        .alert("Premium Feature", isPresented: $showPremiumAlert) {
+            Button("Upgrade Now") {
+                showSubscriptionScreen = true
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
+        }
     }
     
     // MARK: - Header View
@@ -131,8 +163,7 @@ struct GenerateSunoSongResultScreen: View {
             Spacer()
             
             Button(action: {
-                onClose()
-                dismiss()
+                handleCloseButton()
             }) {
                 Image(systemName: "xmark")
                     .font(.title2)
@@ -250,9 +281,14 @@ struct GenerateSunoSongResultScreen: View {
                                    }
                                },
                                onExport: {
-                                   if let fileURL = downloadedFileURLs[song.id] {
-                                       currentFileURL = fileURL
-                                       showExportSheet = true
+                                   // Check subscription first
+                                   if subscriptionManager.isPremium {
+                                       if let fileURL = downloadedFileURLs[song.id] {
+                                           currentFileURL = fileURL
+                                           showExportSheet = true
+                                       }
+                                   } else {
+                                       showPremiumAlert = true
                                    }
                                }
                            )
@@ -351,6 +387,32 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     // MARK: - Helper Methods
+    private func handleCloseButton() {
+        // Check if there are songs still downloading
+        if !downloadingSongs.isEmpty {
+            // Show alert asking user if they want to exit
+            showDownloadAlert = true
+        } else {
+            // No downloads in progress, close immediately
+            onClose()
+            dismiss()
+        }
+    }
+    
+    private func cancelAllDownloads() {
+        Logger.d("🛑 [SunoResult] Cancelling all downloads")
+        // Cancel download task if exists
+        downloadTask?.cancel()
+        downloadTask = nil
+        
+        // Clear downloading set
+        downloadingSongs.removeAll()
+        
+        // Optionally: cancel individual download operations if you have references
+        // For now, we just clear the state
+        Logger.d("✅ [SunoResult] All downloads cancelled")
+    }
+    
     private func startDownloadAllSongs() {
         Logger.d("📥 [SunoResult] Starting download for all \(sunoDataList.count) songs")
         for song in sunoDataList {

@@ -444,12 +444,12 @@ struct ProfileScreen: View {
             )
             
             // Language
-            menuRow(
-                icon: "globe",
-                title: "Language",
-                showArrow: true,
-                action: { showLanguageScreen = true }
-            )
+//            menuRow(
+//                icon: "globe",
+//                title: "Language",
+//                showArrow: true,
+//                action: { showLanguageScreen = true }
+//            )
             
             // FAQ
             menuRow(
