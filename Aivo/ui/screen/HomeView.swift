@@ -7,6 +7,7 @@ struct HomeView: View {
     @State private var showGenerateSongResult = false
     @State private var showSunoSongResult = false
     @State private var showSubscription = false
+    @State private var showProfile = false
     
     // Hardcoded SunoData for testing
     private let hardcodedSunoData: [SunoData] = [
@@ -62,38 +63,53 @@ struct HomeView: View {
             // Background
             AivoSunsetBackground()
             
-            VStack(spacing: 0) {
-                // Header - Fixed
-                headerView
-                
-                // Content based on selected tab
-                Group {
-                    switch selectedTab {
-                    case .home:
-                        GenerateSongTabView()
-                            //.padding(.bottom, 100) // Space for bottom navigation
-                        
-                    case .explore:
-                        ExploreTabView()
-                            //.padding(.bottom, 100) // Space for bottom navigation
-                        
-                    case .cover:
-                        CoverTabView()
-                            //.padding(.bottom, 100) // Space for bottom navigation
-                        
-                    case .library:
-                        LibraryTabView()
-                            //.padding(.bottom, 100) // Space for bottom navigation
+            // Main content
+            if !showProfile {
+                VStack(spacing: 0) {
+                    // Header - Fixed
+                    headerView
+                    
+                    // Content based on selected tab
+                    Group {
+                        switch selectedTab {
+                        case .home:
+                            GenerateSongTabView()
+                                //.padding(.bottom, 100) // Space for bottom navigation
+                            
+                        case .explore:
+                            ExploreTabView()
+                                //.padding(.bottom, 100) // Space for bottom navigation
+                            
+                        case .cover:
+                            CoverTabView()
+                                //.padding(.bottom, 100) // Space for bottom navigation
+                            
+                        case .library:
+                            LibraryTabView()
+                                //.padding(.bottom, 100) // Space for bottom navigation
+                        }
                     }
+                    
+                    // Playing Banner View (if music is playing) - Above bottom nav
+                    PlayingBannerView()
+                    
+                    // Bottom Navigation - Fixed
+                    bottomNavigationView
                 }
-                
-                // Playing Banner View (if music is playing) - Above bottom nav
-                PlayingBannerView()
-                
-                // Bottom Navigation - Fixed
-                bottomNavigationView
+                .transition(.move(edge: .leading))
+            }
+            
+            // Profile Screen with slide from right
+            if showProfile {
+                ProfileScreen(isPresented: $showProfile)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing),
+                        removal: .move(edge: .leading)
+                    ))
+                    .zIndex(1000)
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: showProfile)
     }
     
     // MARK: - Header View
@@ -156,7 +172,7 @@ struct HomeView: View {
             
             // Settings
             Button(action: {
-                testSunoDataDecoding()
+                showProfile = true
             }) {
                 Image(systemName: "gearshape.fill")
                     .font(.title2)
