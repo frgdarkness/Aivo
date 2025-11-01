@@ -93,6 +93,13 @@ struct GenerateSongTabView: View {
                     generationTask?.cancel()
                     showGenerateSongScreen = false
                     showToastMessage("Generation cancelled")
+                    
+                    // Deduct credits and save to history even if cancelled
+                    Task {
+                        await CreditManager.shared.deductForSuccessfulRequest(count: 20)
+                        CreditHistoryManager.shared.addRequest(.generateSong)
+                        Logger.i("🎵 [GenerateSong] Deducted 20 credits and saved history for cancelled generation")
+                    }
                 }
             )
         }
@@ -788,6 +795,8 @@ struct GenerateSongTabView: View {
                     Task {
                         await CreditManager.shared.deductForSuccessfulRequest(count: 20)
                         Logger.i("🎵 [GenerateSong] Deducted 20 credits for successful generation")
+                        // Save to history
+                        CreditHistoryManager.shared.addRequest(.generateSong)
                     }
                     
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

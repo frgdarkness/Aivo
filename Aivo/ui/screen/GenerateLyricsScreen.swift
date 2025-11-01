@@ -385,6 +385,8 @@ struct GenerateLyricsScreen: View {
                     Task {
                         await CreditManager.shared.deductForSuccessfulRequest(count: 4)
                         Logger.i("📝 [GenerateLyrics] Deducted 4 credits for successful lyrics generation")
+                        // Save to history
+                        CreditHistoryManager.shared.addRequest(.generateLyric)
                     }
                 }
             } catch {

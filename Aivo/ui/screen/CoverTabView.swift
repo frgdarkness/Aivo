@@ -79,6 +79,13 @@ struct CoverTabView: View {
                     coverGenerationTask?.cancel()
                     showProcessingScreen = false
                     showToastMessage("Cover generation cancelled")
+                    
+                    // Deduct credits and save to history even if cancelled
+                    Task {
+                        await CreditManager.shared.deductForSuccessfulRequest(count: 10)
+                        CreditHistoryManager.shared.addRequest(.coverSong)
+                        Logger.i("🎤 [CoverTab] Deducted 10 credits and saved history for cancelled cover generation")
+                    }
                 }
             )
         }
@@ -621,6 +628,8 @@ struct CoverTabView: View {
                         Task {
                             await CreditManager.shared.deductForSuccessfulRequest(count: 10)
                             Logger.i("🎤 [CoverTab] Deducted 10 credits for successful cover generation")
+                            // Save to history
+                            CreditHistoryManager.shared.addRequest(.coverSong)
                         }
                         
                         Logger.i("🎵 [CoverTab] Opening GenerateSunoSongResultScreen with cover result")

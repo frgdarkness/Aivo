@@ -170,6 +170,9 @@ struct ProfileScreen: View {
                 }
             }
         )
+        .fullScreenCover(isPresented: $showCreditHistory) {
+            CreditUsageHistoryScreen()
+        }
     }
     
     // MARK: - Header View
@@ -235,7 +238,7 @@ struct ProfileScreen: View {
                         .clipShape(RoundedCorner(radius: 6, corners: [.topLeft, .bottomLeft]))
                     
                     // ID value với background xám nhạt
-                    Text(profileID)
+                    Text(profileID.prefix(20))
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 8)
@@ -256,7 +259,7 @@ struct ProfileScreen: View {
                 }
             }
             
-            //Spacer()
+            Spacer()
             
             // Avatar with edit icon
             ZStack(alignment: .bottomTrailing) {
@@ -360,13 +363,13 @@ struct ProfileScreen: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    // Show membership info
-                }) {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                }
+//                Button(action: {
+//                    // Show membership info
+//                }) {
+//                    Image(systemName: "info.circle")
+//                        .font(.system(size: 14))
+//                        .foregroundColor(.gray)
+//                }
             }
             
             // Credit Row - Layer riêng mờ hơn
@@ -767,7 +770,7 @@ struct EditNameDialog: View {
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color.gray.opacity(0.2))
+                    .fill(Color.black)
                     .background(
                         RoundedRectangle(cornerRadius: 16)
                             .fill(Color.white.opacity(0.1))

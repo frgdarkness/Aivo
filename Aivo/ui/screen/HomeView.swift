@@ -104,7 +104,7 @@ struct HomeView: View {
                 ProfileScreen(isPresented: $showProfile)
                     .transition(.asymmetric(
                         insertion: .move(edge: .trailing),
-                        removal: .move(edge: .leading)
+                        removal: .move(edge: .trailing)
                     ))
                     .zIndex(1000)
             }

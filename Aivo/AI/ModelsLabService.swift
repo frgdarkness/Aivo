@@ -140,7 +140,7 @@ class ModelsLabService: ObservableObject {
             throw ModelsLabError.invalidRequestBody
         }
 
-        let maxAttempts = 5
+        let maxAttempts = 10
         let retryDelayNs: UInt64 = 2_000_000_000 // 2 seconds
 
         for attempt in 1...maxAttempts {

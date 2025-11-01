@@ -102,7 +102,7 @@ struct GenerateSongProcessingScreen: View {
             Button("Cancel", role: .cancel) {
                 // User cancelled the alert, do nothing
             }
-            Button("Yes, Cancel", role: .destructive) {
+            Button("Yes, Exit", role: .destructive) {
                 // User confirmed cancellation
                 Logger.i("⚠️ [ProcessingScreen] User confirmed cancellation")
                 isGenerating = false

@@ -1,16 +1,30 @@
 import Foundation
 
 // MARK: - Request Type
-enum RequestType: String, CaseIterable {
+enum RequestType: String, CaseIterable, Codable {
     case coverSong = "cover_song"
     case generateSong = "generate_song"
+    case generateLyric = "generate_lyric"
     
     var displayName: String {
         switch self {
         case .coverSong:
-            return "Cover Song"
+            return "Generate Cover"
         case .generateSong:
             return "Generate Song"
+        case .generateLyric:
+            return "Generate Lyric"
+        }
+    }
+    
+    var creditCost: Int {
+        switch self {
+        case .generateSong:
+            return 20
+        case .generateLyric:
+            return 4
+        case .coverSong:
+            return 10
         }
     }
 }
