@@ -245,10 +245,20 @@ class ModelsLabService: ObservableObject {
         Logger.d("⏱️ Retry interval: \(retryInterval) seconds")
         
         for attempt in 1...maxRetries {
+            // Check cancellation at start of each loop iteration
+            try? Task.checkCancellation()
+            if Task.isCancelled {
+                Logger.i("⚠️ Fetch cancelled at attempt \(attempt)")
+                return nil
+            }
+            
             Logger.d("🔄 Fetch attempt \(attempt)/\(maxRetries)")
             
             do {
                 let result = try await performFetchRequest(id: id)
+                
+                // Check cancellation after API call
+                try Task.checkCancellation()
                 
                 Logger.d("📋 Fetch response status: \(result.status)")
                 Logger.d("📋 Fetch response ID: \(result.id ?? -1)")
@@ -263,7 +273,11 @@ class ModelsLabService: ObservableObject {
                     Logger.d("⏳ Still processing...")
                     if attempt < maxRetries {
                         Logger.d("⏱️ Waiting \(retryInterval) seconds before retry...")
+                        // Check cancellation before sleep
+                        try Task.checkCancellation()
                         try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
+                        // Check cancellation after sleep
+                        try Task.checkCancellation()
                         continue
                     } else {
                         Logger.w("⚠️ Max retries reached, still processing")
@@ -274,10 +288,25 @@ class ModelsLabService: ObservableObject {
                     Logger.e("💬 Error message: \(result.message ?? "No message")")
                     return nil
                 }
+            } catch is CancellationError {
+                Logger.i("⚠️ Fetch cancelled during attempt \(attempt)")
+                return nil
             } catch {
+                // Check cancellation before handling error
+                if Task.isCancelled {
+                    Logger.i("⚠️ Fetch cancelled, stopping retries")
+                    return nil
+                }
+                
                 Logger.e("❌ Fetch attempt \(attempt) failed: \(error)")
                 if attempt < maxRetries {
                     Logger.d("⏱️ Waiting \(retryInterval) seconds before retry...")
+                    // Check cancellation before sleep
+                    try? Task.checkCancellation()
+                    if Task.isCancelled {
+                        Logger.i("⚠️ Fetch cancelled, stopping retries")
+                        return nil
+                    }
                     try? await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
                 } else {
                     Logger.e("❌ Max retries reached, giving up")
@@ -460,9 +489,16 @@ class ModelsLabService: ObservableObject {
         Logger.d("🎵 Model ID: \(modelID)")
         
         do {
+            // Check cancellation before starting
+            try Task.checkCancellation()
+            
             // Step 1: Upload file to tmpfiles.org
             Logger.i("📤 Step 1: Uploading file to tmpfiles.org...")
             let uploadedUrl = try await uploadFileToTmpFiles(fileData: fileData, fileName: fileName)
+            
+            // Check cancellation after upload
+            try Task.checkCancellation()
+            
             Logger.i("✅ Step 1 completed! Uploaded URL: \(uploadedUrl)")
             
             // Step 2: Process voice cover with uploaded URL
@@ -478,7 +514,15 @@ class ModelsLabService: ObservableObject {
             
             return resultUrl
             
+        } catch is CancellationError {
+            Logger.i("⚠️ Voice cover with file was cancelled")
+            return nil
         } catch {
+            // Check cancellation before handling error
+            if Task.isCancelled {
+                Logger.i("⚠️ Task cancelled, ignoring error")
+                return nil
+            }
             Logger.e("❌ Voice cover with file failed: \(error)")
             Logger.e("🔍 Error details: \(error.localizedDescription)")
             return nil
@@ -492,8 +536,14 @@ class ModelsLabService: ObservableObject {
         Logger.d("🎵 Model ID: \(modelID)")
         
         do {
+            // Check cancellation before starting
+            try Task.checkCancellation()
+            
             Logger.i("📤 Step 1: Sending voice cover request...")
             let voiceCoverResponse = try await voiceCover(audioUrl: audioUrl, modelID: modelID)
+            
+            // Check cancellation after API call
+            try Task.checkCancellation()
             
             guard let id = voiceCoverResponse.id else {
                 Logger.e("❌ No ID received from voice cover response")
@@ -508,6 +558,9 @@ class ModelsLabService: ObservableObject {
             // Start fetching the result
             let resultUrl = await fetchVoiceResult(id: id)
             
+            // Check cancellation after fetch
+            try Task.checkCancellation()
+            
             if let url = resultUrl {
                 Logger.i("🎉 Complete voice cover process successful!")
                 Logger.i("🔗 Final result URL: \(url)")
@@ -516,7 +569,15 @@ class ModelsLabService: ObservableObject {
             }
             
             return resultUrl
+        } catch is CancellationError {
+            Logger.i("⚠️ Voice cover process was cancelled")
+            return nil
         } catch {
+            // Check cancellation before handling error
+            if Task.isCancelled {
+                Logger.i("⚠️ Task cancelled, ignoring error")
+                return nil
+            }
             Logger.e("❌ Voice cover request failed: \(error)")
             Logger.e("🔍 Error details: \(error.localizedDescription)")
             return nil

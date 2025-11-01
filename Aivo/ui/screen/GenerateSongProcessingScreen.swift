@@ -27,28 +27,33 @@ struct GenerateSongProcessingScreen: View {
         ZStack {
             // Background
             AivoSunsetBackground()
+            VStack(spacing: 40) {
+                // Title
+                
+                
+                // Animation Area
+                animationView
+                
+                // Status Text
+                statusView
+                
+                // Progress Bar
+                //progressView
+            }
+            .padding(.horizontal, 40)
+            .padding(.top, 20)
             
             VStack(spacing: 0) {
-                Spacer()
+                
                 
                 // Header
                 headerView
                 
+                titleView.padding(.top, 40)
+                
+                Spacer()
                 // Content
-                VStack(spacing: 40) {
-                    // Title
-                    titleView
-                    
-                    // Animation Area
-                    animationView
-                    
-                    // Status Text
-                    statusView
-                    
-                    // Progress Bar
-                    //progressView
-                }
-                .padding(.horizontal, 40)
+                
                 
                 Spacer()
             }

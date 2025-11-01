@@ -25,6 +25,7 @@ struct GenerateSongTabView: View {
     @State private var generatedLyrics: String = ""
     @State private var isBPMEnabled: Bool = false
     @State private var bpmValue: Double = 100
+    @State private var generationTask: Task<Void, Never>?
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -89,6 +90,7 @@ struct GenerateSongTabView: View {
                 onCancel: {
                     // Cancel generation process
                     Logger.i("⚠️ [GenerateSong] Generation cancelled by user")
+                    generationTask?.cancel()
                     showGenerateSongScreen = false
                     showToastMessage("Generation cancelled")
                 }
@@ -712,7 +714,16 @@ struct GenerateSongTabView: View {
         showGenerateSongScreen = true
         
         // Start generation in background
-        Task {
+        generationTask = Task {
+            // Check cancellation at start
+            guard !Task.isCancelled else {
+                Logger.i("⚠️ [GenerateSong] Task was cancelled before starting")
+                await MainActor.run {
+                    showGenerateSongScreen = false
+                }
+                return
+            }
+            
             do {
                 let sunoService = SunoAiMusicService.shared
                 
@@ -744,6 +755,9 @@ struct GenerateSongTabView: View {
                 print("🎵 [GenerateSong] Vocal gender: \(vocalGender.rawValue)")
                 print("🎵 [GenerateSong] Instrumental: \(isInstrumental)")
                 
+                // Check cancellation before API call
+                try Task.checkCancellation()
+                
                 let generatedSongs = try await sunoService.generateMusicWithRetry(
                     prompt: prompt,
                     style: finalStyle,
@@ -752,6 +766,9 @@ struct GenerateSongTabView: View {
                     instrumental: isInstrumental,
                     model: selectedModel
                 )
+                
+                // Check cancellation after API call
+                try Task.checkCancellation()
                 
                 print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
                 for (index, song) in generatedSongs.enumerated() {
@@ -778,7 +795,22 @@ struct GenerateSongTabView: View {
                     }
                 }
                 
+            } catch is CancellationError {
+                // Task was cancelled, don't show error
+                Logger.i("⚠️ [GenerateSong] Task cancelled during generation")
+                await MainActor.run {
+                    showGenerateSongScreen = false
+                }
             } catch let error as SunoError {
+                // Check cancellation before handling error
+                guard !Task.isCancelled else {
+                    Logger.i("⚠️ [GenerateSong] Task cancelled, ignoring error")
+                    await MainActor.run {
+                        showGenerateSongScreen = false
+                    }
+                    return
+                }
+                
                 print("❌ [GenerateSong] Error generating songs: \(error)")
                 await MainActor.run {
                     showGenerateSongScreen = false
@@ -795,6 +827,15 @@ struct GenerateSongTabView: View {
                     showToastMessage(errorMessage)
                 }
             } catch {
+                // Check cancellation before handling error
+                guard !Task.isCancelled else {
+                    Logger.i("⚠️ [GenerateSong] Task cancelled, ignoring error")
+                    await MainActor.run {
+                        showGenerateSongScreen = false
+                    }
+                    return
+                }
+                
                 print("❌ [GenerateSong] Error generating songs: \(error)")
                 await MainActor.run {
                     showGenerateSongScreen = false

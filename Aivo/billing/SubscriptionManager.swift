@@ -22,8 +22,13 @@ final class SubscriptionManager: ObservableObject {
     
     // MARK: - Product IDs
     enum ProductIdentifier: String, CaseIterable {
-        case premiumWeekly = "aivo.premium.weekly"
-        case premiumYearly = "aivo.premium.yearly"
+        // real product id
+        case premiumWeekly = "AIVO_PREMIUM_WEEKLY"
+        case premiumYearly = "AIVO_PREMIUM_YEARLY"
+        
+        // local test
+//        case premiumWeekly = "aivo.premium.weekly"
+//        case premiumYearly = "aivo.premium.yearly"
         
         var creditsPerPeriod: Int {
             switch self {
@@ -160,7 +165,7 @@ final class SubscriptionManager: ObservableObject {
         Logger.i("purchaseSubscription: start id=\(product.id) price=\(product.displayPrice)")
         
         // Check if user already has an active subscription
-        await checkSubscriptionStatus() // Ensure status is up to date
+        checkSubscriptionStatus() // Ensure status is up to date
         
         if isPremium, let currentSub = currentSubscription {
             let periodName = currentSub.period.displayName
@@ -389,6 +394,7 @@ final class SubscriptionManager: ObservableObject {
         
         // Get product
         var product = products.first(where: { $0.id == transaction.productID })
+        
         if product == nil {
             product = await fetchProductByID(transaction.productID)
         }

@@ -237,6 +237,10 @@ class SunoAiMusicService: ObservableObject {
         
         // Step 1: Generate music
         print("🚀 [SunoAI] Step 1: Generating music...")
+        
+        // Check cancellation before API call
+        try Task.checkCancellation()
+        
         let taskId = try await generateMusic(
             prompt: prompt,
             style: style,
@@ -252,11 +256,18 @@ class SunoAiMusicService: ObservableObject {
             callBackUrl: callBackUrl
         )
         
+        // Check cancellation after API call
+        try Task.checkCancellation()
+        
         print("🚀 [SunoAI] Step 1 completed. Task ID: \(taskId)")
         
         // Step 2: Wait 20 seconds before first check
         print("🚀 [SunoAI] Step 2: Waiting 20 seconds before first check...")
         try await Task.sleep(nanoseconds: 20_000_000_000) // 20 seconds
+        
+        // Check cancellation after initial wait
+        try Task.checkCancellation()
+        
         print("🚀 [SunoAI] Step 2 completed. Starting polling...")
         
         // Step 3: Poll for results (20 times, every 20 seconds)
@@ -264,10 +275,16 @@ class SunoAiMusicService: ObservableObject {
         let retryInterval: UInt64 = 20_000_000_000 // 20 seconds in nanoseconds
         
         for attempt in 1...maxRetries {
+            // Check cancellation at start of each loop iteration
+            try Task.checkCancellation()
+            
             print("🚀 [SunoAI] Step 3: Polling attempt \(attempt)/\(maxRetries)...")
             
             do {
                 let taskDetails = try await getMusicGenerationDetails(taskId: taskId)
+                
+                // Check cancellation after API call
+                try Task.checkCancellation()
                 
                 print("🚀 [SunoAI] Polling result - Status: \(taskDetails.status.rawValue)")
                 
@@ -287,7 +304,11 @@ class SunoAiMusicService: ObservableObject {
                     print("⏳ [SunoAI] Still processing... Status: \(taskDetails.status.rawValue)")
                     if attempt < maxRetries {
                         print("⏳ [SunoAI] Waiting 20 seconds before next attempt...")
+                        // Check cancellation before sleep
+                        try Task.checkCancellation()
                         try await Task.sleep(nanoseconds: retryInterval)
+                        // Check cancellation after sleep
+                        try Task.checkCancellation()
                     }
                     
                 case .CREATE_TASK_FAILED, .GENERATE_AUDIO_FAILED, .CALLBACK_EXCEPTION:
@@ -306,7 +327,16 @@ class SunoAiMusicService: ObservableObject {
                     }
                 }
                 
+            } catch is CancellationError {
+                print("⚠️ [SunoAI] Task cancelled during polling")
+                throw CancellationError()
             } catch {
+                // Check cancellation before handling error
+                if Task.isCancelled {
+                    print("⚠️ [SunoAI] Task cancelled, stopping polling")
+                    throw CancellationError()
+                }
+                
                 print("❌ [SunoAI] Polling attempt \(attempt) failed: \(error)")
                 if attempt == maxRetries {
                     print("❌ [SunoAI] All polling attempts failed")
@@ -314,6 +344,7 @@ class SunoAiMusicService: ObservableObject {
                 }
                 // Wait before retry
                 print("⏳ [SunoAI] Continuing to next attempt...")
+                try Task.checkCancellation()
                 try await Task.sleep(nanoseconds: retryInterval)
             }
         }
@@ -359,6 +390,9 @@ extension SunoAiMusicService {
     
     // MARK: - Generate Lyrics
     func generateLyrics(prompt: String) async throws -> String {
+        // Check cancellation before starting
+        try Task.checkCancellation()
+        
         Logger.i("📝 [SunoAI] Starting lyrics generation...")
         Logger.d("📝 [SunoAI] Prompt: \(prompt)")
         
@@ -416,9 +450,20 @@ extension SunoAiMusicService {
             }
             
             Logger.i("✅ [SunoAI] Task ID: \(data.taskId)")
+            
+            // Check cancellation after API call
+            try Task.checkCancellation()
+            
             return data.taskId
             
+        } catch is CancellationError {
+            Logger.i("⚠️ [SunoAI] Lyrics generation cancelled")
+            throw CancellationError()
         } catch {
+            // Check cancellation before rethrowing
+            if Task.isCancelled {
+                throw CancellationError()
+            }
             Logger.e("❌ [SunoAI] Generate lyrics error: \(error)")
             throw error
         }
@@ -493,10 +538,17 @@ extension SunoAiMusicService {
         let retryInterval: TimeInterval = 5.0
         
         for attempt in 1...maxRetries {
+            // Check cancellation at start of each loop iteration
+            try Task.checkCancellation()
+            
             Logger.d("🔄 [SunoAI] Fetching lyrics attempt \(attempt)/\(maxRetries)")
             
             do {
                 let details = try await getLyricsGenerationDetails(taskId: taskId)
+                
+                // Check cancellation after API call
+                try Task.checkCancellation()
+                
                 Logger.d("📊 [SunoAI] Status: \(details.status.rawValue)")
                 
                 switch details.status {
@@ -532,7 +584,11 @@ extension SunoAiMusicService {
                 case .pending:
                     Logger.d("⏳ [SunoAI] Still generating...")
                     if attempt < maxRetries {
+                        // Check cancellation before sleep
+                        try Task.checkCancellation()
                         try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
+                        // Check cancellation after sleep
+                        try Task.checkCancellation()
                     } else {
                         Logger.e("❌ [SunoAI] Max retries reached")
                         throw SunoError.requestTimeout
@@ -543,12 +599,23 @@ extension SunoAiMusicService {
                     throw SunoError.generationFailed(details.status.rawValue)
                 }
                 
-//            } catch let error as SunoError where error == .requestTimeout {
-//                Logger.e("❌ [SunoAI] Request timeout")
-//                throw error
+            } catch is CancellationError {
+                Logger.i("⚠️ [SunoAI] Lyrics generation cancelled during polling")
+                throw CancellationError()
             } catch {
+                // Check cancellation before handling error
+                if Task.isCancelled {
+                    Logger.i("⚠️ [SunoAI] Task cancelled, stopping polling")
+                    throw CancellationError()
+                }
+                
                 Logger.e("❌ [SunoAI] Error: \(error)")
                 if attempt < maxRetries {
+                    // Check cancellation before sleep
+                    try? Task.checkCancellation()
+                    if Task.isCancelled {
+                        throw CancellationError()
+                    }
                     try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
                 } else {
                     throw error

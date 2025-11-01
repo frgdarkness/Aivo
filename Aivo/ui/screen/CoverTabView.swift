@@ -25,6 +25,7 @@ struct CoverTabView: View {
     @State private var selectedSongForCover: SelectedSong? = nil
     @State private var selectedAudioFileURL: URL? = nil
     @State private var showModelSelectionScreen = false
+    @State private var coverGenerationTask: Task<Void, Never>?
     
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
@@ -75,6 +76,7 @@ struct CoverTabView: View {
                 onCancel: {
                     // Cancel cover generation process
                     Logger.i("⚠️ [CoverTab] Cover generation cancelled by user")
+                    coverGenerationTask?.cancel()
                     showProcessingScreen = false
                     showToastMessage("Cover generation cancelled")
                 }
@@ -485,7 +487,16 @@ struct CoverTabView: View {
         showProcessingScreen = true
         
         // Start generation in background
-        Task {
+        coverGenerationTask = Task {
+            // Check cancellation at start
+            guard !Task.isCancelled else {
+                Logger.i("⚠️ [CoverTab] Task was cancelled before starting")
+                await MainActor.run {
+                    showProcessingScreen = false
+                }
+                return
+            }
+            
             do {
                 let modelsLabService = ModelsLabService.shared
                 let coverModelID = selectedModel?.modelName ?? "arianagrande"
@@ -505,6 +516,9 @@ struct CoverTabView: View {
                     
                     Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
                     
+                    // Check cancellation before processing
+                    try Task.checkCancellation()
+                    
                     // Check if song has audio file from device picker
                     if let deviceFileURL = selectedAudioFileURL {
                         Logger.d("📁 [CoverTab] Using audio file from device picker")
@@ -514,6 +528,9 @@ struct CoverTabView: View {
                             
                             let fileData = try Data(contentsOf: deviceFileURL)
                             let fileName = deviceFileURL.lastPathComponent
+                            
+                            // Check cancellation before API call
+                            try Task.checkCancellation()
                             
                             resultUrl = await modelsLabService.processVoiceCoverWithFile(
                                 fileData: fileData,
@@ -534,6 +551,9 @@ struct CoverTabView: View {
                         let fileData = try Data(contentsOf: localURL)
                         let fileName = "\(selectedSong.title).mp3"
                         
+                        // Check cancellation before API call
+                        try Task.checkCancellation()
+                        
                         resultUrl = await modelsLabService.processVoiceCoverWithFile(
                             fileData: fileData,
                             fileName: fileName,
@@ -542,6 +562,10 @@ struct CoverTabView: View {
                     // Use remote audioUrl directly (for Hot Songs from JSON, similar to YouTube)
                     } else if let audioUrl = selectedSong.audioUrl {
                         Logger.d("🔗 [CoverTab] Using remote audio URL: \(audioUrl)")
+                        
+                        // Check cancellation before API call
+                        try Task.checkCancellation()
+                        
                         resultUrl = await modelsLabService.processVoiceCover(
                             audioUrl: audioUrl,
                             modelID: coverModelID
@@ -568,11 +592,17 @@ struct CoverTabView: View {
                     
                     Logger.i("🔗 [CoverTab] Using verified URL: \(normalizedURL)")
                     
+                    // Check cancellation before API call
+                    try Task.checkCancellation()
+                    
                     resultUrl = await modelsLabService.processVoiceCover(
                         audioUrl: normalizedURL,
                         modelID: coverModelID
                     )
                 }
+                
+                // Check cancellation after API call
+                try Task.checkCancellation()
                 
                 Logger.i("🎤 [CoverTab] Cover song generated successfully!")
                 Logger.d("🎤 [CoverTab] Result URL: \(resultUrl ?? "nil")")
@@ -602,7 +632,22 @@ struct CoverTabView: View {
                     }
                 }
                 
+            } catch is CancellationError {
+                // Task was cancelled, don't show error
+                Logger.i("⚠️ [CoverTab] Task cancelled during cover generation")
+                await MainActor.run {
+                    showProcessingScreen = false
+                }
             } catch {
+                // Check cancellation before handling error
+                guard !Task.isCancelled else {
+                    Logger.i("⚠️ [CoverTab] Task cancelled, ignoring error")
+                    await MainActor.run {
+                        showProcessingScreen = false
+                    }
+                    return
+                }
+                
                 Logger.e("❌ [CoverTab] Error generating cover song: \(error)")
                 await MainActor.run {
                     showProcessingScreen = false
