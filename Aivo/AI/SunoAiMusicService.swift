@@ -497,6 +497,12 @@ extension SunoAiMusicService {
             
             Logger.d("🔍 [SunoAI] HTTP Status: \(httpResponse.statusCode)")
             
+            // Stop immediately if server returns 500 error (internal server error)
+            if httpResponse.statusCode == 500 {
+                Logger.e("❌ [SunoAI] Server error 500 - stopping retry")
+                throw SunoError.httpError(500)
+            }
+            
             guard httpResponse.statusCode == 200 else {
                 Logger.e("❌ [SunoAI] HTTP Error: \(httpResponse.statusCode)")
                 throw SunoError.httpError(httpResponse.statusCode)
@@ -602,6 +608,24 @@ extension SunoAiMusicService {
             } catch is CancellationError {
                 Logger.i("⚠️ [SunoAI] Lyrics generation cancelled during polling")
                 throw CancellationError()
+            } catch let sunoError as SunoError {
+                // Check if it's HTTP 500 error - stop retry immediately
+                if case .httpError(let code) = sunoError, code == 500 {
+                    Logger.e("❌ [SunoAI] Server error 500 detected - stopping retry loop")
+                    throw sunoError
+                }
+                // For other errors, continue retry logic
+                Logger.e("❌ [SunoAI] Error: \(sunoError)")
+                if attempt < maxRetries {
+                    // Check cancellation before sleep
+                    try? Task.checkCancellation()
+                    if Task.isCancelled {
+                        throw CancellationError()
+                    }
+                    try await Task.sleep(nanoseconds: UInt64(retryInterval * 1_000_000_000))
+                } else {
+                    throw sunoError
+                }
             } catch {
                 // Check cancellation before handling error
                 if Task.isCancelled {

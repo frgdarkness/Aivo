@@ -29,6 +29,9 @@ struct ProfileScreen: View {
     @State private var showImagePicker = false
     @State private var showToastMessage = false
     @State private var toastMessageText = ""
+    #if DEBUG
+    @State private var showTestScreen = false
+    #endif
     
     private var profile: UserProfile {
         localStorage.getLocalProfile()
@@ -173,6 +176,11 @@ struct ProfileScreen: View {
         .fullScreenCover(isPresented: $showCreditHistory) {
             CreditUsageHistoryScreen()
         }
+        #if DEBUG
+        .fullScreenCover(isPresented: $showTestScreen) {
+            TestScreen()
+        }
+        #endif
     }
     
     // MARK: - Header View
@@ -466,6 +474,16 @@ struct ProfileScreen: View {
                 showArrow: true,
                 action: { requestReview() }
             )
+            
+            #if DEBUG
+            // Test Screen (Debug Only)
+            menuRow(
+                icon: "wrench.and.screwdriver.fill",
+                title: "Test Screen",
+                showArrow: true,
+                action: { showTestScreen = true }
+            )
+            #endif
             
             // Version
             menuRow(

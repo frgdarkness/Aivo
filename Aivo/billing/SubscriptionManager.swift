@@ -13,543 +13,430 @@ import Combine
 final class SubscriptionManager: ObservableObject {
     static let shared = SubscriptionManager()
     
-    // MARK: - Published
-    @Published var products: [Product] = []
-    @Published var currentSubscription: SubscriptionInfo?
-    @Published var isLoading = false
+    // MARK: - Published states
+    @Published private(set) var isPremium: Bool = false
+    @Published private(set) var products: [Product] = []
+    @Published private(set) var currentSubscription: ActiveSubscription?
+    @Published var isLoading: Bool = false
     @Published var errorMessage: String?
-    @Published var isPremium: Bool = false
     
     // MARK: - Product IDs
-    enum ProductIdentifier: String, CaseIterable {
-        // real product id
-        case premiumWeekly = "AIVO_PREMIUM_WEEKLY"
-        case premiumYearly = "AIVO_PREMIUM_YEARLY"
-        
-        // local test
-//        case premiumWeekly = "aivo.premium.weekly"
-//        case premiumYearly = "aivo.premium.yearly"
-        
-        var creditsPerPeriod: Int {
+    enum ProductID: String, CaseIterable {
+        case weekly = "AIVO_PREMIUM_WEEKLY"
+        case yearly = "AIVO_PREMIUM_YEARLY"
+
+        var sortOrder: Int {
             switch self {
-            case .premiumWeekly: return 1000 // 1000 credits per week
-            case .premiumYearly: return 1000 // 1000 credits per week (same for yearly)
+            case .weekly: return 0
+            case .yearly: return 1
             }
         }
-        
-        var period: SubscriptionInfo.SubscriptionPeriod {
+        var period: SubscriptionPeriod {
             switch self {
-            case .premiumWeekly: return .weekly
-            case .premiumYearly: return .yearly
+            case .weekly: return .weekly
+            case .yearly: return .yearly
             }
         }
+        var creditsPerPeriod: Int { 1000 } // 1000 credits/tuần
+    }
+
+    enum SubscriptionPeriod {
+        case weekly
+        case yearly
         
         var displayName: String {
             switch self {
-            case .premiumWeekly: return "Weekly"
-            case .premiumYearly: return "Yearly"
+            case .weekly: return "Weekly"
+            case .yearly: return "Yearly"
             }
         }
     }
-    
-    private let productIDs = Set(ProductIdentifier.allCases.map { $0.rawValue })
-    
-    // Listeners
+
+    struct ActiveSubscription {
+        let productID: String
+        let willAutoRenew: Bool
+        let expiresDate: Date?
+        var displayName: String?
+        var displayPrice: String?
+
+        var period: SubscriptionPeriod {
+            ProductID(rawValue: productID)?.period ?? .weekly
+        }
+        var isActive: Bool {
+            guard let exp = expiresDate else { return true }
+            return exp > Date()
+        }
+    }
+
+    // MARK: - Private
+    private let productIDs = Set(ProductID.allCases.map(\.rawValue))
     private var updatesTask: Task<Void, Never>?
-    private var statusCheckTask: Task<Void, Never>?
-    
-    // Track processed transactions (persisted to UserDefaults)
-    private func loadProcessedTransactionIDs() -> Set<String> {
-        if let data = UserDefaults.standard.data(forKey: "ProcessedSubscriptionTransactionIDs"),
-           let ids = try? JSONDecoder().decode([String].self, from: data) {
-            return Set(ids)
-        }
-        return Set<String>()
-    }
-    
-    private func saveProcessedTransactionIDs(_ ids: Set<String>) {
-        let array = Array(ids)
-        if let data = try? JSONEncoder().encode(array) {
-            UserDefaults.standard.set(data, forKey: "ProcessedSubscriptionTransactionIDs")
-        }
-    }
-    
-    private var _processedTransactionIDs: Set<String>?
-    
-    private var processedTransactionIDs: Set<String> {
-        get {
-            if _processedTransactionIDs == nil {
-                _processedTransactionIDs = loadProcessedTransactionIDs()
-            }
-            return _processedTransactionIDs ?? Set<String>()
-        }
-        set {
-            _processedTransactionIDs = newValue
-            saveProcessedTransactionIDs(newValue)
-        }
-    }
-    
-    private let profileSyncManager = ProfileSyncManager.shared
-    private let localStorage = LocalStorageManager.shared
+    private var processedTransactionIDs = Set<String>()
+
+    private let bonusCreditAmount = 1000
+    private let bonusIntervalDays: Double = 7
     
     // MARK: - Init
     private init() {
-        Logger.i("SubscriptionManager init")
-        Logger.d("SubscriptionManager: Loaded \(processedTransactionIDs.count) processed transaction IDs")
-        observeTransactions()
-        checkSubscriptionStatus()
-        
-        // Check and grant bonus credits for subscription on app start
-        Task {
-            await checkBonusCreditForSubscription()
-        }
+        Logger.i("SubscriptionManager: Initializing")
+        observeTransactionUpdates()
+        Task { await refreshStatus() } // không force sync để tránh loop login sandbox
     }
-    
-    deinit {
-        updatesTask?.cancel()
-        statusCheckTask?.cancel()
-    }
+
+    deinit { updatesTask?.cancel() }
     
     // MARK: - Public API
     
-    /// Fetch subscription products from App Store
-    func fetchProducts() {
-        guard !isLoading else { return }
+    /// Fetch product list từ App Store
+    func fetchProducts() async {
+        guard !isLoading else {
+            Logger.d("SubscriptionManager: fetchProducts already running")
+            return
+        }
         isLoading = true
         errorMessage = nil
-        Logger.i("fetchSubscriptionProducts: start for ids=\(Array(productIDs))")
+        Logger.i("SubscriptionManager: fetchProducts - starting for productIDs=\(Array(productIDs))")
         
-        Task {
             do {
                 let fetched = try await Product.products(for: Array(productIDs))
-                self.products = fetched.sorted { lhs, rhs in
-                    // Sort by period: weekly first, then yearly
-                    let lhsPeriod = ProductIdentifier(rawValue: lhs.id)?.period ?? .weekly
-                    let rhsPeriod = ProductIdentifier(rawValue: rhs.id)?.period ?? .weekly
-                    return lhsPeriod == .weekly && rhsPeriod == .yearly
-                }
-                self.isLoading = false
-                let productSummaries = self.products.map { "id=\($0.id), price=\($0.displayPrice)" }
-                Logger.i("fetchSubscriptionProducts: success count=\(self.products.count) products=[\(productSummaries.joined(separator: "; "))]")
-                if self.products.isEmpty {
-                    Logger.w("fetchSubscriptionProducts: products list is empty")
-                }
-            } catch {
-                self.isLoading = false
-                self.errorMessage = "Failed to fetch products: \(error.localizedDescription)"
-                Logger.e("fetchSubscriptionProducts: error=\(error.localizedDescription)")
+            products = fetched.sorted {
+                (ProductID(rawValue: $0.id)?.sortOrder ?? 999) < (ProductID(rawValue: $1.id)?.sortOrder ?? 999)
             }
+            isLoading = false
+            Logger.i("SubscriptionManager: fetchProducts - success, count=\(products.count)")
+            Logger.d("SubscriptionManager: Products: " + products.map { "id=\($0.id), price=\($0.displayPrice)" }.joined(separator: "; "))
+        } catch {
+            isLoading = false
+            errorMessage = "Failed to fetch products: \(error.localizedDescription)"
+            Logger.e("SubscriptionManager: fetchProducts - error=\(error.localizedDescription)")
         }
     }
-    
-    /// Get product for a specific identifier
-    func getProduct(for identifier: ProductIdentifier) -> Product? {
-        return products.first { $0.id == identifier.rawValue }
+
+    func product(for id: ProductID) -> Product? {
+        products.first { $0.id == id.rawValue }
     }
-    
-    /// Get credits amount for a subscription product
-    func getCreditsPerPeriod(for product: Product) -> Int {
-        guard let id = ProductIdentifier(rawValue: product.id) else { return 0 }
-        return id.creditsPerPeriod
-    }
-    
-    /// Get period for a subscription product
-    func getPeriod(for product: Product) -> SubscriptionInfo.SubscriptionPeriod? {
-        guard let id = ProductIdentifier(rawValue: product.id) else { return nil }
-        return id.period
-    }
-    
-    /// Purchase a subscription
-    func purchaseSubscription(_ product: Product) async throws -> Bool {
-        errorMessage = nil
-        Logger.i("purchaseSubscription: start id=\(product.id) price=\(product.displayPrice)")
-        
-        // Check if user already has an active subscription
-        checkSubscriptionStatus() // Ensure status is up to date
-        
-        if isPremium, let currentSub = currentSubscription {
-            let periodName = currentSub.period.displayName
-            let expiryString: String
-            if let expiryDate = currentSub.expiryDate {
-                let formatter = DateFormatter()
-                formatter.dateStyle = .medium
-                formatter.timeStyle = .none
-                expiryString = formatter.string(from: expiryDate)
-            } else {
-                expiryString = "unknown"
-            }
-            
-            errorMessage = "You already have an active \(periodName) subscription. It expires on \(expiryString)."
-            Logger.w("purchaseSubscription: User already has active subscription - period=\(periodName), expires=\(expiryString)")
-            NotificationCenter.default.post(
-                name: NSNotification.Name("SubscriptionAlreadyActive"),
-                object: nil,
-                userInfo: ["period": periodName, "expiryDate": expiryString]
-            )
-            return false
+
+    /// Mua theo enum ProductID
+    func purchase(productID: ProductID) async {
+        Logger.i("SubscriptionManager: purchase - start id=\(productID.rawValue)")
+        var prod = product(for: productID)
+        if prod == nil {
+            do { prod = try await Product.products(for: [productID.rawValue]).first }
+            catch { Logger.e("purchase: fetch product fail \(error.localizedDescription)") }
         }
-        
+        guard let product = prod else {
+            errorMessage = "Product not found."
+            Logger.e("purchase: product missing \(productID.rawValue)")
+            return
+        }
+        await purchase(product: product)
+    }
+
+    /// Mua với Product
+    func purchase(product: Product) async {
+        Logger.i("SubscriptionManager: purchase - start product=\(product.id), price=\(product.displayPrice)")
         do {
             let result = try await product.purchase()
-            
             switch result {
-            case .success(let verificationResult):
-                switch verificationResult {
-                case .unverified(_, let error):
-                    Logger.w("purchaseSubscription: unverified error=\(error.localizedDescription)")
-                    self.errorMessage = "Purchase could not be verified."
+            case .success(let verification):
+                switch verification {
+                case .verified(let tx):
+                    Logger.i("purchase: verified tx id=\(tx.id)")
+                    await handleVerified(tx)
+                    await checkBonusCreditForSubscription()
+                case .unverified(_, let err):
+                    errorMessage = "Purchase unverified: \(err.localizedDescription)"
+                    Logger.w("purchase: unverified \(err.localizedDescription)")
                     NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseFailed"), object: nil)
-                    return false
-                case .verified(let transaction):
-                    await handleVerifiedSubscriptionTransaction(transaction)
-                    return true
                 }
-                
-            case .userCancelled:
-                Logger.w("purchaseSubscription: user cancelled for id=\(product.id)")
-                NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseCancelled"), object: nil)
-                return false
-                
             case .pending:
-                Logger.i("purchaseSubscription: pending for id=\(product.id)")
+                Logger.i("purchase: pending")
                 NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchasePending"), object: nil)
-                return false
-                
+            case .userCancelled:
+                Logger.w("purchase: user cancelled")
+                NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseCancelled"), object: nil)
             @unknown default:
-                Logger.w("purchaseSubscription: unknown result for id=\(product.id)")
-                return false
+                Logger.w("purchase: unknown result")
             }
         } catch {
-            self.errorMessage = "Purchase failed: \(error.localizedDescription)"
-            Logger.e("purchaseSubscription: error=\(error.localizedDescription) id=\(product.id)")
+            errorMessage = "Purchase failed: \(error.localizedDescription)"
+            Logger.e("purchase: error \(error.localizedDescription)")
             NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseFailed"), object: nil)
-            throw error
         }
     }
-    
-    /// Check current subscription status
+
+    /// Legacy wrapper
+    func purchaseSubscription(_ product: Product) async throws -> Bool {
+        await purchase(product: product)
+        return errorMessage == nil
+    }
+
+    /// Khôi phục mua
+    func restorePurchases() async {
+        Logger.i("restorePurchases: start")
+        do {
+            try await AppStore.sync()
+            await refreshStatus(forceSync: false)
+            Logger.i("restorePurchases: success")
+        } catch {
+            errorMessage = "Restore failed: \(error.localizedDescription)"
+            Logger.e("restorePurchases: error \(error.localizedDescription)")
+        }
+    }
+
+    /// Check subscription (wrapper)
     func checkSubscriptionStatus() {
-        Logger.i("checkSubscriptionStatus: start")
+        Task { await refreshStatus() }
+    }
+
+    // MARK: - Refresh Status (with sandbox-friendly fallback)
+    func refreshStatus(forceSync: Bool = false) async {
+        Logger.i("SubscriptionManager: refreshStatus - starting")
+
+        // 1) Chỉ sync nếu thực sự cần (tránh sandbox bắt login liên tục)
+        await ensureReceiptIfNeeded(force: forceSync)
+
+        // 2) Thử đọc entitlements trước (nhanh nhất)
+        var best: ActiveSubscription?
+        var entitlementsHadAny = false
+
+        for await res in Transaction.currentEntitlements {
+            switch res {
+            case .verified(let tx):
+                guard productIDs.contains(tx.productID) else { continue }
+                entitlementsHadAny = true
+                Logger.d("refreshStatus: entitlements tx id=\(tx.id), product=\(tx.productID)")
+                let candidate = ActiveSubscription(
+                    productID: tx.productID,
+                    willAutoRenew: (tx.revocationDate == nil),
+                    expiresDate: tx.expirationDate,          // iOS 15+: auto-renewable có expirationDate
+                    displayName: nil,
+                    displayPrice: nil
+                )
+                best = chooseMoreRecent(current: best, candidate: candidate)
+            case .unverified(_, let err):
+                Logger.w("refreshStatus: entitlements unverified \(err.localizedDescription)")
+            }
+        }
+
+        // 3) Nếu entitlements rỗng → fallback latest(for:)
+        if best == nil {
+            Logger.d("refreshStatus: entitlements empty → fallback latest(for:)")
+            for id in productIDs {
+                if let tx = await latestActiveTransaction(for: id) {
+                    let candidate = ActiveSubscription(
+                        productID: tx.productID,
+                        willAutoRenew: (tx.revocationDate == nil),
+                        expiresDate: tx.expirationDate,
+                        displayName: nil,
+                        displayPrice: nil
+                    )
+                    best = chooseMoreRecent(current: best, candidate: candidate)
+                }
+            }
+        }
+
+        // 4) Sandbox đôi khi trễ → retry nhẹ 1 lần nếu vẫn nil và entitlements chưa có gì
+        if best == nil && !entitlementsHadAny {
+            try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s
+            Logger.d("refreshStatus: retry after short delay")
+            for id in productIDs {
+                if let tx = await latestActiveTransaction(for: id) {
+                    let candidate = ActiveSubscription(
+                        productID: tx.productID,
+                        willAutoRenew: (tx.revocationDate == nil),
+                        expiresDate: tx.expirationDate,
+                        displayName: nil,
+                        displayPrice: nil
+                    )
+                    best = chooseMoreRecent(current: best, candidate: candidate)
+                }
+            }
+        }
+
+        // 5) Cập nhật state + nạp thông tin hiển thị
+        if var sub = best {
+            if let prod = try? await Product.products(for: [sub.productID]).first {
+                sub.displayName = prod.displayName
+                sub.displayPrice = prod.displayPrice
+            }
+            currentSubscription = sub
+            isPremium = true
+            Logger.i("refreshStatus: ACTIVE product=\(sub.productID), expires=\(sub.expiresDate?.description ?? "nil")")
+
+            // Cập nhật CreditManager
+            let infoPeriod: SubscriptionInfo.SubscriptionPeriod? = (sub.period == .weekly) ? .weekly : .yearly
+            CreditManager.shared.updatePremiumStatus(true, period: infoPeriod, skipInitialGrant: true)
+        } else {
+            currentSubscription = nil
+            isPremium = false
+            Logger.i("refreshStatus: NO ACTIVE SUBSCRIPTION")
+            CreditManager.shared.updatePremiumStatus(false)
+        }
+
+        // 6) Bonus credit nếu premium
+        await checkBonusCreditForSubscription()
+    }
+
+    // MARK: - Bonus Credit (1000/tuần)
+    func checkBonusCreditForSubscription() async {
+        guard isPremium else {
+            Logger.d("checkBonusCreditForSubscription: user not premium, skip")
+            return
+        }
+
+        let now = Date()
         
-        statusCheckTask?.cancel()
-        statusCheckTask = Task {
-            do {
-                // Check all current entitlements
-                var activeSubscription: SubscriptionInfo?
-                
-                for await result in Transaction.currentEntitlements {
-                    switch result {
-                    case .verified(let transaction):
-                        // Check if this is one of our subscription products
-                        if productIDs.contains(transaction.productID) {
-                            Logger.d("checkSubscriptionStatus: found subscription transaction id=\(transaction.id) productID=\(transaction.productID)")
-                            
-                            // Get product to access subscription info
-                            let profile = localStorage.getLocalProfile()
-                            var product = products.first(where: { $0.id == transaction.productID })
-                            if product == nil {
-                                product = await fetchProductByID(transaction.productID)
-                            }
-                            guard let product = product else {
-                                Logger.w("checkSubscriptionStatus: product not found for id=\(transaction.productID)")
-                                continue
-                            }
-                            
-                            // Get subscription info from product
-                            let period = ProductIdentifier(rawValue: transaction.productID)?.period ?? .weekly
-                            let creditsPerPeriod = ProductIdentifier(rawValue: transaction.productID)?.creditsPerPeriod ?? 1200
-                            
-                            // Since transaction is in currentEntitlements, it means subscription is active
-                            let subscriptionStatusValue: SubscriptionInfo.SubscriptionStatus = .active
-                            
-                            // Calculate expiry date based on period
-                            // For subscriptions in currentEntitlements, calculate from purchase date
-                            let calendar = Calendar.current
-                            let expiryDate = calendar.date(byAdding: period == .weekly ? .day : .year, value: period == .weekly ? 7 : 1, to: transaction.purchaseDate)
-                            let autoRenews = true // Default for auto-renewable subscriptions
-                            
-                            let info = SubscriptionInfo(
-                                subscriptionID: UUID().uuidString,
-                                profileID: profile.profileID,
-                                productID: transaction.productID,
-                                transactionID: String(transaction.id),
-                                creditsPerPeriod: creditsPerPeriod,
-                                period: period,
-                                price: product.displayPrice,
-                                currency: product.priceFormatStyle.currencyCode,
-                                status: subscriptionStatusValue,
-                                startDate: transaction.purchaseDate,
-                                expiryDate: expiryDate,
-                                autoRenews: autoRenews
-                            )
-                            
-                            // Keep the most recent active subscription
-                            if subscriptionStatusValue == .active {
-                                if activeSubscription == nil || (info.expiryDate ?? Date.distantPast) > (activeSubscription?.expiryDate ?? Date.distantPast) {
-                                    activeSubscription = info
-                                }
-                            }
-                        }
-                    case .unverified(_, let error):
-                        Logger.w("checkSubscriptionStatus: unverified transaction error=\(error.localizedDescription)")
-                    }
-                }
-                
-                await MainActor.run {
-                    self.currentSubscription = activeSubscription
-                    self.isPremium = activeSubscription?.isActive ?? false
-                    
-                    // Update CreditManager premium status
-                    if let subscription = activeSubscription, subscription.isActive {
-                        // Update premium status but skip initial grant (only grant if weekly period has passed)
-                        CreditManager.shared.updatePremiumStatus(true, period: subscription.period, skipInitialGrant: false)
-                        
-                        // Check and grant bonus credits if needed (separate from purchase flow)
-                        Task {
-                            await self.checkBonusCreditForSubscription()
-                        }
-                    } else {
-                        CreditManager.shared.updatePremiumStatus(false)
-                    }
-                    
-                    if let subscription = activeSubscription {
-                        Logger.i("checkSubscriptionStatus: active subscription found period=\(subscription.period.rawValue) expires=\(subscription.expiryDate?.description ?? "never")")
-                    } else {
-                        Logger.i("checkSubscriptionStatus: no active subscription found")
-                    }
-                }
-            } catch {
-                Logger.e("checkSubscriptionStatus: error=\(error.localizedDescription)")
+        // Priority 1: Load from Keychain (persists across app reinstalls)
+        var lastBonusDate: Date? = KeychainManager.shared.getLastBonusDate()
+        
+        // Priority 2: Fallback to UserDefaults (migration from old version)
+        if lastBonusDate == nil {
+            if let userDefaultsDate = UserDefaults.standard.object(forKey: "AIVO_LastBonusCreditDate") as? Date {
+                lastBonusDate = userDefaultsDate
+                // Migrate to Keychain
+                KeychainManager.shared.saveLastBonusDate(userDefaultsDate)
+                Logger.d("checkBonusCreditForSubscription: Migrated lastBonusDate from UserDefaults to Keychain")
+            }
+        }
+
+        if let last = lastBonusDate {
+            let days = now.timeIntervalSince(last) / (60 * 60 * 24)
+            if days >= bonusIntervalDays {
+                await CreditManager.shared.increaseCredits(by: bonusCreditAmount)
+                KeychainManager.shared.saveLastBonusDate(now)
+                // Also save to UserDefaults for backward compatibility
+                UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
+                Logger.i("checkBonusCreditForSubscription: +\(bonusCreditAmount) credits (weekly bonus), daysSinceLast=\(Int(days))")
+            } else {
+                Logger.d("checkBonusCreditForSubscription: not yet (\(Int(bonusIntervalDays - days)) days left)")
+            }
+        } else {
+            // lần đầu sau khi sub
+            await CreditManager.shared.increaseCredits(by: bonusCreditAmount)
+            KeychainManager.shared.saveLastBonusDate(now)
+            // Also save to UserDefaults for backward compatibility
+            UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
+            Logger.i("checkBonusCreditForSubscription: first-time +\(bonusCreditAmount) credits")
+        }
+    }
+
+    // MARK: - Transaction observation
+    private func observeTransactionUpdates() {
+        Logger.i("SubscriptionManager: observeTransactionUpdates - starting")
+        updatesTask = Task.detached { [weak self] in
+            guard let self else { return }
+            Logger.d("observeTransactionUpdates: task started")
+            for await update in Transaction.updates {
+                await self.handleUpdate(update)
             }
         }
     }
     
-    /// Get current active subscription
-    func getCurrentSubscription() -> SubscriptionInfo? {
-        return currentSubscription
+    private func handleUpdate(_ verification: VerificationResult<Transaction>) async {
+        switch verification {
+        case .unverified(_, let error):
+            Logger.w("handleUpdate: unverified \(error.localizedDescription)")
+        case .verified(let transaction):
+            guard productIDs.contains(transaction.productID) else {
+                Logger.d("handleUpdate: non-sub product \(transaction.productID) → finish")
+                await transaction.finish()
+                return
+            }
+            Logger.i("handleUpdate: verified id=\(transaction.id), product=\(transaction.productID)")
+            await handleVerified(transaction)
+        }
     }
-    
-    /// Restore purchases
-    func restorePurchases() {
-        Logger.i("restorePurchases: start")
-        Task {
+
+    private func handleVerified(_ transaction: Transaction) async {
+        let txID = String(transaction.id)
+        let status = await String(describing: transaction.subscriptionStatus)
+        Logger.d("handleVerified: id=\(txID) - product=\(transaction.productID) - status=\(status) - appTransactionID=\(transaction.appTransactionID) - expiredDate=\(transaction.expirationDate ?? Date())")
+        if !processedTransactionIDs.insert(txID).inserted {
+            Logger.w("handleVerified: already processed id=\(txID) → finish & refresh")
+            await transaction.finish()
+            await refreshStatus()
+            return
+        }
+        
+        // Không spam sync, chỉ finish & refresh
+        Logger.d("handleVerified: new tx id=\(txID) → refresh")
+        await refreshStatus()
+        await transaction.finish()
+
+        // Sync profile to RemoteFirebase khi user subscribe (tương tự CreditStoreManager)
+        // Chỉ sync khi user subscribe, không sync mặc định
+        do {
+            try await ProfileSyncManager.shared.createRemoteProfileAndSync()
+            Logger.i("handleVerified: Profile synced to RemoteFirebase after subscription")
+        } catch {
+            Logger.e("handleVerified: Failed to sync profile to RemoteFirebase: \(error.localizedDescription)")
+            // Nếu đã có remote profile, thử sync lại
+            do {
+                await ProfileSyncManager.shared.syncProfileIfNeeded()
+                Logger.d("handleVerified: Profile sync attempted via syncProfileIfNeeded")
+            } catch {
+                Logger.e("handleVerified: Failed to sync profile: \(error.localizedDescription)")
+            }
+        }
+
+        NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
+    }
+
+    // MARK: - Helpers
+
+    /// Chỉ gọi AppStore.sync() khi thật sự cần (chưa có receipt) hoặc force
+    private func ensureReceiptIfNeeded(force: Bool = false) async {
+        let hasReceipt: Bool = {
+            guard let url = Bundle.main.appStoreReceiptURL else { return false }
+            return FileManager.default.fileExists(atPath: url.path)
+        }()
+        if force || !hasReceipt {
             do {
                 try await AppStore.sync()
-                checkSubscriptionStatus() // Re-check after sync
-                Logger.i("restorePurchases: success")
+                Logger.d("ensureReceiptIfNeeded: AppStore.sync() done (force=\(force))")
             } catch {
-                self.errorMessage = "Restore failed: \(error.localizedDescription)"
-                Logger.e("restorePurchases: error=\(error.localizedDescription)")
+                Logger.w("ensureReceiptIfNeeded: sync failed \(error.localizedDescription)")
             }
-        }
-    }
-    
-    // MARK: - Private
-    
-    private func fetchProductByID(_ productID: String) async -> Product? {
-        do {
-            let products = try await Product.products(for: [productID])
-            return products.first
-        } catch {
-            Logger.e("fetchProductByID: error=\(error.localizedDescription)")
-            return nil
-        }
-    }
-    
-    /// Observe transaction updates
-    private func observeTransactions() {
-        Logger.i("subscriptionObserver: start listening to Transaction.updates")
-        updatesTask = Task.detached { [weak self] in
-            for await update in Transaction.updates {
-                await self?.handleTransactionUpdate(update)
-            }
-        }
-    }
-    
-    private func handleTransactionUpdate(_ verificationResult: VerificationResult<Transaction>) async {
-        switch verificationResult {
-        case .unverified(_, let error):
-            Logger.w("subscriptionTxUpdate: unverified error=\(error.localizedDescription)")
-            
-        case .verified(let transaction):
-            // Only handle subscription transactions
-            // Check if product is in our subscription product IDs
-            if productIDs.contains(transaction.productID) {
-                Logger.i("subscriptionTxUpdate: verified subscription product_id=\(transaction.productID) transaction_id=\(transaction.id)")
-                await handleVerifiedSubscriptionTransaction(transaction)
-            }
-        }
-    }
-    
-    private func handleVerifiedSubscriptionTransaction(_ transaction: Transaction) async {
-        let transactionID = String(transaction.id)
-        
-        // Check if already processed
-        guard !processedTransactionIDs.contains(transactionID) else {
-            Logger.w("handleVerifiedSubscriptionTx: transaction already processed id=\(transactionID)")
-            // Still need to check status in case of renewal
-            await checkSubscriptionStatus()
-            return
-        }
-        
-        // Get product
-        var product = products.first(where: { $0.id == transaction.productID })
-        
-        if product == nil {
-            product = await fetchProductByID(transaction.productID)
-        }
-        guard let product = product else {
-            Logger.e("handleVerifiedSubscriptionTx: product not found id=\(transaction.productID)")
-            await transaction.finish()
-            return
-        }
-        
-        let profile = localStorage.getLocalProfile()
-        let period = ProductIdentifier(rawValue: transaction.productID)?.period ?? .weekly
-        let creditsPerPeriod = ProductIdentifier(rawValue: transaction.productID)?.creditsPerPeriod ?? 1200
-        
-        // Check if this is a NEW purchase (user didn't have subscription before)
-        let isNewPurchase = await MainActor.run { currentSubscription == nil || !isPremium }
-        
-        // For new purchases, assume active status
-        // The actual status will be checked later via checkSubscriptionStatus()
-        let subscriptionStatusValue: SubscriptionInfo.SubscriptionStatus = .active
-        
-        // Calculate expiry date based on period
-        let calendar = Calendar.current
-        let expiryDate = calendar.date(byAdding: period == .weekly ? .day : .year, value: period == .weekly ? 7 : 1, to: transaction.purchaseDate)
-        let autoRenews = true // Default for auto-renewable subscriptions
-        
-        // Create SubscriptionInfo
-        let info = SubscriptionInfo(
-            subscriptionID: UUID().uuidString,
-            profileID: profile.profileID,
-            productID: transaction.productID,
-            transactionID: String(transaction.id),
-            creditsPerPeriod: creditsPerPeriod,
-            period: period,
-            price: product.displayPrice,
-            currency: product.priceFormatStyle.currencyCode,
-            status: subscriptionStatusValue,
-            startDate: transaction.purchaseDate,
-            expiryDate: expiryDate,
-            autoRenews: autoRenews
-        )
-        
-        Logger.i("handleVerifiedSubscriptionTx: subscription created product_id=\(transaction.productID) period=\(period.rawValue) credits=\(creditsPerPeriod) isNewPurchase=\(isNewPurchase)")
-        
-        // ONLY grant initial credits for NEW purchases, not renewals or restores
-        if subscriptionStatusValue == .active && isNewPurchase {
-            await grantInitialPurchaseCredits(amount: creditsPerPeriod)
         } else {
-            Logger.i("subscriptionCreditsGranted: SKIPPED (not a new purchase) - isNewPurchase=\(isNewPurchase)")
-        }
-        
-        // Mark as processed AFTER checking if it's new purchase
-        var processed = processedTransactionIDs
-        processed.insert(transactionID)
-        processedTransactionIDs = processed
-        
-        // Update current subscription and premium status
-        await MainActor.run {
-            self.currentSubscription = info
-            self.isPremium = info.isActive
-            
-            // Update CreditManager premium status
-            // Skip initial grant because we already granted credits above
-            if info.isActive {
-                CreditManager.shared.updatePremiumStatus(true, period: period, skipInitialGrant: true)
-            } else {
-                CreditManager.shared.updatePremiumStatus(false)
-            }
-        }
-        
-        // Sync with Firebase
-        await syncSubscriptionWithFirebase(subscription: info)
-        
-        // Sync profile
-        do {
-            try await profileSyncManager.syncProfileToRemote()
-        } catch {
-            Logger.e("SubscriptionManager: Failed to sync profile: \(error.localizedDescription)")
-        }
-        
-        // Send notification
-        NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
-        
-        // For subscriptions, we don't finish immediately - let it renew
-        // Only finish if it's expired or cancelled
-        if subscriptionStatusValue == .expired {
-            await transaction.finish()
-        } else {
-            // Check status periodically for renewals
-            checkSubscriptionStatus()
+            Logger.d("ensureReceiptIfNeeded: receipt exists → skip sync")
         }
     }
-    
-    // MARK: - Credit Granting Logic
-    
-    /// Grant initial credits after successful purchase
-    /// This is called ONLY once when user first purchases subscription
-    private func grantInitialPurchaseCredits(amount: Int) async {
-        Logger.i("grantInitialPurchaseCredits: Granting \(amount) credits for new subscription purchase")
-        
-        await CreditManager.shared.increaseCredits(by: amount)
-        Logger.i("grantInitialPurchaseCredits: + \(amount) -> total=\(CreditManager.shared.credits)")
-        
-        // Set last grant date to now
-        localStorage.setLastPremiumCreditGrantDate(Date())
-        Logger.d("grantInitialPurchaseCredits: Last grant date set to \(Date())")
-    }
-    
-    /// Check and grant bonus credits for subscription users
-    /// This checks if 7 days have passed since last grant and grants weekly credits
-    /// Should be called on app startup and after subscription status checks
-    func checkBonusCreditForSubscription() async {
-        Logger.i("checkBonusCreditForSubscription: Start checking")
-        
-        // Only check if user is premium
-        guard isPremium, let subscription = currentSubscription else {
-            Logger.d("checkBonusCreditForSubscription: User is not premium, skipping")
-            return
-        }
-        
-        // Check if should grant weekly credits
-        guard localStorage.shouldGrantWeeklyCredits() else {
-            if let lastGrantDate = localStorage.getLastPremiumCreditGrantDate() {
-                let daysSinceLastGrant = Calendar.current.dateComponents([.day], from: lastGrantDate, to: Date()).day ?? 0
-                Logger.d("checkBonusCreditForSubscription: Only \(daysSinceLastGrant) days since last grant, need 7 days")
-            } else {
-                Logger.d("checkBonusCreditForSubscription: No last grant date found")
-            }
-            return
-        }
-        
-        // Grant weekly credits
-        let creditsPerPeriod = subscription.creditsPerPeriod
-        Logger.i("checkBonusCreditForSubscription: Granting \(creditsPerPeriod) weekly credits")
-        
-        await CreditManager.shared.increaseCredits(by: creditsPerPeriod)
-        Logger.i("checkBonusCreditForSubscription: + \(creditsPerPeriod) -> total=\(CreditManager.shared.credits)")
-        
-        // Update last grant date
-        localStorage.setLastPremiumCreditGrantDate(Date())
-        Logger.d("checkBonusCreditForSubscription: Last grant date updated to \(Date())")
-    }
-    
-    /// Sync subscription with Firebase Realtime Database
-    private func syncSubscriptionWithFirebase(subscription: SubscriptionInfo) async {
-        do {
-            Logger.i("syncSubscription: start profileID=\(subscription.profileID) product_id=\(subscription.productID) period=\(subscription.period.rawValue)")
-            
-            // Save subscription to Firebase
-            try await FirebaseRealtimeService.shared.saveSubscription(subscription)
-            
-            Logger.i("syncSubscription: success profileID=\(subscription.profileID) subscriptionID=\(subscription.subscriptionID)")
-            
-        } catch {
-            Logger.e("syncSubscription: error=\(error.localizedDescription)")
-        }
-    }
-}
 
+    /// Fallback: lấy transaction mới nhất của 1 product và tự kiểm tra còn hiệu lực
+    private func latestActiveTransaction(for productID: String) async -> Transaction? {
+        do {
+            if let result = try await Transaction.latest(for: productID) {
+                switch result {
+                case .verified(let tx):
+                    if let rev = tx.revocationDate, rev <= Date() { return nil }
+                    if let exp = tx.expirationDate { return exp > Date() ? tx : nil }
+                    return tx
+                case .unverified(_, let err):
+                    Logger.w("latestActiveTransaction: unverified \(productID) \(err.localizedDescription)")
+                    return nil
+                }
+            }
+        } catch {
+            Logger.w("latestActiveTransaction: error \(productID) \(error.localizedDescription)")
+        }
+        return nil
+    }
+
+    private func chooseMoreRecent(current: ActiveSubscription?, candidate: ActiveSubscription) -> ActiveSubscription {
+        guard let cur = current else { return candidate }
+        let curExp = cur.expiresDate ?? .distantPast
+        let candExp = candidate.expiresDate ?? .distantPast
+        return candExp > curExp ? candidate : cur
+    }
+
+    // MARK: - Legacy helpers
+    func getProduct(for identifier: ProductID) -> Product? { product(for: identifier) }
+    func getCreditsPerPeriod(for product: Product) -> Int {
+        ProductID(rawValue: product.id)?.creditsPerPeriod ?? 1000
+    }
+    func getPeriod(for product: Product) -> SubscriptionPeriod? {
+        ProductID(rawValue: product.id)?.period
+    }
+    func getCurrentSubscription() -> ActiveSubscription? { currentSubscription }
+}

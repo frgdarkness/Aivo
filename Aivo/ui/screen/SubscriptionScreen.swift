@@ -44,8 +44,10 @@ struct SubscriptionScreen: View {
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
         .onAppear {
-            subscriptionManager.fetchProducts()
-            subscriptionManager.checkSubscriptionStatus()
+            Task {
+                await subscriptionManager.fetchProducts()
+                await subscriptionManager.refreshStatus()
+            }
         }
         .alert("Purchase Error", isPresented: $showPurchaseError) {
             Button("OK", role: .cancel) { }
@@ -159,7 +161,7 @@ struct SubscriptionScreen: View {
     }
 
     // MARK: - Active Subscription View
-    private func activeSubscriptionView(subscription: SubscriptionInfo) -> some View {
+    private func activeSubscriptionView(subscription: SubscriptionManager.ActiveSubscription) -> some View {
         VStack(spacing: 0) {
             // Title showing subscription plan
             VStack(alignment: .leading, spacing: 8) {
@@ -172,7 +174,7 @@ struct SubscriptionScreen: View {
                 }
                 
                 // Expiry date
-                if let expiryDate = subscription.expiryDate {
+                if let expiryDate = subscription.expiresDate {
                     HStack {
                         Text("Expires on \(formatDate(expiryDate))")
                             .font(.system(size: 15, weight: .medium))
@@ -297,7 +299,7 @@ struct SubscriptionScreen: View {
     private var planCards: some View {
         VStack(spacing: 14) {
             // Yearly plan
-            if let yearlyProduct = subscriptionManager.getProduct(for: .premiumYearly) {
+            if let yearlyProduct = subscriptionManager.getProduct(for: .yearly) {
                 planCard(
                     title: "Yearly",
                     subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: yearlyProduct)) credits per week",
@@ -320,7 +322,7 @@ struct SubscriptionScreen: View {
             }
 
             // Weekly plan
-            if let weeklyProduct = subscriptionManager.getProduct(for: .premiumWeekly) {
+            if let weeklyProduct = subscriptionManager.getProduct(for: .weekly) {
                 planCard(
                     title: "Weekly",
                     subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
@@ -448,7 +450,7 @@ struct SubscriptionScreen: View {
     private func handlePurchase() {
         guard !isPurchasing else { return }
         
-        let productID: SubscriptionManager.ProductIdentifier = selectedPlan == .yearly ? .premiumYearly : .premiumWeekly
+        let productID: SubscriptionManager.ProductID = selectedPlan == .yearly ? .yearly : .weekly
         
         guard let product = subscriptionManager.getProduct(for: productID) else {
             purchaseErrorMessage = "Product not available. Please try again later."
@@ -522,7 +524,9 @@ struct SubscriptionScreen: View {
     
     private func handleRestore() {
         Logger.i("📱 [SubscriptionScreen] Restoring purchases")
-        subscriptionManager.restorePurchases()
+        Task {
+            await subscriptionManager.restorePurchases()
+        }
     }
 }
 

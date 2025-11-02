@@ -46,16 +46,17 @@ struct RootView: View {
                 
             case .intro:
                 IntroScreen { 
-                    // Callback when intro is completed
+                    // Callback when intro is completed - navigate to subscription
                     withAnimation(.easeInOut(duration: 0.3)) {
-                        currentScreen = .home
+                        currentScreen = .subscription
                     }
                 }
                 .transition(.pushFromRight)
                 
             case .subscription:
                 SubscriptionScreen {
-                    // When subscription screen is dismissed, navigate to home
+                    // When subscription screen is dismissed (user taps X), navigate to home
+                    // This allows user to skip subscription and use app with limited features
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentScreen = .home
                     }
@@ -161,7 +162,7 @@ extension SplashScreenView {
             
             // Check subscription status first
             Logger.d("🔄 Checking Subscription Status...")
-            await subscriptionManager.checkSubscriptionStatus()
+            await subscriptionManager.refreshStatus()
             
             // Fetch remote config
             Logger.d("🔄 Fetching Remote Config...")
@@ -187,15 +188,18 @@ extension SplashScreenView {
                 Logger.d("🔍 Splash: isPremium = \(SubscriptionManager.shared.isPremium)")
                 
                 if userDefaultsManager.shouldShowIntro() {
+                    // First time: Show intro, then will navigate to subscription
                     nextScreen = .intro
                     Logger.d("🔍 Splash: Navigating to intro")
-                } else if !SubscriptionManager.shared.isPremium && userDefaultsManager.shouldShowSubscriptionPrompt() {
-                    userDefaultsManager.markSubscriptionPromptShown()
+                } else if !SubscriptionManager.shared.isPremium {
+                    // Not first time, but not subscribed: Show subscription directly
+                    // Don't mark as shown here, let user dismiss or purchase
                     nextScreen = .subscription
-                    Logger.d("🔍 Splash: Navigating to subscription")
+                    Logger.d("🔍 Splash: Navigating to subscription (user not subscribed)")
                 } else {
+                    // User is subscribed: Go to home
                     nextScreen = .home
-                    Logger.d("🔍 Splash: Navigating to home")
+                    Logger.d("🔍 Splash: Navigating to home (user is premium)")
                 }
                 
                 onSplashCompleted(nextScreen)

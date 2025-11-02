@@ -203,7 +203,7 @@ struct IntroScreen: View {
                                 return
                             }
                             
-                            try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
+                            try? await Task.sleep(nanoseconds: 4_000_000_000) // 5 seconds
                             
                             // Check again after sleep
                             guard !Task.isCancelled else {
@@ -214,7 +214,7 @@ struct IntroScreen: View {
                             Logger.d("✅ [IntroScreen] Hiding processing, showing play screen")
                             showProcessing = false
                             
-                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds - longer delay to ensure processing dismissed
+                            try? await Task.sleep(nanoseconds: 100_000_000) // 0.5 seconds - longer delay to ensure processing dismissed
                             
                             // Final check before setting selectedSong
                             guard !Task.isCancelled else {

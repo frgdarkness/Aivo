@@ -102,6 +102,7 @@ struct GenerateLyricsScreen: View {
     @State private var progress: Double = 0.0
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var showServerErrorAlert = false
 
     var body: some View {
         ZStack {
@@ -156,6 +157,11 @@ struct GenerateLyricsScreen: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
+        }
+        .alert("Server Error", isPresented: $showServerErrorAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("There was a server error. Please try again in a few minutes.")
         }
     }
 
@@ -368,8 +374,16 @@ struct GenerateLyricsScreen: View {
         return creditManager.credits >= 4
     }
     
+    // Hide keyboard helper
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+    
     private func generateLyrics() {
         guard !prompt.isEmpty else { return }
+        
+        // Hide keyboard first
+        hideKeyboard()
         
         // Check subscription first
         guard subscriptionManager.isPremium else {
@@ -407,6 +421,18 @@ struct GenerateLyricsScreen: View {
                         Logger.i("📝 [GenerateLyrics] Deducted 4 credits for successful lyrics generation")
                         // Save to history
                         CreditHistoryManager.shared.addRequest(.generateLyric)
+                    }
+                }
+            } catch let sunoError as SunoError {
+                Logger.e("❌ [GenerateLyrics] Error: \(sunoError)")
+                await MainActor.run {
+                    isGenerating = false
+                    
+                    // Check if it's HTTP 500 error
+                    if case .httpError(let code) = sunoError, code == 500 {
+                        showServerErrorAlert = true
+                    } else {
+                        showToastMessage("Failed to generate lyrics: \(sunoError.localizedDescription)")
                     }
                 }
             } catch {

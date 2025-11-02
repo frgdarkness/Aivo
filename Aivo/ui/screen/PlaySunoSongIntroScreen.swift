@@ -17,6 +17,8 @@ struct PlaySunoSongIntroScreen: View {
     @State private var rotationAngle: Double = 0
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
+    @State private var hasSetupPlayer = false // Track if player has been setup to avoid re-setup
+    @State private var coverRefreshId = UUID() // Force refresh AsyncImage when cover downloads
     
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
     
@@ -120,6 +122,7 @@ struct PlaySunoSongIntroScreen: View {
                     placeholderView
                 }
             }
+            .id(coverRefreshId) // Force refresh when cover downloads
             .frame(width: 280, height: 280)
             .clipShape(Circle())
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
@@ -324,40 +327,24 @@ struct PlaySunoSongIntroScreen: View {
     private var customBackgroundView: some View {
         GeometryReader { geometry in
             ZStack {
-                // Nửa trên: Ảnh cover blur
+                // Nửa trên: Ảnh cover blur (matching PlayMySongScreen style)
                 VStack {
-                    AsyncImage(url: getImageURL()) { phase in
-                        switch phase {
-                        case .empty:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        case .failure:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        @unknown default:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        }
+                    AsyncImage(url: getImageURL()) { image in
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .blur(radius: 20)
+                            .scaleEffect(1.2)
+                            .clipped()  // Clip early to prevent overflow issues
+                    } placeholder: {
+                        Image("demo_cover")
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .blur(radius: 20)
+                            .scaleEffect(1.2)
+                            .clipped()
                     }
+                    .id(coverRefreshId) // Force refresh when cover downloads
                     .frame(height: geometry.size.height * 0.55)
                     .clipped()
                     
@@ -389,15 +376,14 @@ struct PlaySunoSongIntroScreen: View {
     
     // MARK: - Helper Functions
     private func getImageURL() -> URL? {
-        // Check if local cover exists first (similar to getImageURLForSong)
-        let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let coverPath = documents.appendingPathComponent("SunoData/\(sunoData.id)_cover.jpg")
-        if FileManager.default.fileExists(atPath: coverPath.path) {
-            return coverPath
+        // Check if local cover exists first (using SunoDataManager like PlayMySongScreen)
+        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: sunoData.id) {
+            return localCoverPath
         }
         
-        // Fallback to source URL
-        return URL(string: sunoData.sourceImageUrl)
+        // Fallback: prioritize imageUrl first (matching download logic), then sourceImageUrl
+        let imageUrlString = sunoData.imageUrl.isEmpty ? sunoData.sourceImageUrl : sunoData.imageUrl
+        return URL(string: imageUrlString)
     }
     
     private func parseLyric(from prompt: String?) -> String? {
@@ -478,10 +464,22 @@ struct PlaySunoSongIntroScreen: View {
                 
                 DispatchQueue.main.async {
                     self.isDownloading = false
-                    self.setupAudioPlayerWithURL(fileURL)
                     
-                    // Save to library after successful download
-                    // Copy file from temp to Documents and save metadata
+                    // Only setup player once (avoid re-setup that interrupts playback)
+                    if !self.hasSetupPlayer {
+                        self.setupAudioPlayerWithURL(fileURL)
+                        self.hasSetupPlayer = true
+                        
+                        // Auto-play after setup (only once)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            // Small delay to ensure audio player is fully ready
+                            if !self.isPlaying {
+                                self.togglePlayPause()
+                            }
+                        }
+                    }
+                    
+                    // Save to library after successful download (non-blocking, doesn't interrupt playback)
                     Task {
                         do {
                             Logger.d("💾 [PlaySunoSongIntro] Saving song to library: \(self.sunoData.title)")
@@ -515,6 +513,19 @@ struct PlaySunoSongIntroScreen: View {
                                 try coverData.write(to: destinationCoverURL)
                                 coverURL = destinationCoverURL
                                 Logger.d("✅ [PlaySunoSongIntro] Downloaded cover image to: \(coverURL.path)")
+                            } else if !self.sunoData.sourceImageUrl.isEmpty {
+                                // Fallback to sourceImageUrl if imageUrl is empty
+                                guard let imageURL = URL(string: self.sunoData.sourceImageUrl) else {
+                                    throw NSError(domain: "PlaySunoSongIntro", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid source image URL"])
+                                }
+                                
+                                let coverExt = imageURL.pathExtension.isEmpty ? "jpg" : imageURL.pathExtension.lowercased()
+                                let destinationCoverURL = sunoDataDirectory.appendingPathComponent("\(self.sunoData.id)_cover.\(coverExt)")
+                                
+                                let (coverData, _) = try await URLSession.shared.data(from: imageURL)
+                                try coverData.write(to: destinationCoverURL)
+                                coverURL = destinationCoverURL
+                                Logger.d("✅ [PlaySunoSongIntro] Downloaded cover image from sourceImageUrl to: \(coverURL.path)")
                             } else {
                                 let placeholderFileName = "\(self.sunoData.id)_cover.jpg"
                                 coverURL = sunoDataDirectory.appendingPathComponent(placeholderFileName)
@@ -545,15 +556,12 @@ struct PlaySunoSongIntroScreen: View {
                             
                             await MainActor.run {
                                 Logger.d("✅ [PlaySunoSongIntro] Successfully saved song to library: \(metadataURL.path)")
+                                // Force UI refresh to show downloaded cover
+                                self.coverRefreshId = UUID() // This triggers AsyncImage to reload from local path
                             }
                         } catch {
                             Logger.e("❌ [PlaySunoSongIntro] Error saving song to library: \(error)")
                         }
-                    }
-                    
-                    // Auto-play after download
-                    if !self.isPlaying {
-                        self.togglePlayPause()
                     }
                 }
             },
@@ -575,12 +583,20 @@ struct PlaySunoSongIntroScreen: View {
     
     private func setupAudioPlayerWithURL(_ url: URL) {
         do {
+            // Configure audio session for playback (required on real device)
+            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
+            try AVAudioSession.sharedInstance().setActive(true)
+            Logger.d("🎵 [PlaySunoSongIntro] Audio session configured and activated")
+            
             audioPlayer = try AVAudioPlayer(contentsOf: url)
             audioPlayer?.delegate = IntroAudioPlayerDelegate { [self] in
                 isPlaying = false
                 currentTime = 0
                 playbackTimer?.invalidate()
             }
+            
+            // Prepare to play for better performance on real device
+            audioPlayer?.prepareToPlay()
             
             // Use duration from SunoData if available, otherwise from audio player
             if sunoData.duration > 0 {
@@ -591,6 +607,8 @@ struct PlaySunoSongIntroScreen: View {
             
             // Start timer for progress updates
             startPlaybackTimer()
+            
+            Logger.d("✅ [PlaySunoSongIntro] Audio player setup completed successfully")
         } catch {
             Logger.e("❌ [PlaySunoSongIntro] Error setting up audio player: \(error)")
         }
@@ -608,11 +626,35 @@ struct PlaySunoSongIntroScreen: View {
         if isPlaying {
             audioPlayer?.pause()
             playbackTimer?.invalidate()
+            isPlaying = false
+            Logger.d("⏸️ [PlaySunoSongIntro] Audio paused")
         } else {
-            audioPlayer?.play()
-            startPlaybackTimer()
+            // Ensure audio session is active before playing
+            do {
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch {
+                Logger.e("❌ [PlaySunoSongIntro] Error activating audio session: \(error)")
+            }
+            
+            let success = audioPlayer?.play() ?? false
+            isPlaying = success
+            
+            if success {
+                startPlaybackTimer()
+                Logger.d("▶️ [PlaySunoSongIntro] Audio playing successfully")
+            } else {
+                Logger.e("❌ [PlaySunoSongIntro] Failed to play audio")
+                // Retry after a short delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    let retrySuccess = self.audioPlayer?.play() ?? false
+                    self.isPlaying = retrySuccess
+                    if retrySuccess {
+                        self.startPlaybackTimer()
+                        Logger.d("✅ [PlaySunoSongIntro] Audio playing after retry")
+                    }
+                }
+            }
         }
-        isPlaying.toggle()
     }
     
     private func stopAudio() {

@@ -23,9 +23,32 @@ final class LocalStorageManager: ObservableObject {
         
         // Ensure localProfile is never null
         if localProfile == nil {
-            let profileID = generatePersistentProfileID()
+            // Try to get profileID from Keychain first (persists across app reinstalls)
+            let profileID: String
+            if let keychainProfileID = KeychainManager.shared.getProfileID() {
+                // ProfileID exists in Keychain - use it
+                profileID = keychainProfileID
+                Logger.d("🆔 Loaded profileID from Keychain: \(profileID)")
+            } else {
+                // No profileID in Keychain - generate new one and save to Keychain
+                profileID = generatePersistentProfileID()
+                KeychainManager.shared.saveProfileID(profileID)
+                Logger.d("🆔 Generated new profileID and saved to Keychain: \(profileID)")
+            }
+            
+            // Also save to UserDefaults for backward compatibility
+            UserDefaults.standard.set(profileID, forKey: "FirebaseProfileID")
+            
             localProfile = UserProfile(profileID: profileID)
             saveLocalProfile(localProfile!)
+        } else {
+            // If localProfile exists, ensure its profileID is also in Keychain
+            let existingProfileID = localProfile!.profileID
+            if KeychainManager.shared.getProfileID() == nil {
+                // ProfileID not in Keychain - save it for persistence
+                KeychainManager.shared.saveProfileID(existingProfileID)
+                Logger.d("🆔 Synced existing profileID to Keychain: \(existingProfileID)")
+            }
         }
     }
     
@@ -234,17 +257,35 @@ final class LocalStorageManager: ObservableObject {
     // MARK: - Profile ID Management
     
     func getOrCreateProfileID() async throws -> String {
+        // Priority 1: Check Keychain first (persists across app reinstalls)
+        if let keychainProfileID = KeychainManager.shared.getProfileID() {
+            // Sync to UserDefaults for backward compatibility
+            UserDefaults.standard.set(keychainProfileID, forKey: "FirebaseProfileID")
+            Logger.d("🆔 Retrieved profileID from Keychain: \(keychainProfileID)")
+            return keychainProfileID
+        }
+        
+        // Priority 2: Check UserDefaults (for migration from old version)
         if let existing = UserDefaults.standard.string(forKey: "FirebaseProfileID") {
+            // Migrate to Keychain
+            KeychainManager.shared.saveProfileID(existing)
+            Logger.d("🆔 Migrated profileID from UserDefaults to Keychain: \(existing)")
             return existing
         }
-        if let kc = KeychainManager.shared.getProfileID() {
-            UserDefaults.standard.set(kc, forKey: "FirebaseProfileID")
-            return kc
+        
+        // Priority 3: Use existing localProfile if available
+        if let existingProfile = localProfile {
+            KeychainManager.shared.saveProfileID(existingProfile.profileID)
+            UserDefaults.standard.set(existingProfile.profileID, forKey: "FirebaseProfileID")
+            Logger.d("🆔 Using existing localProfile ID: \(existingProfile.profileID)")
+            return existingProfile.profileID
         }
+        
+        // Priority 4: Generate new profileID
         let newID = generatePersistentProfileID()
-        UserDefaults.standard.set(newID, forKey: "FirebaseProfileID")
         KeychainManager.shared.saveProfileID(newID)
-        Logger.d("🆔 Generated profileID: \(newID)")
+        UserDefaults.standard.set(newID, forKey: "FirebaseProfileID")
+        Logger.d("🆔 Generated new profileID: \(newID)")
         return newID
     }
     

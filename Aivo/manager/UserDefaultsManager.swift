@@ -127,7 +127,7 @@ class UserDefaultsManager: ObservableObject {
     }
     
     func shouldShowIntro() -> Bool {
-        return isLanguageShowed && !isIntroShowed
+        return !isIntroShowed
     }
     
     func shouldGoDirectlyToHome() -> Bool {

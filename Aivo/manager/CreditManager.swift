@@ -11,8 +11,22 @@ class CreditManager: ObservableObject {
     private let localStorage = LocalStorageManager.shared
     
     private init() {
-        // Load credits from local storage
-        credits = localStorage.getCurrentCredits()
+        // Priority 1: Load credits from Keychain (persists across app reinstalls)
+        if let keychainCredits = KeychainManager.shared.getCredits() {
+            credits = keychainCredits
+            // Sync to local storage for backward compatibility
+            localStorage.updateCredits(keychainCredits)
+            Logger.d("CreditManager: Loaded credits=\(credits) from Keychain")
+        } else {
+            // Priority 2: Load from local storage (fallback)
+            credits = localStorage.getCurrentCredits()
+            // Save to Keychain if we have credits
+            if credits > 0 {
+                KeychainManager.shared.saveCredits(credits)
+                Logger.d("CreditManager: Migrated credits=\(credits) from LocalStorage to Keychain")
+            }
+        }
+        
         // Load premium status
         isPremiumUser = localStorage.isPremiumUser
         
@@ -66,6 +80,8 @@ class CreditManager: ObservableObject {
         // Update UI on main thread
         await MainActor.run {
             self.credits = localStorage.getCurrentCredits()
+            // Save to Keychain
+            KeychainManager.shared.saveCredits(self.credits)
         }
         
         // Sync to Firebase if remote profile exists
@@ -81,6 +97,8 @@ class CreditManager: ObservableObject {
         
         // Update UI on main thread
         credits = newValue
+        // Save to Keychain
+        KeychainManager.shared.saveCredits(newValue)
         Logger.d("CreditManager: Set credits to \(newValue)")
 
         // Sync to Firebase if remote profile exists
@@ -103,6 +121,8 @@ class CreditManager: ObservableObject {
             if self.credits != newCredits {
                 self.credits = newCredits
             }
+            // Save to Keychain
+            KeychainManager.shared.saveCredits(newCredits)
         }
         
         Logger.d("CreditManager: Added \(amount) credits. Total: \(credits)")
