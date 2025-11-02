@@ -14,6 +14,7 @@ struct PlaySunoSongIntroScreen: View {
     @State private var scrubTime: TimeInterval = 0
     @State private var rotationAngle: Double = 0
     @State private var coverImageId = UUID() // Force refresh cover image when downloaded
+    @State private var coverImageURL: URL? = nil // Cached cover URL to avoid recalculation
     
     // Download states (like GenerateSunoSongResultScreen)
     @State private var downloadedFileURLs: [String: URL] = [:]
@@ -24,6 +25,22 @@ struct PlaySunoSongIntroScreen: View {
     init(sunoData: SunoData, onIntroCompleted: @escaping () -> Void) {
         self.sunoData = sunoData
         self.onIntroCompleted = onIntroCompleted
+    }
+    
+    private var resolvedCoverURL: URL? {
+        // Local cover nếu đã save
+        if let local = SunoDataManager.shared.getLocalCoverPath(for: sunoData.id) {
+            return local
+        }
+        // Remote chính
+        if !sunoData.imageUrl.isEmpty, let u = URL(string: sunoData.imageUrl) {
+            return u
+        }
+        // Remote phụ (suno cdn)
+        if !sunoData.sourceImageUrl.isEmpty, let u = URL(string: sunoData.sourceImageUrl) {
+            return u
+        }
+        return nil
     }
     
     var body: some View {
@@ -66,6 +83,16 @@ struct PlaySunoSongIntroScreen: View {
         }
         .onAppear {
             Logger.d("🎵 [PlaySunoSongIntro] Screen appeared with song: \(sunoData.title)")
+            
+            // Cache cover image URL once (only from imageUrl)
+            if coverImageURL == nil {
+                if !sunoData.imageUrl.isEmpty, let url = URL(string: sunoData.imageUrl) {
+                    coverImageURL = url
+                    Logger.d("🖼️ [PlaySunoSongIntro] Cached cover URL: \(sunoData.imageUrl)")
+                } else {
+                    Logger.w("⚠️ [PlaySunoSongIntro] imageUrl is empty or invalid for song: \(sunoData.title)")
+                }
+            }
             
             // Stop any currently playing song from previous screen
             if musicPlayer.isPlaying {
@@ -125,28 +152,18 @@ struct PlaySunoSongIntroScreen: View {
     // MARK: - Album Art View with Download Progress
     private var albumArtView: some View {
         ZStack {
-            // Cover image (like GenerateSunoSongResultScreen)
-            AsyncImage(url: getImageURL(for: sunoData)) { phase in
+            AsyncImage(url: resolvedCoverURL) { phase in
                 switch phase {
                 case .empty:
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                 case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    image.resizable().aspectRatio(contentMode: .fill)
+                case .failure(_):
+                    Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                 @unknown default:
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                 }
             }
-            .id(coverImageId) // Force refresh when cover downloads
             .frame(width: 280, height: 280)
             .clipShape(Circle())
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
@@ -157,8 +174,7 @@ struct PlaySunoSongIntroScreen: View {
                 : .easeInOut(duration: 0.3),
                 value: rotationAngle
             )
-            
-            // Download progress overlay
+
             if downloadingSongs.contains(sunoData.id) {
                 Circle()
                     .fill(Color.black.opacity(0.7))
@@ -168,7 +184,6 @@ struct PlaySunoSongIntroScreen: View {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
                                 .scaleEffect(1.5)
-                            
                             Text("Downloading...")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.white)
@@ -323,80 +338,55 @@ struct PlaySunoSongIntroScreen: View {
     private var customBackgroundView: some View {
         GeometryReader { geometry in
             ZStack {
-                // Nửa trên: Ảnh cover blur
-                VStack {
-                    AsyncImage(url: getImageURL(for: sunoData)) { phase in
-                        switch phase {
-                        case .empty:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        case .failure:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
-                        @unknown default:
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .blur(radius: 20)
-                                .scaleEffect(1.2)
-                                .clipped()
+                // Nửa trên: cover blur (ép đúng width)
+                VStack(spacing: 0) {
+                    AsyncImage(url: resolvedCoverURL) { phase in
+                        let base = Group {
+                            switch phase {
+                            case .empty:
+                                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+                            case .success(let image):
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            case .failure(_):
+                                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+                            @unknown default:
+                                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+                            }
                         }
+                        base
+                            .blur(radius: 20)
+                            .scaleEffect(1.2)
                     }
-                    .id("background_\(coverImageId)") // Force refresh when cover downloads
-                    .frame(height: geometry.size.height * 0.55)
+                    .frame(width: geometry.size.width, height: geometry.size.height * 0.55) // ✅ ép width
                     .clipped()
-                    
-                    Spacer()
+
+                    Spacer(minLength: 0)
                 }
-                
-                // Nửa dưới: Đen từ 80% để nối tiếp
-                VStack {
-                    Spacer()
+
+                // Nửa dưới: đen để nối
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
                     Color.black.opacity(0.8)
                         .frame(height: geometry.size.height * 0.45)
                 }
-                
-                // Overlay đen dần từ đỉnh đến cuối
+
+                // Overlay tối dần từ trên xuống
                 LinearGradient(
                     gradient: Gradient(stops: [
                         .init(color: Color.black.opacity(0.05), location: 0.0),
-                        .init(color: Color.black.opacity(1.0), location: 0.5),
-                        .init(color: Color.black.opacity(1.0), location: 1.0)
+                        .init(color: Color.black.opacity(1.0),  location: 0.5),
+                        .init(color: Color.black.opacity(1.0),  location: 1.0)
                     ]),
-                    startPoint: .top,
-                    endPoint: .bottom
+                    startPoint: .top, endPoint: .bottom
                 )
             }
-            .drawingGroup()
         }
         .ignoresSafeArea()
     }
     
-    // MARK: - Helper Functions (like GenerateSunoSongResultScreen)
-    private func getImageURL(for song: SunoData) -> URL? {
-        // Check if local cover exists first
-        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-            return localCoverPath
-        }
-        
-        // Fallback to source URL or regular image URL (exactly like GenerateSunoSongResultScreen)
-        return URL(string: song.sourceImageUrl.isEmpty ? song.imageUrl : song.sourceImageUrl)
-    }
+    // MARK: - Helper Functions
+    // Note: Cover URL is now cached in @State coverImageURL, set once in onAppear
+    // This avoids recalculation on every render and prevents log spam
     
     private func parseLyric(from prompt: String?) -> String? {
         guard let prompt = prompt, !prompt.isEmpty else { return nil }
@@ -489,15 +479,14 @@ struct PlaySunoSongIntroScreen: View {
                 self.downloadingSongs.remove(song.id)
                 self.downloadedFileURLs[song.id] = fileURL
                 
-                // Save full SunoData to local storage
+                // Save full SunoData to local storage (cover will stay on imageUrl, no need to refresh)
                 Task {
                     do {
                         let savedURL = try await SunoDataManager.shared.saveSunoData(song)
                         await MainActor.run {
                             self.savedToDevice.insert(song.id)
                             Logger.d("💾 [PlaySunoSongIntro] Full SunoData saved to device: \(savedURL.path)")
-                            // Force refresh cover image when download completes
-                            self.coverImageId = UUID()
+                            // Don't refresh coverImageId - keep showing imageUrl from the start
                         }
                     } catch {
                         Logger.e("❌ [PlaySunoSongIntro] Error saving SunoData: \(error)")
