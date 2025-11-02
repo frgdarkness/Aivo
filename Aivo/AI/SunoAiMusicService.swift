@@ -298,7 +298,26 @@ class SunoAiMusicService: ObservableObject {
                     for (index, song) in sunoData.enumerated() {
                         print("🚀 [SunoAI] Song \(index + 1): \(song.title) - Duration: \(song.duration)s")
                     }
-                    return sunoData
+                    
+                    // Update modelName to "AIVO music" for all items before returning
+                    let updatedSunoData = sunoData.map { song in
+                        SunoData(
+                            id: song.id,
+                            audioUrl: song.audioUrl,
+                            sourceAudioUrl: song.sourceAudioUrl,
+                            streamAudioUrl: song.streamAudioUrl,
+                            sourceStreamAudioUrl: song.sourceStreamAudioUrl,
+                            imageUrl: song.imageUrl,
+                            sourceImageUrl: song.sourceImageUrl,
+                            prompt: song.prompt,
+                            modelName: "AIVO music",
+                            title: song.title,
+                            tags: song.tags,
+                            createTime: song.createTime,
+                            duration: song.duration
+                        )
+                    }
+                    return updatedSunoData
                     
                 case .PENDING, .TEXT_SUCCESS, .FIRST_SUCCESS:
                     print("⏳ [SunoAI] Still processing... Status: \(taskDetails.status.rawValue)")
