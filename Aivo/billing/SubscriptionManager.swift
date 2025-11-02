@@ -175,7 +175,7 @@ final class SubscriptionManager: ObservableObject {
     func restorePurchases() async {
         Logger.i("restorePurchases: start")
         do {
-            try await AppStore.sync()
+            //try await AppStore.sync()
             await refreshStatus(forceSync: false)
             Logger.i("restorePurchases: success")
         } catch {
@@ -267,11 +267,44 @@ final class SubscriptionManager: ObservableObject {
             // Cập nhật CreditManager
             let infoPeriod: SubscriptionInfo.SubscriptionPeriod? = (sub.period == .weekly) ? .weekly : .yearly
             CreditManager.shared.updatePremiumStatus(true, period: infoPeriod, skipInitialGrant: true)
+            
+            // Update subscription fields in UserProfile
+            // Determine start date: use current time if profile doesn't have it yet
+            let profile = LocalStorageManager.shared.getLocalProfile()
+            let startDate = profile.subscriptionStartDate ?? Date()
+            let expiredDate = sub.expiresDate
+            
+            LocalStorageManager.shared.updateSubscriptionFields(
+                plan: infoPeriod,
+                startDate: startDate,
+                expiredDate: expiredDate
+            )
+            
+            // Sync profile to remote if needed
+            if LocalStorageManager.shared.hasRemoteProfile {
+                Task {
+                    await ProfileSyncManager.shared.syncProfileIfNeeded()
+                }
+            }
         } else {
             currentSubscription = nil
             isPremium = false
             Logger.i("refreshStatus: NO ACTIVE SUBSCRIPTION")
             CreditManager.shared.updatePremiumStatus(false)
+            
+            // Clear subscription fields when no active subscription
+            LocalStorageManager.shared.updateSubscriptionFields(
+                plan: nil,
+                startDate: nil,
+                expiredDate: nil
+            )
+            
+            // Sync profile to remote if needed
+            if LocalStorageManager.shared.hasRemoteProfile {
+                Task {
+                    await ProfileSyncManager.shared.syncProfileIfNeeded()
+                }
+            }
         }
 
         // 6) Bonus credit nếu premium
@@ -307,6 +340,17 @@ final class SubscriptionManager: ObservableObject {
                 KeychainManager.shared.saveLastBonusDate(now)
                 // Also save to UserDefaults for backward compatibility
                 UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
+                
+                // Update lastBonusTime in UserProfile
+                LocalStorageManager.shared.updateLastBonusTime(now)
+                
+                // Sync profile to remote if needed
+                if LocalStorageManager.shared.hasRemoteProfile {
+                    Task {
+                        await ProfileSyncManager.shared.syncProfileIfNeeded()
+                    }
+                }
+                
                 Logger.i("checkBonusCreditForSubscription: +\(bonusCreditAmount) credits (weekly bonus), daysSinceLast=\(Int(days))")
             } else {
                 Logger.d("checkBonusCreditForSubscription: not yet (\(Int(bonusIntervalDays - days)) days left)")
@@ -317,6 +361,17 @@ final class SubscriptionManager: ObservableObject {
             KeychainManager.shared.saveLastBonusDate(now)
             // Also save to UserDefaults for backward compatibility
             UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
+            
+            // Update lastBonusTime in UserProfile
+            LocalStorageManager.shared.updateLastBonusTime(now)
+            
+            // Sync profile to remote if needed
+            if LocalStorageManager.shared.hasRemoteProfile {
+                Task {
+                    await ProfileSyncManager.shared.syncProfileIfNeeded()
+                }
+            }
+            
             Logger.i("checkBonusCreditForSubscription: first-time +\(bonusCreditAmount) credits")
         }
     }
@@ -361,6 +416,25 @@ final class SubscriptionManager: ObservableObject {
         
         // Không spam sync, chỉ finish & refresh
         Logger.d("handleVerified: new tx id=\(txID) → refresh")
+        
+        // Update subscription fields with transaction info before refresh
+        // This ensures startDate is set from actual purchase date
+        let profile = LocalStorageManager.shared.getLocalProfile()
+        if profile.subscriptionPlan == nil {
+            // First time subscription - set startDate from transaction
+            let period: SubscriptionInfo.SubscriptionPeriod? = {
+                guard let productID = ProductID(rawValue: transaction.productID) else { return nil }
+                return productID.period == .weekly ? .weekly : .yearly
+            }()
+            
+            LocalStorageManager.shared.updateSubscriptionFields(
+                plan: period,
+                startDate: transaction.purchaseDate,
+                expiredDate: transaction.expirationDate
+            )
+            Logger.d("handleVerified: Set initial subscription startDate from transaction: \(transaction.purchaseDate)")
+        }
+        
         await refreshStatus()
         await transaction.finish()
 
@@ -393,7 +467,7 @@ final class SubscriptionManager: ObservableObject {
         }()
         if force || !hasReceipt {
             do {
-                try await AppStore.sync()
+                //try await AppStore.sync()
                 Logger.d("ensureReceiptIfNeeded: AppStore.sync() done (force=\(force))")
             } catch {
                 Logger.w("ensureReceiptIfNeeded: sync failed \(error.localizedDescription)")

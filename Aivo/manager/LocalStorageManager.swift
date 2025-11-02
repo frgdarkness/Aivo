@@ -31,7 +31,7 @@ final class LocalStorageManager: ObservableObject {
                 Logger.d("🆔 Loaded profileID from Keychain: \(profileID)")
             } else {
                 // No profileID in Keychain - generate new one and save to Keychain
-                profileID = generatePersistentProfileID()
+                profileID = generateProfileID()
                 KeychainManager.shared.saveProfileID(profileID)
                 Logger.d("🆔 Generated new profileID and saved to Keychain: \(profileID)")
             }
@@ -86,6 +86,30 @@ final class LocalStorageManager: ObservableObject {
     
     func updateLocalProfile(_ profile: UserProfile) {
         saveLocalProfile(profile)
+    }
+    
+    /// Update subscription fields in UserProfile
+    func updateSubscriptionFields(
+        plan: SubscriptionInfo.SubscriptionPeriod?,
+        startDate: Date?,
+        expiredDate: Date?
+    ) {
+        var profile = getLocalProfile()
+        profile.subscriptionPlan = plan
+        profile.subscriptionStartDate = startDate
+        profile.subscriptionExpiredDate = expiredDate
+        profile.lastUpdated = Date()
+        saveLocalProfile(profile)
+        Logger.d("💾 Updated subscription fields: plan=\(plan?.rawValue ?? "nil"), startDate=\(startDate?.description ?? "nil"), expiredDate=\(expiredDate?.description ?? "nil")")
+    }
+    
+    /// Update lastBonusTime in UserProfile
+    func updateLastBonusTime(_ date: Date) {
+        var profile = getLocalProfile()
+        profile.lastBonusTime = date
+        profile.lastUpdated = Date()
+        saveLocalProfile(profile)
+        Logger.d("💾 Updated lastBonusTime: \(date)")
     }
     
     func clearLocalProfile() {
@@ -241,17 +265,16 @@ final class LocalStorageManager: ObservableObject {
     // MARK: - Profile Creation
     
     func createLocalProfile() -> UserProfile {
-        let profileID = generateLocalProfileID()
+        // Use unified ID generation method
+        let profileID = generateProfileID()
+        // Ensure ID is saved to Keychain for persistence
+        KeychainManager.shared.saveProfileID(profileID)
+        UserDefaults.standard.set(profileID, forKey: "FirebaseProfileID")
+        
         let profile = UserProfile(profileID: profileID)
         saveLocalProfile(profile)
+        Logger.d("🆔 Created local profile with ID: \(profileID)")
         return profile
-    }
-    
-    private func generateLocalProfileID() -> String {
-        let deviceID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
-        let timestamp = Int(Date().timeIntervalSince1970)
-        let random = Int.random(in: 1000...9999)
-        return "local_\(deviceID.prefix(8))_\(timestamp)_\(random)"
     }
     
     // MARK: - Profile ID Management
@@ -282,19 +305,20 @@ final class LocalStorageManager: ObservableObject {
         }
         
         // Priority 4: Generate new profileID
-        let newID = generatePersistentProfileID()
+        let newID = generateProfileID()
         KeychainManager.shared.saveProfileID(newID)
         UserDefaults.standard.set(newID, forKey: "FirebaseProfileID")
         Logger.d("🆔 Generated new profileID: \(newID)")
         return newID
     }
     
-    private func generatePersistentProfileID() -> String {
+    /// Unified method to generate profile ID (persists across app reinstalls)
+    private func generateProfileID() -> String {
         let deviceID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
         let ts = Int(Date().timeIntervalSince1970)
         let rnd = Int.random(in: 1000...9999)
         let raw = "\(deviceID)_\(ts)_\(rnd)"
         let hash = raw.data(using: .utf8)?.base64EncodedString() ?? UUID().uuidString
-        return "profile_\(hash.prefix(20))"
+        return "user_\(hash.prefix(20))"
     }
 }

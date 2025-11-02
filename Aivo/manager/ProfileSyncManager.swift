@@ -43,26 +43,37 @@ final class ProfileSyncManager: ObservableObject {
     }
     
     /// Create remote profile and sync local data
+    /// Only creates remote profile if it doesn't exist, otherwise syncs existing profile
     func createRemoteProfileAndSync() async throws {
         let localProfile = localStorage.getLocalProfile()
+        let profileID = localProfile.profileID
         
         await MainActor.run { self.isSyncing = true }
         
         do {
-            // Create profile on Firebase
-            try await firebaseService.createProfile(localProfile)
+            // Check if profile already exists on remote
+            let exists = try await firebaseService.checkProfileExistsOnServer(profileID: profileID)
             
-            // Update local status
-            localStorage.setHasRemoteProfile(true)
-            
-            Logger.d("✅ Remote profile created and synced")
+            if exists {
+                // Profile already exists - sync instead of creating
+                Logger.d("🌐 Remote profile already exists for ID: \(profileID) - syncing...")
+                try await firebaseService.updateProfile(localProfile)
+                localStorage.setHasRemoteProfile(true)
+                Logger.d("✅ Remote profile synced successfully")
+            } else {
+                // Profile doesn't exist - create new one
+                Logger.d("🌐 Creating new remote profile for ID: \(profileID)")
+                try await firebaseService.createProfile(localProfile)
+                localStorage.setHasRemoteProfile(true)
+                Logger.d("✅ Remote profile created and synced")
+            }
             
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = nil
             }
         } catch {
-            Logger.e("❌ Failed to create remote profile: \(error)")
+            Logger.e("❌ Failed to create/sync remote profile: \(error)")
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = error.localizedDescription
