@@ -206,6 +206,48 @@ enum SunoLyricsStatus: String, Codable {
     case sensitiveWordError = "SENSITIVE_WORD_ERROR"
 }
 
+// MARK: - Timestamped Lyrics Models
+struct TimestampedLyricsRequest: Codable {
+    let taskId: String
+    let audioId: String?
+    let musicIndex: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case taskId
+        case audioId
+        case musicIndex
+    }
+}
+
+struct TimestampedLyricsResponse: Codable {
+    let code: Int
+    let msg: String
+    let data: TimestampedLyricsData?
+}
+
+struct TimestampedLyricsData: Codable {
+    let alignedWords: [AlignedWord]
+    let waveformData: [Double]
+    let hootCer: Double
+    let isStreamed: Bool
+}
+
+struct AlignedWord: Codable {
+    let word: String
+    let success: Bool
+    let startS: Double
+    let endS: Double
+    let palign: Int
+    
+    enum CodingKeys: String, CodingKey {
+        case word
+        case success
+        case startS
+        case endS
+        case palign
+    }
+}
+
 // MARK: - Errors
 enum SunoError: LocalizedError {
     case invalidResponse

@@ -317,6 +317,12 @@ class SunoAiMusicService: ObservableObject {
                             duration: song.duration
                         )
                     }
+                    
+                    // Fetch timestamped lyrics for each song after generation success
+                    Task {
+                        await fetchTimestampedLyricsForSongs(taskId: taskId, songs: updatedSunoData)
+                    }
+                    
                     return updatedSunoData
                     
                 case .PENDING, .TEXT_SUCCESS, .FIRST_SUCCESS:
@@ -550,6 +556,73 @@ extension SunoAiMusicService {
         }
     }
     
+    // MARK: - Get Timestamped Lyrics
+    func getTimestampedLyrics(taskId: String, audioId: String, musicIndex: Int = 0) async throws -> TimestampedLyricsData {
+        Logger.i("🎤 [SunoAI] Getting timestamped lyrics for taskId: \(taskId), audioId: \(audioId)")
+        
+        guard let url = URL(string: "\(baseURL)/generate/get-timestamped-lyrics") else {
+            Logger.e("❌ [SunoAI] Invalid timestamped lyrics URL")
+            throw SunoError.invalidURL
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody = TimestampedLyricsRequest(
+            taskId: taskId,
+            audioId: audioId,
+            musicIndex: musicIndex
+        )
+        
+        do {
+            let jsonData = try JSONEncoder().encode(requestBody)
+            request.httpBody = jsonData
+            
+            Logger.d("🎤 [SunoAI] Request URL: \(url)")
+            Logger.d("🎤 [SunoAI] Request body: \(String(data: jsonData, encoding: .utf8) ?? "Unable to convert")")
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            Logger.d("🎤 [SunoAI] Response received")
+            Logger.d("🎤 [SunoAI] Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert")")
+            
+            guard let httpResponse = response as? HTTPURLResponse else {
+                Logger.e("❌ [SunoAI] Invalid response type")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.d("🎤 [SunoAI] HTTP Status: \(httpResponse.statusCode)")
+            
+            guard httpResponse.statusCode == 200 else {
+                Logger.e("❌ [SunoAI] HTTP Error: \(httpResponse.statusCode)")
+                throw SunoError.httpError(httpResponse.statusCode)
+            }
+            
+            let lyricsResponse = try JSONDecoder().decode(TimestampedLyricsResponse.self, from: data)
+            Logger.i("🎤 [SunoAI] Response code: \(lyricsResponse.code)")
+            Logger.i("🎤 [SunoAI] Response msg: \(lyricsResponse.msg)")
+            
+            guard lyricsResponse.code == 200 else {
+                Logger.e("❌ [SunoAI] API Error: \(lyricsResponse.msg)")
+                throw SunoError.apiError(lyricsResponse.msg)
+            }
+            
+            guard let data = lyricsResponse.data else {
+                Logger.e("❌ [SunoAI] No data in response")
+                throw SunoError.invalidResponse
+            }
+            
+            Logger.i("✅ [SunoAI] Got timestamped lyrics: \(data.alignedWords.count) words")
+            return data
+            
+        } catch {
+            Logger.e("❌ [SunoAI] Get timestamped lyrics error: \(error)")
+            throw error
+        }
+    }
+    
     // MARK: - Complete Lyrics Generation Flow
     func generateLyricsWithRetry(prompt: String) async throws -> [LyricsResult] {
         Logger.i("🎵 [SunoAI] Starting complete lyrics generation flow")
@@ -668,5 +741,28 @@ extension SunoAiMusicService {
         
         Logger.e("❌ [SunoAI] Max retries exceeded")
         throw SunoError.requestTimeout
+    }
+    
+    // MARK: - Helper: Fetch Timestamped Lyrics for Songs
+    private func fetchTimestampedLyricsForSongs(taskId: String, songs: [SunoData]) async {
+        Logger.i("🎤 [SunoAI] Fetching timestamped lyrics for \(songs.count) songs")
+        
+        for (index, song) in songs.enumerated() {
+            do {
+                Logger.d("🎤 [SunoAI] Fetching lyrics for song \(index + 1)/\(songs.count): \(song.title) (id: \(song.id))")
+                let lyrics = try await getTimestampedLyrics(
+                    taskId: taskId,
+                    audioId: song.id,
+                    musicIndex: index
+                )
+                
+                // Save to local storage
+                TimestampedLyricsManager.shared.saveTimestampedLyrics(for: song.id, lyrics: lyrics)
+                Logger.i("✅ [SunoAI] Saved timestamped lyrics for song: \(song.title)")
+            } catch {
+                Logger.w("⚠️ [SunoAI] Failed to get timestamped lyrics for song \(song.title): \(error.localizedDescription)")
+                // Continue with next song even if this one fails
+            }
+        }
     }
 }

@@ -32,6 +32,9 @@ struct PlayMySongScreen: View {
     @State private var showEditSheet = false
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var timestampedLyrics: TimestampedLyricsData?
+    @State private var lyricSentences: [LyricSentence] = []
+    @State private var currentSentenceIndex: Int = 0
 
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
@@ -114,6 +117,13 @@ struct PlayMySongScreen: View {
             // Reset animation state immediately when dismissing to prevent lag
             rotationAngle = 0
         }
+        .onChange(of: musicPlayer.currentSong?.id) { songId in
+            // Load timestamped lyrics and update favorite state when song changes
+            if let songId = songId {
+                loadTimestampedLyrics(for: songId)
+                isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
+            }
+        }
         .onChange(of: musicPlayer.isPlaying) { isPlaying in
             if isPlaying {
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
@@ -123,11 +133,9 @@ struct PlayMySongScreen: View {
                 withAnimation(.easeInOut(duration: 0.3)) { rotationAngle = 0 }
             }
         }
-        .onChange(of: currentSong?.id) { songId in
-            // Update favorite state when song changes
-            if let songId = songId {
-                isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
-            }
+        .onChange(of: musicPlayer.currentTime) { currentTime in
+            // Update current sentence based on playback time
+            updateCurrentSentence(for: currentTime)
         }
         .onChange(of: musicPlayer.currentSong) { _ in
             // Force refresh UI when MusicPlayer changes song
@@ -374,40 +382,61 @@ struct PlayMySongScreen: View {
     
     // MARK: - Lyric View
     private var lyricView: some View {
-        ScrollView {
-            VStack(spacing: 8) {
-                if let lyric = parseLyric(from: currentSong?.prompt) {
-                    Text(lyric)
-                        .font(.body)
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(6)
-                        .padding(.horizontal, 20)
-                } else {
-                    Text("Lyric not available")
-                        .font(.body)
-                        .foregroundColor(.white.opacity(0.6))
-                        .italic()
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 8) {
+                    if !lyricSentences.isEmpty {
+                        // Display sentences from timestamped lyrics
+                        ForEach(Array(lyricSentences.enumerated()), id: \.offset) { index, sentence in
+                            Text(sentence.text)
+                                .font(.body)
+                                .foregroundColor(.white)
+                                .opacity(index == currentSentenceIndex ? 1.0 : 0.55)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(6)
+                                .padding(.horizontal, 20)
+                                .id(index) // ID for scroll proxy
+                        }
+                    } else if let lyric = parseLyric(from: currentSong?.prompt) {
+                        // Fallback to prompt lyrics if no timestamped lyrics
+                        Text(lyric)
+                            .font(.body)
+                            .foregroundColor(.white)
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(6)
+                            .padding(.horizontal, 20)
+                    } else {
+                        Text("Lyric not available")
+                            .font(.body)
+                            .foregroundColor(.white.opacity(0.6))
+                            .italic()
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                }
+                .padding(.vertical, 16)
+            }
+            .frame(maxHeight: 150) // Lyric view max height 150pt
+            .mask(
+                // Gradient mask: trên/dưới nhạt, giữa đậm
+                LinearGradient(
+                    gradient: Gradient(stops: [
+                        .init(color: .clear, location: 0.0),      // Trên: trong suốt
+                        .init(color: .black, location: 0.25),      // Chuyển đậm dần
+                        .init(color: .black, location: 0.75),      // Giữa: đậm
+                        .init(color: .clear, location: 1.0)       // Dưới: trong suốt
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .onChange(of: currentSentenceIndex) { newIndex in
+                // Scroll to current sentence with animation
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    proxy.scrollTo(newIndex, anchor: .center)
                 }
             }
-            .padding(.vertical, 16)
         }
-        .frame(maxHeight: 150) // Lyric view max height 150pt
-        .mask(
-            // Gradient mask: trên/dưới nhạt, giữa đậm
-            LinearGradient(
-                gradient: Gradient(stops: [
-                    .init(color: .clear, location: 0.0),      // Trên: trong suốt
-                    .init(color: .black, location: 0.2),      // Chuyển đậm dần
-                    .init(color: .black, location: 0.8),      // Giữa: đậm
-                    .init(color: .clear, location: 1.0)       // Dưới: trong suốt
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        )
     }
 
     // MARK: - Playback Controls
@@ -509,6 +538,209 @@ struct PlayMySongScreen: View {
         }
     }
 
+    // MARK: - Timestamped Lyrics
+    private func loadTimestampedLyrics(for songId: String) {
+        if let lyrics = TimestampedLyricsManager.shared.getTimestampedLyrics(for: songId) {
+            Logger.i("🎤 [PlayMySong] Loaded timestamped lyrics for song: \(songId)")
+            Logger.d("🎤 [PlayMySong] Total words: \(lyrics.alignedWords.count)")
+            Logger.d("🎤 [PlayMySong] Waveform data points: \(lyrics.waveformData.count)")
+            Logger.d("🎤 [PlayMySong] Hoot CER: \(lyrics.hootCer)")
+            Logger.d("🎤 [PlayMySong] Is streamed: \(lyrics.isStreamed)")
+            
+            // Store timestamped lyrics
+            timestampedLyrics = lyrics
+            
+            // Parse lyrics into sentences
+            parseLyricSentences(from: lyrics)
+            
+            // Log first few words as example
+            let firstWords = lyrics.alignedWords.prefix(5)
+            for word in firstWords {
+                Logger.d("🎤 [PlayMySong] Word: '\(word.word)' | Start: \(word.startS)s | End: \(word.endS)s")
+            }
+        } else {
+            Logger.d("🎤 [PlayMySong] No timestamped lyrics found for song: \(songId)")
+            timestampedLyrics = nil
+            lyricSentences = []
+            currentSentenceIndex = 0
+        }
+    }
+    
+    // MARK: - Parse Lyric Sentences
+    private func parseLyricSentences(from lyrics: TimestampedLyricsData) {
+        var sentences: [LyricSentence] = []
+        var currentSentenceWords: [AlignedWord] = []
+        var currentSentenceText = ""
+        var pendingNewSentenceText: String? = nil
+        var pendingNewSentenceFirstWord: AlignedWord? = nil
+        
+        for word in lyrics.alignedWords {
+            let wordText = word.word
+            
+            // Process pending new sentence text first
+            if let pendingText = pendingNewSentenceText {
+                if !pendingText.isEmpty, let pendingWord = pendingNewSentenceFirstWord {
+                    // Has pending text and word - use them as first part of new sentence
+                    currentSentenceText = pendingText
+                    currentSentenceWords = [pendingWord]
+                    pendingNewSentenceText = nil
+                    pendingNewSentenceFirstWord = nil
+                } else {
+                    // Pending text is empty string - this word is the first word of new sentence
+                    // Start new sentence with this word
+                    currentSentenceText = wordText
+                    currentSentenceWords = [word]
+                    // Clear pending and continue to next iteration since we've already processed this word
+                    pendingNewSentenceText = nil
+                    pendingNewSentenceFirstWord = nil
+                    continue
+                }
+            }
+            
+            // Check for double newline first (paragraph break)
+            if wordText.contains("\n\n") {
+                let parts = wordText.components(separatedBy: "\n\n")
+                
+                // Add text before \n\n to current sentence
+                if let beforeNewline = parts.first, !beforeNewline.trimmingCharacters(in: .whitespaces).isEmpty {
+                    if currentSentenceWords.isEmpty {
+                        currentSentenceText = beforeNewline.trimmingCharacters(in: .whitespaces)
+                    } else {
+                        currentSentenceText += " " + beforeNewline.trimmingCharacters(in: .whitespaces)
+                    }
+                    currentSentenceWords.append(word)
+                }
+                
+                // End current sentence if it has content
+                if !currentSentenceWords.isEmpty {
+                    let startTime = currentSentenceWords.first?.startS ?? word.startS
+                    sentences.append(LyricSentence(
+                        text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
+                        startTime: startTime,
+                        words: currentSentenceWords
+                    ))
+                }
+                
+                // Prepare new sentence with text after \n\n
+                if parts.count > 1 {
+                    let afterNewline = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if !afterNewline.isEmpty {
+                        // Text after \n\n - this word contains the first word of new sentence
+                        pendingNewSentenceText = afterNewline
+                        pendingNewSentenceFirstWord = word
+                    } else {
+                        // No text after \n\n - next word will be first word of new sentence
+                        pendingNewSentenceText = ""
+                        pendingNewSentenceFirstWord = nil
+                    }
+                } else {
+                    currentSentenceText = ""
+                    currentSentenceWords = []
+                }
+            } else if wordText.contains("\n") {
+                // Single newline - end of sentence/line
+                let parts = wordText.components(separatedBy: "\n")
+                
+                // Add text before \n to current sentence
+                if let beforeNewline = parts.first, !beforeNewline.trimmingCharacters(in: .whitespaces).isEmpty {
+                    if currentSentenceWords.isEmpty {
+                        currentSentenceText = beforeNewline.trimmingCharacters(in: .whitespaces)
+                    } else {
+                        currentSentenceText += " " + beforeNewline.trimmingCharacters(in: .whitespaces)
+                    }
+                    currentSentenceWords.append(word)
+                }
+                
+                // End current sentence if it has content
+                if !currentSentenceWords.isEmpty {
+                    let startTime = currentSentenceWords.first?.startS ?? word.startS
+                    sentences.append(LyricSentence(
+                        text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
+                        startTime: startTime,
+                        words: currentSentenceWords
+                    ))
+                }
+                
+                // Prepare new sentence with text after \n
+                if parts.count > 1 {
+                    let afterNewline = parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                    if !afterNewline.isEmpty {
+                        // Text after \n - this word contains the first word of new sentence
+                        // Use this word's startS as the startTime for the new sentence
+                        pendingNewSentenceText = afterNewline
+                        pendingNewSentenceFirstWord = word
+                    } else {
+                        // Word ends with \n but no text after - next word will be first word of new sentence
+                        pendingNewSentenceText = ""
+                        pendingNewSentenceFirstWord = nil
+                    }
+                } else {
+                    currentSentenceText = ""
+                    currentSentenceWords = []
+                }
+            } else {
+                // Regular word (no newline) - add to current sentence
+                if currentSentenceWords.isEmpty {
+                    // First word of sentence - use its startS as sentence startTime
+                    currentSentenceText = wordText
+                    currentSentenceWords = [word]
+                } else {
+                    // Append word to sentence with space
+                    currentSentenceText += " " + wordText
+                    currentSentenceWords.append(word)
+                }
+            }
+        }
+        
+        // Add last sentence if exists
+        if !currentSentenceWords.isEmpty {
+            let startTime = currentSentenceWords.first?.startS ?? 0
+            sentences.append(LyricSentence(
+                text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
+                startTime: startTime,
+                words: currentSentenceWords
+            ))
+        }
+        
+        lyricSentences = sentences
+        currentSentenceIndex = 0
+        
+        Logger.d("🎤 [PlayMySong] Parsed \(sentences.count) sentences from lyrics")
+        for (index, sentence) in sentences.enumerated() {
+            Logger.d("🎤 [PlayMySong] Sentence \(index): '\(sentence.text.prefix(50))' | Start: \(sentence.startTime)s")
+        }
+    }
+    
+    // MARK: - Update Current Sentence
+    private func updateCurrentSentence(for currentTime: TimeInterval) {
+        guard !lyricSentences.isEmpty else { return }
+        
+        // Find the sentence that should be playing based on currentTime
+        var newIndex = 0
+        
+        for (index, sentence) in lyricSentences.enumerated() {
+            // Check if currentTime is within this sentence's time range
+            let nextSentenceStartTime = index < lyricSentences.count - 1 
+                ? lyricSentences[index + 1].startTime 
+                : Double.infinity
+            
+            if currentTime >= sentence.startTime && currentTime < nextSentenceStartTime {
+                newIndex = index
+                break
+            }
+            
+            // If we've passed all sentences, use the last one
+            if index == lyricSentences.count - 1 && currentTime >= sentence.startTime {
+                newIndex = index
+            }
+        }
+        
+        // Update index if changed (avoid unnecessary updates)
+        if newIndex != currentSentenceIndex {
+            currentSentenceIndex = newIndex
+        }
+    }
+    
     // MARK: - Helpers
     private func onAppearTasks() {
         isLoading = true
@@ -518,6 +750,9 @@ struct PlayMySongScreen: View {
         // Load favorite state when opening song
         if let song = currentSong {
             isFavorite = FavoriteManager.shared.isFavorite(songId: song.id)
+            
+            // Load timestamped lyrics when opening song
+            loadTimestampedLyrics(for: song.id)
         }
         
         if musicPlayer.isPlaying {
@@ -938,6 +1173,14 @@ struct EditSongInfoDialog: View {
             }
         }
     }
+}
+
+// MARK: - Lyric Sentence Model
+struct LyricSentence: Identifiable {
+    let id = UUID()
+    let text: String
+    let startTime: Double
+    let words: [AlignedWord]
 }
 
 // MARK: - Helper Functions
