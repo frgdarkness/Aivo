@@ -1,0 +1,62 @@
+[
+    {
+      "id": "b5df8027-84ec-4e03-b26d-af63cbd38df7",
+      "audioUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/audio/b5df8027-84ec-4e03-b26d-af63cbd38df7-audio.mp3",
+      "sourceAudioUrl": "https://cdn1.suno.ai/b5df8027-84ec-4e03-b26d-af63cbd38df7.mp3",
+      "streamAudioUrl": "https://musicfile.api.box/YjVkZjgwMjctODRlYy00ZTAzLWIyNmQtYWY2M2NiZDM4ZGY3",
+      "sourceStreamAudioUrl": "https://cdn1.suno.ai/b5df8027-84ec-4e03-b26d-af63cbd38df7.mp3",
+      "imageUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/cover/b5df8027-84ec-4e03-b26d-af63cbd38df7-image.jpeg",
+      "sourceImageUrl": "https://cdn2.suno.ai/image_b5df8027-84ec-4e03-b26d-af63cbd38df7.jpeg",
+      "prompt": "[Verse]\nI woke up chasing a golden beam\nA spark\nA flicker\nA wild dream\nThrough the shadows I run\nI leap\nThe fire inside\nIt never sleeps\n\n[Prechorus]\nEvery heartbeat\nEvery step\nPulls me closer\nI can't rest\n\n[Chorus]\nI'm chasing the glow\nChasing the glow\nThrough the highs\nThrough the lows\nI know\nThe light is calling\nIt won't let go\nI'm chasing the glow\nChasing the glow\n\n[Verse 2]\nSkies ignite\nThe stars align\nA blaze of colors\nThis heart is mine\nThe world is spinning\nBut I stand still\nOn the edge of wonder\nFeel the thrill\n\n[Prechorus]\nEvery moment\nEvery breath\nPulls me closer\nPast regret\n\n[Chorus]\nI'm chasing the glow\nChasing the glow\nThrough the highs\nThrough the lows\nI know\nThe light is calling\nIt won't let go\nI'm chasing the glow\nChasing the glow",
+      "modelName": "chirp-v4",
+      "title": "Chasing the Glow",
+      "tags": "emotional, uplifting, uplifting edm, edm, emotional drop. build tension with soaring pads and bright arpeggios leading into a drop that bursts with layered leads and sidechained bass. a powerful kick anchors the rhythm while vocal chops add an emotional edge., 125 bpm, light, euphoric synths",
+      "createTime": 1761710538966,
+      "duration": 212.2
+    },
+    {
+      "id": "359bc4e5-ea84-46e0-8047-86316315b1f0",
+      "audioUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/audio/359bc4e5-ea84-46e0-8047-86316315b1f0-audio.mp3",
+      "sourceAudioUrl": "https://cdn1.suno.ai/359bc4e5-ea84-46e0-8047-86316315b1f0.mp3",
+      "streamAudioUrl": "https://musicfile.api.box/MzU5YmM0ZTUtZWE4NC00NmUwLTgwNDctODYzMTYzMTViMWYw",
+      "sourceStreamAudioUrl": "https://cdn1.suno.ai/359bc4e5-ea84-46e0-8047-86316315b1f0.mp3",
+      "imageUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/cover/359bc4e5-ea84-46e0-8047-86316315b1f0-image.jpeg",
+      "sourceImageUrl": "https://cdn2.suno.ai/image_359bc4e5-ea84-46e0-8047-86316315b1f0.jpeg",
+      "prompt": "[Verse]\nCrowd chatter louder than my heartbeat,\nFaces flash by, feel the concrete.\nSmiles painted, like they Picasso,\nInside, I’m sinking, ship with no cargo.\n\nEchoes in my head, can’t find the source,\nWords on repeat, like a broken discourse.\nTuning out the noise, but it leaks in,\nGlass half-full, yet it’s seeping thin.\n\n[Chorus]\nSilent chaos in my mind,\nFront row seats, but I’m blind.\nPretend it’s fine, but I’m lyin’,\nWorld spins loud, and I’m quiet, tryin’.\n\n[Verse 2]\nLaughs in the room, but my chest stay hollow,\nFaking the rhythm, steps I can’t follow.\nNeon lights hum, cut through the fog,\nShadows of a crowd, but I’m lost in the smog.\n\nMirror shows a face, but the eyes don’t blink,\nThink I’m afloat, but I’m startin’ to sink.\nBreeze outside, but my skin don’t feel,\nHiding the truth, like a locked-up seal.\n\n[Chorus]\nSilent chaos in my mind,\nFront row seats, but I’m blind.\nPretend it’s fine, but I’m lyin’,\nWorld spins loud, and I’m quiet, tryin’.",
+      "modelName": "chirp-crow",
+      "title": "Silent Chaos",
+      "tags": "mellow, rap, tone, noise, layered with a warm bassline and minimal drums for an introspective atmosphere, lo-fi, 122 bpm, soft keys with a dusty vinyl crackle, emotional",
+      "createTime": 1761722458308,
+      "duration": 131.0
+    },
+    {
+      "id": "7588a73b-6919-416d-8ed0-970a43265548",
+      "audioUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/audio/7588a73b-6919-416d-8ed0-970a43265548-audio.mp3",
+      "sourceAudioUrl": "https://cdn1.suno.ai/7588a73b-6919-416d-8ed0-970a43265548.mp3",
+      "streamAudioUrl": "https://musicfile.api.box/NzU4OGE3M2ItNjkxOS00MTZkLThlZDAtOTcwYTQzMjY1NTQ4",
+      "sourceStreamAudioUrl": "https://cdn1.suno.ai/7588a73b-6919-416d-8ed0-970a43265548.mp3",
+      "imageUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/cover/7588a73b-6919-416d-8ed0-970a43265548-image.jpeg",
+      "sourceImageUrl": "https://cdn2.suno.ai/image_7588a73b-6919-416d-8ed0-970a43265548.jpeg",
+      "prompt": "[Verse]\nA crack in the mirror it cuts my stare\nA ghost of a smile that isn’t there\nThe echoes scream in empty halls\nEvery step just feels so small\n\n[Prechorus]\nBut the sun fights through the storm\nA fragile light still keeps me warm\n\n[Chorus]\nI’m shattered but I’m whole\nLost but I still know\nEvery piece will find its place\nI’ll rise through time and space\nI’m shattered but I’m whole\n\n[Verse 2]\nYour voice still lingers like falling rain\nIt drowns my fears but fuels the pain\nI chase the stars you left behind\nA sky that bends but never shines\n\n[Prechorus]\nAnd the moon pulls tides of hope\nThrough the dark I’ll learn to cope\n\n[Chorus]\nI’m shattered but I’m whole\nLost but I still know\nEvery piece will find its place\nI’ll rise through time and space\nI’m shattered but I’m whole",
+      "modelName": "chirp-v4",
+      "title": "Shattered and Whole",
+      "tags": "vocal, cinematic build, female vocals, emotional, future bass drop, edm, emotional melodic edm",
+      "createTime": 1761708473594,
+      "duration": 217.92
+    },
+    {
+      "id": "6a88fc68-8a85-43e4-8d80-5767f3b6996e",
+      "audioUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/audio/6a88fc68-8a85-43e4-8d80-5767f3b6996e-audio.mp3",
+      "sourceAudioUrl": "https://cdn1.suno.ai/6a88fc68-8a85-43e4-8d80-5767f3b6996e.mp3",
+      "streamAudioUrl": "https://musicfile.api.box/NmE4OGZjNjgtOGE4NS00M2U0LThkODAtNTc2N2YzYjY5OTZl",
+      "sourceStreamAudioUrl": "https://cdn1.suno.ai/6a88fc68-8a85-43e4-8d80-5767f3b6996e.mp3",
+      "imageUrl": "https://api.homeaidecor.app/storage/files/aivo/intro_song/cover/6a88fc68-8a85-43e4-8d80-5767f3b6996e-image.jpeg",
+      "sourceImageUrl": "https://cdn2.suno.ai/image_6a88fc68-8a85-43e4-8d80-5767f3b6996e.jpeg",
+      "prompt": "[Verse]\nThe clock spins but it can't erase\nThe warmth of your familiar face\nA thousand roads\nI always find\nYour voice echoes\nIt rewinds\n\n[Prechorus]\nIn your arms\nTime bends\nIt slows\nEvery second\nMy heart knows\n\n[Chorus]\nYou're my place\nYou're my song\nWhere I’ve belonged all along\nTimeless as the stars that glow\nYou’re my love\nYou’re my home\n\n[Verse 2]\nThe world fades into black and white\nBut you paint my skies with light\nEvery step\nI hear your tune\nSoft as whispers\nBold as June\n\n[Prechorus]\nIn your eyes\nI see my past\nAnd a future built to last\n\n[Chorus]\nYou're my place\nYou're my song\nWhere I’ve belonged all along\nTimeless as the stars that glow\nYou’re my love\nYou’re my home",
+      "modelName": "chirp-crow",
+      "title": "Timeless as Home",
+      "tags": "acoustic and piano layers, slow groove at 90 bpm, duet vocals, slow, pop ballad, tender heartfelt lyrics, acoustic, heartfelt, ballad, pop",
+      "createTime": 1761724030705,
+      "duration": 165.4
+    }
+]
