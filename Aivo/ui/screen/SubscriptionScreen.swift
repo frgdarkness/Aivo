@@ -211,7 +211,10 @@ struct SubscriptionScreen: View {
     }
     
     private var title: some View {
-        HStack { Text("Upgrade to Premium")
+        
+        HStack {
+            Spacer()
+            Text("Upgrade to Premium")
                 .font(.system(size: 28, weight: .heavy))
                 .foregroundColor(.white)
                 .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
@@ -273,13 +276,53 @@ struct SubscriptionScreen: View {
 
     private var features: some View {
         VStack(alignment: .leading, spacing: 16) {
-            featureRow("1000 credits per week")
+            // Dynamic credits based on selected plan
+            let creditsAmount = selectedPlan == .yearly ? 1200 : 1000
+            featureRowWithHighlightedCredits(creditsAmount: creditsAmount)
             featureRow("Access to All Features")
             featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
-            featureRow("Unlimited downloads")
+            //featureRow("Unlimited downloads")
         }
-        .padding(.top, 18)
+        .padding(.top, 20)
+    }
+
+    private func featureRowWithHighlightedCredits(creditsAmount: Int) -> some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
+                    .frame(width: 28, height: 28)
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .font(.system(size: 20))
+            }
+            
+            // Credits amount with highlight
+            HStack(spacing: 4) {
+                Text("\(creditsAmount)")
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [
+                                AivoTheme.Secondary.goldenSun,
+                                Color(red: 1.0, green: 0.85, blue: 0.4)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .font(.system(size: 28, weight: .bold))
+                    .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 4, x: 0, y: 2)
+                VStack {
+                    Text("credits per week")
+                        .foregroundColor(.white.opacity(0.85))
+                        .font(.system(size: 17, weight: .medium))
+                        .padding(.top, 6)
+                }
+                
+            }
+            
+            Spacer()
+        }
     }
 
     private func featureRow(_ text: String) -> some View {
@@ -337,7 +380,7 @@ struct SubscriptionScreen: View {
                 // Fallback loading state
                 planCard(
                     title: "Weekly",
-                    subtitle: "1200 credits per week",
+                    subtitle: "1000 credits per week",
                     price: "Loading...",
                     per: "/Week",
                     isSelected: selectedPlan == .weekly,

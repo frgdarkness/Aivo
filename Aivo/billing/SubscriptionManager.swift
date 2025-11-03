@@ -40,7 +40,12 @@ final class SubscriptionManager: ObservableObject {
             case .yearly: return .yearly
             }
         }
-        var creditsPerPeriod: Int { 1000 } // 1000 credits/tuần
+        var creditsPerPeriod: Int {
+            switch self {
+            case .weekly: return 1000  // 1000 credits/tuần
+            case .yearly: return 1200 // 1200 credits/tuần
+            }
+        }
     }
 
     enum SubscriptionPeriod {
@@ -76,7 +81,14 @@ final class SubscriptionManager: ObservableObject {
     private var updatesTask: Task<Void, Never>?
     private var processedTransactionIDs = Set<String>()
 
-    private let bonusCreditAmount = 1000
+    private var bonusCreditAmount: Int {
+        // Get bonus based on current subscription period
+        guard let currentSub = currentSubscription else { return 1000 } // Default to weekly
+        switch currentSub.period {
+        case .weekly: return 1000
+        case .yearly: return 1200
+        }
+    }
     private let bonusIntervalDays: Double = 7
     
     // MARK: - Init
@@ -314,7 +326,7 @@ final class SubscriptionManager: ObservableObject {
         await checkBonusCreditForSubscription()
     }
 
-    // MARK: - Bonus Credit (1000/tuần)
+    // MARK: - Bonus Credit (weekly: 1000, yearly: 1200)
     func checkBonusCreditForSubscription() async {
         guard isPremium else {
             Logger.d("checkBonusCreditForSubscription: user not premium, skip")
@@ -322,6 +334,9 @@ final class SubscriptionManager: ObservableObject {
         }
 
         let now = Date()
+        
+        // Get bonus amount based on current subscription period
+        let bonusAmount = bonusCreditAmount
         
         // Priority 1: Load from Keychain (persists across app reinstalls)
         var lastBonusDate: Date? = KeychainManager.shared.getLastBonusDate()
@@ -339,7 +354,7 @@ final class SubscriptionManager: ObservableObject {
         if let last = lastBonusDate {
             let days = now.timeIntervalSince(last) / (60 * 60 * 24)
             if days >= bonusIntervalDays {
-                await CreditManager.shared.increaseCredits(by: bonusCreditAmount)
+                await CreditManager.shared.increaseCredits(by: bonusAmount)
                 KeychainManager.shared.saveLastBonusDate(now)
                 // Also save to UserDefaults for backward compatibility
                 UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
@@ -354,13 +369,14 @@ final class SubscriptionManager: ObservableObject {
                     }
                 }
                 
-                Logger.i("checkBonusCreditForSubscription: +\(bonusCreditAmount) credits (weekly bonus), daysSinceLast=\(Int(days))")
+                let periodName = currentSubscription?.period.displayName ?? "unknown"
+                Logger.i("checkBonusCreditForSubscription: +\(bonusAmount) credits (\(periodName) bonus), daysSinceLast=\(Int(days))")
             } else {
                 Logger.d("checkBonusCreditForSubscription: not yet (\(Int(bonusIntervalDays - days)) days left)")
             }
         } else {
             // lần đầu sau khi sub
-            await CreditManager.shared.increaseCredits(by: bonusCreditAmount)
+            await CreditManager.shared.increaseCredits(by: bonusAmount)
             KeychainManager.shared.saveLastBonusDate(now)
             // Also save to UserDefaults for backward compatibility
             UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
@@ -375,7 +391,8 @@ final class SubscriptionManager: ObservableObject {
                 }
             }
             
-            Logger.i("checkBonusCreditForSubscription: first-time +\(bonusCreditAmount) credits")
+            let periodName = currentSubscription?.period.displayName ?? "unknown"
+            Logger.i("checkBonusCreditForSubscription: first-time +\(bonusAmount) credits (\(periodName) bonus)")
         }
     }
 
