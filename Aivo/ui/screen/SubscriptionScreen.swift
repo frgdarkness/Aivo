@@ -13,6 +13,8 @@ struct SubscriptionScreen: View {
     @State private var showAlreadySubscribedAlert = false
     @State private var alreadySubscribedMessage = ""
     @State private var purchaseErrorMessage = ""
+    @State private var buttonScale: CGFloat = 1.0
+    @State private var glowIntensity: Double = 0.5
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -144,17 +146,18 @@ struct SubscriptionScreen: View {
 
     private var header: some View {
         HStack {
-            Spacer()
+            
             Button(action: {
                 onDismiss?()
                 dismiss()
             }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.black.opacity(0.6))
+                    .foregroundColor(.white.opacity(0.3))
                     .frame(width: 42, height: 42)
                     .clipShape(Circle())
             }
+            Spacer()
         }
         .padding(.top, 50)
     }
@@ -431,19 +434,104 @@ struct SubscriptionScreen: View {
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .padding(.trailing, 8)
                 }
-                Text(isPurchasing ? "Processing..." : "Continue For Payment")
+                Text(isPurchasing ? "Processing..." : "Continue")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity)
             .frame(height: 58)
             .background(
-                Capsule()
-                    .fill(isPurchasing ? AivoTheme.Primary.orange.opacity(0.6) : AivoTheme.Primary.orange)
+                ZStack {
+                    // Base gradient
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    AivoTheme.Primary.orange,
+                                    AivoTheme.Primary.orange.opacity(0.85)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                    
+                    // Glowing border effect
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    AivoTheme.Primary.orange,
+                                    AivoTheme.Primary.orange.opacity(0.8),
+                                    AivoTheme.Primary.orange.opacity(0.6)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 2.5
+                        )
+                        .opacity(glowIntensity)
+                    
+                    // Outer glow shadow
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    AivoTheme.Primary.orange.opacity(0.4),
+                                    AivoTheme.Primary.orange.opacity(0.2)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .blur(radius: 8)
+                        .opacity(glowIntensity * 0.8)
+                        .padding(-4)
+                }
+            )
+            .scaleEffect(buttonScale)
+            .shadow(
+                color: AivoTheme.Primary.orange.opacity(glowIntensity * 0.8),
+                radius: 12,
+                x: 0,
+                y: 4
+            )
+            .shadow(
+                color: AivoTheme.Primary.orange.opacity(glowIntensity * 0.4),
+                radius: 20,
+                x: 0,
+                y: 8
             )
         }
         .disabled(isPurchasing || subscriptionManager.isLoading)
         .padding(.top, 18)
+        .onAppear {
+            startPulseAnimation()
+        }
+        .onDisappear {
+            stopPulseAnimation()
+        }
+    }
+    
+    // MARK: - Pulse Animation
+    private func startPulseAnimation() {
+        // Synchronized pulse: scale and glow together with same timing
+        let animationDuration = 1.6 // Unified duration for both effects
+        
+        withAnimation(
+            .easeInOut(duration: animationDuration)
+            .repeatForever(autoreverses: true)
+        ) {
+            // Scale up = glow bright (synchronized)
+            buttonScale = 1.03
+            glowIntensity = 0.9
+        }
+    }
+    
+    private func stopPulseAnimation() {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            buttonScale = 1.0
+            glowIntensity = 0.5
+        }
     }
     
     private func handlePurchase() {

@@ -35,6 +35,7 @@ struct PlayMySongScreen: View {
     @State private var timestampedLyrics: TimestampedLyricsData?
     @State private var lyricSentences: [LyricSentence] = []
     @State private var currentSentenceIndex: Int = 0
+    @State private var cachedCoverImageURL: URL?
 
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
@@ -122,15 +123,25 @@ struct PlayMySongScreen: View {
             if let songId = songId {
                 loadTimestampedLyrics(for: songId)
                 isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
+                
+                // Cache cover image URL to prevent reload
+                if let coverURL = getImageURLForSong(currentSong) {
+                    cachedCoverImageURL = coverURL
+                }
             }
         }
         .onChange(of: musicPlayer.isPlaying) { isPlaying in
+            // Use explicit animation control to prevent conflicts
             if isPlaying {
+                // Start rotation animation smoothly
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                     rotationAngle = 360
                 }
             } else {
-                withAnimation(.easeInOut(duration: 0.3)) { rotationAngle = 0 }
+                // Stop rotation smoothly
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    rotationAngle = 0
+                }
             }
         }
         .onChange(of: musicPlayer.currentTime) { currentTime in
@@ -326,21 +337,39 @@ struct PlayMySongScreen: View {
 
     // MARK: - Album Art
     private var albumArtView: some View {
-        AsyncImage(url: getImageURLForSong(currentSong)) { image in
-            image.resizable().aspectRatio(contentMode: .fill)
-        } placeholder: {
-            Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+        AsyncImage(url: cachedCoverImageURL ?? getImageURLForSong(currentSong)) { phase in
+            Group {
+                switch phase {
+                case .empty:
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure(_):
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                @unknown default:
+                    Image("demo_cover")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                }
+            }
         }
         .frame(width: 280, height: 280)
         .clipShape(Circle())
-        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
-        .rotationEffect(.degrees(rotationAngle))
-        .animation(
-            musicPlayer.isPlaying
-            ? .linear(duration: 8).repeatForever(autoreverses: false)
-            : .easeInOut(duration: 0.3),
-            value: rotationAngle
+        //.shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+        // Use rotation3DEffect instead of rotationEffect for better GPU performance
+        .rotation3DEffect(
+            .degrees(rotationAngle),
+            axis: (x: 0, y: 0, z: 1),
+            perspective: 2.0
         )
+        // Apply smooth animation only when playing (controlled by onChange)
+        .drawingGroup() // Optimize rendering to single layer - reduces compositing overhead
     }
 
     // MARK: - Song Info
@@ -753,14 +782,24 @@ struct PlayMySongScreen: View {
             
             // Load timestamped lyrics when opening song
             loadTimestampedLyrics(for: song.id)
+            
+            // Cache cover image URL on appear
+            if let coverURL = getImageURLForSong(song) {
+                cachedCoverImageURL = coverURL
+            }
         }
         
+        // Initialize rotation state based on playing status
         if musicPlayer.isPlaying {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            // Reset angle to 0 first to ensure smooth start
+            rotationAngle = 0
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                     rotationAngle = 360
                 }
             }
+        } else {
+            rotationAngle = 0
         }
     }
     
