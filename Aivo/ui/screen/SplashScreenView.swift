@@ -116,9 +116,7 @@ struct SplashScreenView: View {
                         .scaleEffect(x: 1, y: 2, anchor: .center)
                         .padding(.horizontal, 40)
                     
-                    Text("splash.description")
-                        .aivoText(.muted)
-                        .multilineTextAlignment(.center)
+                
                 }
                 .padding(.bottom, 50)
             }

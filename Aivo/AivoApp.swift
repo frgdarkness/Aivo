@@ -77,6 +77,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Show app open ad when app becomes active
         //AppOpenAdManager.shared.showAdIfAvailable()
+        
+        // Reactivate audio session for background playback support
+        MusicPlayer.shared.reactivateAudioSession()
     }
     
     func application(

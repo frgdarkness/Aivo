@@ -183,11 +183,28 @@ class MusicPlayer: NSObject, ObservableObject {
     
     private func setupAudioSession() {
         do {
-            try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
-            try AVAudioSession.sharedInstance().setActive(true)
-            Logger.d("🎵 [MusicPlayer] Audio session configured")
+            let audioSession = AVAudioSession.sharedInstance()
+            // Set category with options to support background playback
+            try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
+            try audioSession.setActive(true, options: [])
+            Logger.d("🎵 [MusicPlayer] Audio session configured for background playback")
         } catch {
             Logger.e("❌ [MusicPlayer] Error setting up audio session: \(error)")
+        }
+    }
+    
+    /// Reactivate audio session (call when app becomes active)
+    func reactivateAudioSession() {
+        do {
+            try AVAudioSession.sharedInstance().setActive(true)
+            Logger.d("🎵 [MusicPlayer] Audio session reactivated")
+            
+            // Resume playback if it was playing before
+            if isPlaying {
+                play()
+            }
+        } catch {
+            Logger.e("❌ [MusicPlayer] Error reactivating audio session: \(error)")
         }
     }
     

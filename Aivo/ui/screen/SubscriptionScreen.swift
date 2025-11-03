@@ -150,10 +150,9 @@ struct SubscriptionScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 36, height: 36)
-                    .background(Color.white.opacity(0.15))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.black.opacity(0.6))
+                    .frame(width: 42, height: 42)
                     .clipShape(Circle())
             }
         }
