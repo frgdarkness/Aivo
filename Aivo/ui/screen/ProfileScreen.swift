@@ -20,7 +20,6 @@ struct ProfileScreen: View {
     
     @State private var showLanguageScreen = false
     @State private var showCreditHistory = false
-    @State private var showFAQ = false
     @State private var notificationsEnabled = false
     @State private var showMailComposer = false
     @State private var canSendMail = false
@@ -464,7 +463,7 @@ struct ProfileScreen: View {
                 icon: "questionmark.square",
                 title: "FAQ",
                 showArrow: true,
-                action: { showFAQ = true }
+                action: { openFAQUrl() }
             )
             
             // Rate Us
@@ -588,6 +587,14 @@ struct ProfileScreen: View {
     private func openMailApp() {
         if let emailURL = URL(string: "mailto:\(remoteConfig.adminEmail)") {
             UIApplication.shared.open(emailURL)
+        }
+    }
+    
+    private func openFAQUrl() {
+        if let url = URL(string: remoteConfig.supportUrl) {
+            UIApplication.shared.open(url)
+        } else {
+            Logger.e("Invalid FAQ URL: \(remoteConfig.supportUrl)")
         }
     }
     
