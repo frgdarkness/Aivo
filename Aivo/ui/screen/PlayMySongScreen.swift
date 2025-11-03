@@ -378,16 +378,17 @@ struct PlayMySongScreen: View {
             Text(currentSong?.title ?? "Unknown Title")
                 .font(.title2).fontWeight(.bold)
                 .foregroundColor(.white).multilineTextAlignment(.center).lineLimit(2)
+                .padding(.top, 12)
 
-            Text(currentSong?.modelName ?? "Unknown Artist")
-                .font(.subheadline).foregroundColor(.white.opacity(0.8))
-                .multilineTextAlignment(.center)
-            
-            // Duration display
-            Text(formatDuration(currentSong?.duration ?? 0))
-                .font(.caption)
-                .foregroundColor(.white.opacity(0.6))
-                .multilineTextAlignment(.center)
+//            Text(currentSong?.modelName ?? "Unknown Artist")
+//                .font(.subheadline).foregroundColor(.white.opacity(0.8))
+//                .multilineTextAlignment(.center)
+//            
+//            // Duration display
+//            Text(formatDuration(currentSong?.duration ?? 0))
+//                .font(.caption)
+//                .foregroundColor(.white.opacity(0.6))
+//                .multilineTextAlignment(.center)
         }
         .padding(.horizontal, 40)
     }
@@ -479,7 +480,7 @@ struct PlayMySongScreen: View {
     }
 
     private var seekBarView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             Slider(
                 value: Binding(
                     get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
@@ -1233,4 +1234,51 @@ func getImageURLForSong(_ song: SunoData?) -> URL? {
     
     // Fallback to source URL
     return URL(string: song.sourceImageUrl)
+}
+
+// MARK: - Preview
+struct PlayMySongScreen_Previews: PreviewProvider {
+    static var previews: some View {
+        // Create mock songs
+        let mockSongs = [
+            SunoData(
+                id: "preview_song_1",
+                audioUrl: "https://example.com/audio1.mp3",
+                sourceAudioUrl: "https://example.com/audio1.mp3",
+                imageUrl: "",
+                sourceImageUrl: "",
+                prompt: "[Verse 1]\nThis is a preview song\nWith some sample lyrics\n\n[Chorus]\nSing along with me\nThis is just a preview",
+                modelName: "Preview Artist",
+                title: "Preview Song",
+                tags: "preview,test",
+                createTime: Int64(Date().timeIntervalSince1970),
+                duration: 180.0
+            ),
+            SunoData(
+                id: "preview_song_2",
+                audioUrl: "https://example.com/audio2.mp3",
+                sourceAudioUrl: "https://example.com/audio2.mp3",
+                imageUrl: "",
+                sourceImageUrl: "",
+                prompt: "[Verse 1]\nAnother preview track\nFor testing purposes",
+                modelName: "Another Artist",
+                title: "Second Preview",
+                tags: "preview,test",
+                createTime: Int64(Date().timeIntervalSince1970),
+                duration: 200.0
+            )
+        ]
+        
+        // Setup MusicPlayer with first song for preview
+        let player = MusicPlayer.shared
+        player.currentSong = mockSongs.first
+        player.songs = mockSongs
+        player.currentIndex = 0
+        player.currentTime = 45.0
+        player.duration = 180.0
+        player.isPlaying = false
+        
+        return PlayMySongScreen(songs: mockSongs, initialIndex: 0)
+            .previewDisplayName("Play My Song Screen")
+    }
 }

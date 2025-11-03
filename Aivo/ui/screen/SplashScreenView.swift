@@ -17,6 +17,7 @@ struct RootView: View {
     enum AppScreen {
         case splash
         case selectLanguage
+        case interview
         case intro
         case subscription
         case home
@@ -38,8 +39,17 @@ struct RootView: View {
                     SelectLanguageScreen { language in
                         //userDefaultsManager.setLanguageSelected(language)
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            currentScreen = .intro
+                            currentScreen = .interview
                         }
+                    }
+                }
+                .transition(.pushFromRight)
+                
+            case .interview:
+                InterviewScreen {
+                    // Navigate to intro after interview
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentScreen = .intro
                     }
                 }
                 .transition(.pushFromRight)
@@ -186,9 +196,9 @@ extension SplashScreenView {
                 Logger.d("🔍 Splash: isPremium = \(SubscriptionManager.shared.isPremium)")
                 
                 if userDefaultsManager.shouldShowIntro() {
-                    // First time: Show intro, then will navigate to subscription
-                    nextScreen = .intro
-                    Logger.d("🔍 Splash: Navigating to intro")
+                    // First time: Show interview first, then intro, then subscription
+                    nextScreen = .interview
+                    Logger.d("🔍 Splash: Navigating to interview (first time)")
                 } else if !SubscriptionManager.shared.isPremium {
                     // Not first time, but not subscribed: Show subscription directly
                     // Don't mark as shown here, let user dismiss or purchase
