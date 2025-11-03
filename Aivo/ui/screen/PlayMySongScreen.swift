@@ -887,7 +887,7 @@ struct PlayMySongScreen: View {
                             .scaleEffect(1.2)
                             .clipped()
                     }
-                    .frame(height: geometry.size.height * 0.55)
+                    .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                     .clipped()
                     
                     Spacer()
