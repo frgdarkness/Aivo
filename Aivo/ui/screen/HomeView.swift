@@ -216,7 +216,11 @@ struct HomeView: View {
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -5)
         )
         .fullScreenCover(isPresented: $showSubscription) {
-            SubscriptionScreen()
+            if SubscriptionManager.shared.isPremium {
+                SubscriptionScreen()
+            } else {
+                SubscriptionScreenIntro()
+            }
         }
         .fullScreenCover(isPresented: $showGenerateSongResult) {
             GenerateSongResultScreen(

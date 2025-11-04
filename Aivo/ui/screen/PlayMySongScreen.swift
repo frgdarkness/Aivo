@@ -96,7 +96,11 @@ struct PlayMySongScreen: View {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreen()
+            if SubscriptionManager.shared.isPremium {
+                SubscriptionScreen()
+            } else {
+                SubscriptionScreenIntro()
+            }
         }
         .alert("Premium Feature", isPresented: $showPremiumAlert) {
             Button("Upgrade Now") {

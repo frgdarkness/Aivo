@@ -148,7 +148,11 @@ struct GenerateLyricsScreen: View {
             }
         )
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreen()
+            if SubscriptionManager.shared.isPremium {
+                SubscriptionScreen()
+            } else {
+                SubscriptionScreenIntro()
+            }
         }
         .alert("Premium Feature", isPresented: $showPremiumAlert) {
             Button("Upgrade Now") {

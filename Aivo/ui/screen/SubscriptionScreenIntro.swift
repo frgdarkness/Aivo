@@ -756,6 +756,8 @@ struct SubscriptionScreenIntro: View {
             return
         }
         
+        songs.forEach { Logger.d("🎵 [SubscriptionScreenIntro] Found song: \($0.title)") }
+        
         // Chọn random song
         let randomSong = songs.randomElement()!
         Logger.d("🎵 [SubscriptionScreenIntro] Selected random song: \(randomSong.title)")
