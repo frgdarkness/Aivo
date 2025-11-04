@@ -14,6 +14,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var introSongList: [IntroSongJSON] = []
     @Published var hottestList: [SunoData] = []
     @Published var newList: [SunoData] = []
+    @Published var trendingList: [SunoData] = []
     @Published var coverModelList: [CoverSongModel] = []
     @Published var songStatus: [SongStatus] = []
     
@@ -124,9 +125,11 @@ class RemoteConfigManager: ObservableObject {
             // Build new songs
             if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "NEW_SONGS").stringValue) {
                 newList = songs
+                trendingList = songs
                 Logger.d("### RemoteConfigManager: Loaded \(songs.count) new songs from remote config")
             } else {
                 newList = loadSunoDataFromResource(filename: "new_songs")
+                trendingList = newList
                 Logger.d("### RemoteConfigManager: Loaded \(newList.count) new songs from resource")
             }
             

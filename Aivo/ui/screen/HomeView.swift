@@ -77,7 +77,7 @@ struct HomeView: View {
                                 //.padding(.bottom, 100) // Space for bottom navigation
                             
                         case .explore:
-                            ExploreTabView()
+                            ExploreTabViewNew()
                                 //.padding(.bottom, 100) // Space for bottom navigation
                             
                         case .cover:
