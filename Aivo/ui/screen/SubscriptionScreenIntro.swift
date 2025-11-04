@@ -174,47 +174,20 @@ struct SubscriptionScreenIntro: View {
     private var coverWithPlayButton: some View {
         ZStack {
             if !isDownloadingSong {
-                // Cover tròn với rotation animation (chỉ hiện khi không download)
-                Group {
-                    if let song = subscriptionSong, let imageUrl = URL(string: song.imageUrl) {
-                        AsyncImage(url: imageUrl) { phase in
-                            Group {
-                                switch phase {
-                                case .empty:
-                                    Image("demo_cover")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure(_):
-                                    Image("demo_cover")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                @unknown default:
-                                    Image("demo_cover")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                }
-                            }
-                        }
-                    } else {
-                        Image("demo_cover")
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    }
-                }
-                .frame(width: 200, height: 200)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.9), radius: 20, x: 0, y: 10)
-                // Use rotation3DEffect for better GPU performance
-                .rotation3DEffect(
-                    .degrees(rotationAngle),
-                    axis: (x: 0, y: 0, z: 1),
-                    perspective: 2.0
-                )
-                .drawingGroup()
+                // Cover tròn với rotation animation (luôn dùng cover_default_resize)
+                Image("cover_default_resize")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 200, height: 200)
+                    .clipShape(Circle())
+                    .shadow(color: .black.opacity(0.9), radius: 20, x: 0, y: 10)
+                    // Use rotation3DEffect for better GPU performance
+                    .rotation3DEffect(
+                        .degrees(rotationAngle),
+                        axis: (x: 0, y: 0, z: 1),
+                        perspective: 2.0
+                    )
+                    .drawingGroup()
             } else {
                 // Hiện loading indicator khi đang download
                 ProgressView()
@@ -427,11 +400,15 @@ struct SubscriptionScreenIntro: View {
     private var planCards: some View {
         VStack(spacing: 14) {
             // Yearly plan
-            if let yearlyProduct = subscriptionManager.getProduct(for: .yearly) {
+            if let yearlyProduct = subscriptionManager.getProduct(for: .yearly),
+               let weeklyProduct = subscriptionManager.getProduct(for: .weekly) {
+                // Tính giá gốc từ weekly × 53 và format giống yearly price
+                let originalPrice = calculateOriginalYearlyPrice(from: weeklyProduct, formatLike: yearlyProduct)
                 planCard(
                     title: "Yearly",
                     subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: yearlyProduct)) credits per week",
                     price: yearlyProduct.displayPrice,
+                    originalPrice: originalPrice,
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
                     showTag: true
@@ -442,6 +419,7 @@ struct SubscriptionScreenIntro: View {
                     title: "Yearly",
                     subtitle: "1200 credits per week",
                     price: "Loading...",
+                    originalPrice: nil,
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
                     showTag: true
@@ -455,6 +433,7 @@ struct SubscriptionScreenIntro: View {
                     title: "Weekly",
                     subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
                     price: weeklyProduct.displayPrice,
+                    originalPrice: nil,
                     per: "/Week",
                     isSelected: selectedPlan == .weekly,
                     showTag: false
@@ -465,6 +444,7 @@ struct SubscriptionScreenIntro: View {
                     title: "Weekly",
                     subtitle: "1000 credits per week",
                     price: "Loading...",
+                    originalPrice: nil,
                     per: "/Week",
                     isSelected: selectedPlan == .weekly,
                     showTag: false
@@ -475,7 +455,7 @@ struct SubscriptionScreenIntro: View {
         .padding(.top, 28)
     }
 
-    private func planCard(title: String, subtitle: String, price: String, per: String, isSelected: Bool, showTag: Bool, onTap: @escaping () -> Void) -> some View {
+    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, per: String, isSelected: Bool, showTag: Bool, onTap: @escaping () -> Void) -> some View {
         ZStack(alignment: .topTrailing) {
             Button(action: onTap) {
                 HStack {
@@ -496,13 +476,34 @@ struct SubscriptionScreenIntro: View {
                         .font(.system(size: 18, weight: .semibold))
                 }
                     Spacer()
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(price)
-                        .foregroundColor(.white)
-                        .font(.system(size: 18, weight: .bold))
-                    Text(per)
-                        .foregroundColor(.white.opacity(0.7))
-                        .font(.system(size: 14, weight: .regular))
+                    // Price section - hiển thị giá gốc (nếu có) và giá real
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        if let original = originalPrice {
+                            // Giá gốc có strikethrough
+                            Text(original)
+                                .foregroundColor(.white.opacity(0.5))
+                                .font(.system(size: 16, weight: .regular))
+                                .strikethrough()
+                        }
+                        
+                        // Giá real nổi bật
+                        Text(price)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [
+                                        AivoTheme.Secondary.goldenSun,
+                                        AivoTheme.Primary.orange
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .font(.system(size: originalPrice != nil ? 22 : 18, weight: .bold))
+                            .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 2, x: 0, y: 1)
+                        
+                        Text(per)
+                            .foregroundColor(.white.opacity(0.7))
+                            .font(.system(size: 14, weight: .regular))
                     }
                     .padding(.trailing, 16)
                 }
@@ -888,6 +889,23 @@ struct SubscriptionScreenIntro: View {
             if FileManager.default.fileExists(atPath: p.path) { return p }
         }
         return dir.appendingPathComponent("\(song.id)_audio.mp3")
+    }
+    
+    // MARK: - Calculate Original Yearly Price
+    private func calculateOriginalYearlyPrice(from weeklyProduct: Product, formatLike yearlyProduct: Product) -> String {
+        // Lấy giá weekly và tính × 53
+        let weeklyPrice = weeklyProduct.price
+        
+        // Tính giá gốc = weekly × 53
+        // Sử dụng NSDecimalNumber để tính toán chính xác
+        let weeklyDecimal = NSDecimalNumber(decimal: weeklyPrice)
+        let multiplier = NSDecimalNumber(value: 53)
+        let originalAmount = weeklyDecimal.multiplying(by: multiplier)
+        
+        // Format giống với yearly price format
+        // Sử dụng priceFormatStyle từ yearlyProduct để format giống nhau
+        let formatted = originalAmount.decimalValue.formatted(yearlyProduct.priceFormatStyle)
+        return formatted
     }
 }
 

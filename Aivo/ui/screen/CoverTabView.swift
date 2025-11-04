@@ -111,14 +111,6 @@ struct CoverTabView: View {
                 SubscriptionScreenIntro()
             }
         }
-        .alert("Premium Feature", isPresented: $showPremiumAlert) {
-            Button("Upgrade Now") {
-                showSubscriptionScreen = true
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
-        }
         .fullScreenCover(isPresented: $showModelSelectionScreen) {
             SelectModelScreen(
                 availableModels: availableModels,
@@ -473,8 +465,8 @@ struct CoverTabView: View {
             .frame(height: 56)
             .background(AivoTheme.Primary.orange)
             .cornerRadius(12)
-            .disabled(!isGenerateEnabled || !hasEnoughCreditsForCover)
-            .opacity((!isGenerateEnabled || !hasEnoughCreditsForCover) ? 0.5 : 1.0)
+            .disabled(!isGenerateEnabled)
+            .opacity((!isGenerateEnabled) ? 0.5 : 1.0)
             .shadow(color: (isGenerateEnabled && hasEnoughCreditsForCover) ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
         }
         .disabled(!isGenerateEnabled || !hasEnoughCreditsForCover)
@@ -498,7 +490,7 @@ struct CoverTabView: View {
     private func generateCoverSong() {
         // Check subscription first
         guard subscriptionManager.isPremium else {
-            showPremiumAlert = true
+            showSubscriptionScreen = true
             return
         }
         

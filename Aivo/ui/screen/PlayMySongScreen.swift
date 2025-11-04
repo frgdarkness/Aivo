@@ -102,14 +102,6 @@ struct PlayMySongScreen: View {
                 SubscriptionScreenIntro()
             }
         }
-        .alert("Premium Feature", isPresented: $showPremiumAlert) {
-            Button("Upgrade Now") {
-                showSubscriptionScreen = true
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
-        }
         .overlay {
             if showEditSheet, let song = currentSong {
                 EditSongInfoDialog(song: song) {
@@ -819,7 +811,7 @@ struct PlayMySongScreen: View {
     private func exportCurrentSong() {
         // Check subscription first
         guard subscriptionManager.isPremium else {
-            showPremiumAlert = true
+            showSubscriptionScreen = true
             return
         }
         

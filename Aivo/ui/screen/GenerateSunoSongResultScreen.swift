@@ -147,14 +147,6 @@ struct GenerateSunoSongResultScreen: View {
                 SubscriptionScreenIntro()
             }
         }
-        .alert("Premium Feature", isPresented: $showPremiumAlert) {
-            Button("Upgrade Now") {
-                showSubscriptionScreen = true
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
-        }
     }
     
     // MARK: - Header View
@@ -292,7 +284,7 @@ struct GenerateSunoSongResultScreen: View {
                                            showExportSheet = true
                                        }
                                    } else {
-                                       showPremiumAlert = true
+                                       showSubscriptionScreen = true
                                    }
                                }
                            )

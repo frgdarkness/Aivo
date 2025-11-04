@@ -154,14 +154,6 @@ struct GenerateLyricsScreen: View {
                 SubscriptionScreenIntro()
             }
         }
-        .alert("Premium Feature", isPresented: $showPremiumAlert) {
-            Button("Upgrade Now") {
-                showSubscriptionScreen = true
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
-        }
         .alert("Server Error", isPresented: $showServerErrorAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -250,8 +242,8 @@ struct GenerateLyricsScreen: View {
                 )
                 .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
             }
-            .disabled(prompt.isEmpty || isGenerating || !hasEnoughCreditsForLyrics)
-            .opacity((prompt.isEmpty || isGenerating || !hasEnoughCreditsForLyrics) ? 0.5 : 1.0)
+            .disabled(prompt.isEmpty || isGenerating)
+            .opacity((prompt.isEmpty || isGenerating) ? 0.5 : 1.0)
 
             // Generating Animation (shown below button)
             if isGenerating {
@@ -391,7 +383,7 @@ struct GenerateLyricsScreen: View {
         
         // Check subscription first
         guard subscriptionManager.isPremium else {
-            showPremiumAlert = true
+            showSubscriptionScreen = true
             return
         }
         

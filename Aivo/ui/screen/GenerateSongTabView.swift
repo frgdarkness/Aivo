@@ -124,14 +124,6 @@ struct GenerateSongTabView: View {
                 SubscriptionScreenIntro()
             }
         }
-        .alert("Premium Feature", isPresented: $showPremiumAlert) {
-            Button("Upgrade Now") {
-                showSubscriptionScreen = true
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("This feature is exclusive to Premium members. Do you want to upgrade now?")
-        }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
                 // Parse format: [Title]\n\nLyrics
@@ -701,8 +693,8 @@ struct GenerateSongTabView: View {
                     .fill(AivoTheme.Primary.orange)
             )
         }
-        .disabled(!isCreateButtonEnabled || !hasEnoughCreditsForGenerate)
-        .opacity((!isCreateButtonEnabled || !hasEnoughCreditsForGenerate) ? 0.5 : 1.0)
+        .disabled(!isCreateButtonEnabled)
+        .opacity((!isCreateButtonEnabled) ? 0.5 : 1.0)
     }
     
     private var hasEnoughCreditsForGenerate: Bool {
@@ -721,7 +713,7 @@ struct GenerateSongTabView: View {
     private func generateSong() {
         // Check subscription first
         guard subscriptionManager.isPremium else {
-            showPremiumAlert = true
+            showSubscriptionScreen = true
             return
         }
         
