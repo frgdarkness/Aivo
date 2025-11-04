@@ -19,6 +19,8 @@ struct SubscriptionScreenIntro: View {
     @State private var rotationAngle: Double = 0
     @State private var isDownloadingSong = false
     @State private var subscriptionSong: SunoData?
+    @State private var isScrubbing = false
+    @State private var scrubTime: TimeInterval = 0
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -119,6 +121,12 @@ struct SubscriptionScreenIntro: View {
                 }
             }
         }
+        .onChange(of: musicPlayer.currentTime) { _ in
+            // Update progress khi currentTime thay đổi (trừ khi đang scrub)
+            if !isScrubbing && musicPlayer.duration > 0 {
+                // Progress tự động update qua binding
+            }
+        }
     }
 
     // MARK: - Background không blur
@@ -170,24 +178,61 @@ struct SubscriptionScreenIntro: View {
         }
     }
 
-    // MARK: - Cover với Play/Pause Button ở giữa
+    // MARK: - Cover với Play/Pause Button và Circular Seekbar
     private var coverWithPlayButton: some View {
         ZStack {
             if !isDownloadingSong {
-                // Cover tròn với rotation animation (luôn dùng cover_default_resize)
-                Image("cover_default_resize")
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 200, height: 200)
-                    .clipShape(Circle())
-                    .shadow(color: .black.opacity(0.9), radius: 20, x: 0, y: 10)
-                    // Use rotation3DEffect for better GPU performance
-                    .rotation3DEffect(
-                        .degrees(rotationAngle),
-                        axis: (x: 0, y: 0, z: 1),
-                        perspective: 2.0
-                    )
-                    .drawingGroup()
+                // Circular Progress Bar (seekbar) - vòng ngoài
+                let progress = musicPlayer.duration > 0 ? (isScrubbing ? scrubTime : musicPlayer.currentTime) / musicPlayer.duration : 0
+                let progressAngle = progress * 360
+                
+                ZStack {
+                    // Background circle (mờ)
+                    Circle()
+                        .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                        .frame(width: 220, height: 220)
+                    
+                    // Progress circle (màu cam)
+                    Circle()
+                        .trim(from: 0, to: progress)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    AivoTheme.Primary.orange,
+                                    AivoTheme.Secondary.goldenSun
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                        )
+                        .frame(width: 220, height: 220)
+                        .rotationEffect(.degrees(-90)) // Bắt đầu từ trên cùng
+                    
+                    // Cover tròn với rotation animation (luôn dùng cover_default_resize)
+                    Image("cover_default_resize")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 200, height: 200)
+                        .clipShape(Circle())
+                        .shadow(color: .black.opacity(0.9), radius: 20, x: 0, y: 10)
+                        // Use rotation3DEffect for better GPU performance
+                        .rotation3DEffect(
+                            .degrees(rotationAngle),
+                            axis: (x: 0, y: 0, z: 1),
+                            perspective: 2.0
+                        )
+                        .drawingGroup()
+                }
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            handleCircularSeek(value: value)
+                        }
+                        .onEnded { value in
+                            handleCircularSeekEnd()
+                        }
+                )
             } else {
                 // Hiện loading indicator khi đang download
                 ProgressView()
@@ -208,6 +253,57 @@ struct SubscriptionScreenIntro: View {
                 }
             }
         }
+    }
+    
+    // MARK: - Circular Seekbar Handlers
+    private func handleCircularSeek(value: DragGesture.Value) {
+        guard musicPlayer.duration > 0 else { return }
+        
+        let center = CGPoint(x: 110, y: 110) // Center của circle 220x220
+        let location = value.location
+        
+        // Tính khoảng cách từ center đến touch point
+        let dx = location.x - center.x
+        let dy = location.y - center.y
+        let distance = sqrt(dx * dx + dy * dy)
+        
+        // Kiểm tra xem touch có nằm trong vùng ring (giữa button và progress bar) không
+        // Button radius: 35 (70/2), Progress bar radius: 110 (220/2)
+        // Chỉ cho phép seek khi touch nằm trong vùng ring (35 < distance < 110)
+        let buttonRadius: CGFloat = 35
+        let outerRadius: CGFloat = 110
+        
+        guard distance > buttonRadius && distance <= outerRadius else {
+            // Touch nằm trong button hoặc ngoài progress bar - không seek
+            return
+        }
+        
+        // Tính góc (atan2 trả về -π đến π, bắt đầu từ phía bên phải)
+        var angle = atan2(dy, dx) * 180 / .pi
+        
+        // Chuyển đổi từ -180...180 sang 0...360 (bắt đầu từ trên cùng = -90 độ)
+        angle = angle + 90 // Rotate để bắt đầu từ trên
+        if angle < 0 {
+            angle += 360
+        }
+        
+        // Chuyển đổi góc (0-360) thành progress (0-1)
+        let progress = angle / 360.0
+        
+        // Tính thời gian tương ứng
+        let newTime = progress * musicPlayer.duration
+        
+        // Update scrub time
+        isScrubbing = true
+        scrubTime = max(0, min(musicPlayer.duration, newTime))
+    }
+    
+    private func handleCircularSeekEnd() {
+        guard isScrubbing else { return }
+        
+        // Seek đến vị trí đã chọn
+        musicPlayer.seek(to: scrubTime)
+        isScrubbing = false
     }
 
     private var header: some View {

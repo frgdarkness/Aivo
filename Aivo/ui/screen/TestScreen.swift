@@ -11,9 +11,11 @@ import Security
 struct TestScreen: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var creditManager = CreditManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @StateObject private var localStorage = LocalStorageManager.shared
     
     @State private var creditAmount: String = ""
+    @State private var isPremium: Bool = false
     @State private var showClearDataAlert = false
     @State private var showClearKeychainAlert = false
     @State private var showSuccessToast = false
@@ -57,6 +59,14 @@ struct TestScreen: View {
             }
         } message: {
             Text("This will delete all data stored in Keychain including profileID. This action cannot be undone.")
+        }
+        .onAppear {
+            // Load premium status khi mở màn hình
+            isPremium = subscriptionManager.isPremium
+        }
+        .onChange(of: subscriptionManager.isPremium) { newValue in
+            // Update state khi premium status thay đổi
+            isPremium = newValue
         }
         .overlay(
             // Toast Message
@@ -109,40 +119,67 @@ struct TestScreen: View {
     
     // MARK: - Set Credit Section
     private var setCreditSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Set Credit")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.white)
-            
-            HStack(spacing: 12) {
-                TextField("Enter credit amount", text: $creditAmount)
-                    .keyboardType(.numberPad)
-                    .font(.system(size: 16))
+        VStack(alignment: .leading, spacing: 20) {
+            // Set Premium Toggle
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Set Premium")
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundColor(.white)
-                    .padding(14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white.opacity(0.15))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                    )
                 
-                Button(action: {
-                    applyCredit()
-                }) {
-                    Text("Apply")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.black)
-                        .frame(width: 80, height: 50)
+                HStack {
+                    Text(isPremium ? "Premium Active" : "Not Premium")
+                        .font(.system(size: 16))
+                        .foregroundColor(.white.opacity(0.8))
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $isPremium)
+                        .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
+                        .onChange(of: isPremium) { newValue in
+                            togglePremiumStatus(newValue)
+                        }
+                }
+            }
+            
+            Divider()
+                .background(Color.white.opacity(0.3))
+            
+            // Set Credit
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Set Credit")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+                
+                HStack(spacing: 12) {
+                    TextField("Enter credit amount", text: $creditAmount)
+                        .keyboardType(.numberPad)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                        .padding(14)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(AivoTheme.Primary.orange)
+                                .fill(Color.white.opacity(0.15))
                         )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
+                    
+                    Button(action: {
+                        applyCredit()
+                    }) {
+                        Text("Apply")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(width: 80, height: 50)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(AivoTheme.Primary.orange)
+                            )
+                    }
+                    .disabled(creditAmount.isEmpty || Int(creditAmount) == nil)
+                    .opacity(creditAmount.isEmpty || Int(creditAmount) == nil ? 0.5 : 1.0)
                 }
-                .disabled(creditAmount.isEmpty || Int(creditAmount) == nil)
-                .opacity(creditAmount.isEmpty || Int(creditAmount) == nil ? 0.5 : 1.0)
             }
         }
         .padding(20)
@@ -194,6 +231,25 @@ struct TestScreen: View {
     }
     
     // MARK: - Helper Methods
+    private func togglePremiumStatus(_ isPremium: Bool) {
+        // Update premium status through CreditManager
+        // This will update both CreditManager and LocalStorageManager
+        Task { @MainActor in
+            if isPremium {
+                // Set to premium with yearly period (default for testing)
+                CreditManager.shared.updatePremiumStatus(true, period: .yearly)
+                showToast("Premium status set to Active")
+            } else {
+                // Remove premium status
+                CreditManager.shared.updatePremiumStatus(false)
+                showToast("Premium status set to Inactive")
+            }
+            
+            // Refresh SubscriptionManager status để sync với CreditManager
+            await subscriptionManager.refreshStatus()
+        }
+    }
+    
     private func applyCredit() {
         guard let amount = Int(creditAmount), amount >= 0 else {
             showToast("Invalid credit amount")
