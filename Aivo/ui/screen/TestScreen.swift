@@ -237,11 +237,13 @@ struct TestScreen: View {
         Task { @MainActor in
             if isPremium {
                 // Set to premium with yearly period (default for testing)
-                CreditManager.shared.updatePremiumStatus(true, period: .yearly)
+                //CreditManager.shared.updatePremiumStatus(true, period: .yearly)
+                SubscriptionManager.shared.setPremiumDebug(isPremiumEnable: true)
                 showToast("Premium status set to Active")
             } else {
                 // Remove premium status
-                CreditManager.shared.updatePremiumStatus(false)
+                //CreditManager.shared.updatePremiumStatus(false)
+                SubscriptionManager.shared.setPremiumDebug(isPremiumEnable: false)
                 showToast("Premium status set to Inactive")
             }
             

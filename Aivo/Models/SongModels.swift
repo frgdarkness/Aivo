@@ -411,6 +411,19 @@ enum SongGenre: String, CaseIterable {
         ]
     }
     
+    static func getExplore() -> [SongGenre] {
+        return [
+            .pop,              // nhạc đại chúng, dễ nghe nhất
+            .edm,              // nhạc điện tử sôi động
+            .rock,         // pha giữa pop và rock, trẻ trung
+            .rnb,              // R&B tình cảm, hợp vocal nữ
+            .rap,
+            .hiphop,           // hip-hop đại chúng
+            .classical,             // K-Pop thịnh hành ở châu Á
+            .jazz,     // pop mộc, kiểu Ed Sheeran
+        ]
+    }
+    
     static func getIntroList() -> [SongGenre] {
         return [.edm, .pop, .rap, .rock]
     }

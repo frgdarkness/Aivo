@@ -56,7 +56,7 @@ class CreditManager: ObservableObject {
     ///   - skipInitialGrant: If true, skip automatic initial credit grant (used when credits already granted elsewhere)
     /// Note: Weekly credit checking is now handled by SubscriptionManager.checkBonusCreditForSubscription()
     func updatePremiumStatus(_ isPremium: Bool, period: SubscriptionInfo.SubscriptionPeriod? = nil, skipInitialGrant: Bool = false) {
-        localStorage.setIsPremiumUser(isPremium, period: period)
+        //localStorage.setIsPremiumUser(isPremium, period: period)
         isPremiumUser = isPremium
         
         Logger.d("💎 CreditManager: Premium status updated - isPremium: \(isPremium), period: \(period?.rawValue ?? "none")")

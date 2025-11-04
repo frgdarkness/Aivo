@@ -35,6 +35,9 @@ struct ExploreTabViewNew: View {
                 
                 // News Section
                 newsSection
+                
+                // Genre Sections
+                genreSections
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 100) // Space for bottom nav
@@ -206,6 +209,184 @@ struct ExploreTabViewNew: View {
                     }
                 }
             }
+        }
+    }
+    
+    // MARK: - Genre Sections
+    private var genreSections: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            ForEach(SongGenre.getExplore(), id: \.self) { genre in
+                GenreSectionView(
+                    genre: genre,
+                    songs: filterSongsByGenre(genre),
+                    songStatusMap: songStatusMap,
+                    onSongTap: { song in
+                        selectedSongForPlayback = SongPlaybackItem(song: song)
+                    }
+                )
+            }
+        }
+    }
+    
+    // MARK: - Filter Songs by Genre
+    private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
+        let genreName = genre.rawValue.lowercased()
+        return Array(remoteConfig.hottestList
+            .filter { song in
+                // Check if song tags contain genre name
+                song.tags.lowercased().contains(genreName)
+            }
+            .prefix(10))
+    }
+}
+
+// MARK: - Genre Section View
+struct GenreSectionView: View {
+    let genre: SongGenre
+    let songs: [SunoData]
+    let songStatusMap: [String: SongStatus]
+    let onSongTap: (SunoData) -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(genre.displayName)
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: {
+                    // Handle "Xem tất cả" tap
+                }) {
+                    Text("Xem tất cả")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
+            
+            if songs.isEmpty {
+                Text("No songs available")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.5))
+                    .padding(.vertical, 20)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 16) {
+                        ForEach(songs, id: \.id) { song in
+                            GenreSongCardView(
+                                song: song,
+                                status: songStatusMap[song.id],
+                                onTap: {
+                                    onSongTap(song)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Genre Song Card View
+struct GenreSongCardView: View {
+    let song: SunoData
+    let status: SongStatus?
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 8) {
+                // Cover Image with Listen Count
+                ZStack(alignment: .topLeading) {
+                    AsyncImage(url: getImageURL(for: song)) { phase in
+                        Group {
+                            switch phase {
+                            case .empty:
+                                Image("demo_cover")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            case .failure:
+                                Image("demo_cover")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            @unknown default:
+                                Image("demo_cover")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            }
+                        }
+                    }
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    // Listen Count - Top Left Corner
+                    HStack(spacing: 4) {
+                        Image(systemName: "headphones")
+                            .font(.system(size: 10))
+                            .foregroundColor(.white)
+                        Text(formatCount(status?.playCount ?? 0))
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.white)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.black.opacity(0.5))
+                    )
+                    .padding(6)
+                }
+                
+                // Song Title - Max 1 line
+                Text(song.title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(width: 120, alignment: .leading)
+                
+                // Model ID (modelName)
+                HStack(spacing: 4) {
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 10))
+                        .foregroundColor(.white.opacity(0.6))
+                    Text(song.modelName)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.white.opacity(0.7))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
+                .frame(width: 120, alignment: .leading)
+            }
+            .frame(width: 120)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private func getImageURL(for song: SunoData) -> URL? {
+        // Check if local cover exists first
+        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
+            return localCoverPath
+        }
+        
+        // Fallback to source URL or regular image URL
+        return URL(string: song.sourceImageUrl.isEmpty ? song.imageUrl : song.sourceImageUrl)
+    }
+    
+    private func formatCount(_ count: Int) -> String {
+        if count >= 1000000 {
+            return String(format: "%.1fM", Double(count) / 1000000.0)
+        } else if count >= 1000 {
+            return String(format: "%.1fK", Double(count) / 1000.0)
+        } else {
+            return "\(count)"
         }
     }
 }

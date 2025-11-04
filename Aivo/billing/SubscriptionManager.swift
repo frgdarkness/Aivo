@@ -326,6 +326,10 @@ final class SubscriptionManager: ObservableObject {
         await checkBonusCreditForSubscription()
     }
 
+    func setPremiumDebug(isPremiumEnable: Bool) {
+        isPremium = isPremiumEnable
+    }
+    
     // MARK: - Bonus Credit (weekly: 1000, yearly: 1200)
     func checkBonusCreditForSubscription() async {
         guard isPremium else {
