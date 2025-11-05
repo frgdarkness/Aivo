@@ -134,8 +134,8 @@ struct ExploreTabViewNew: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(Array(remoteConfig.trendingList.prefix(10)), id: \.id) { song in
-                        TrendingCardView(song: song) {
+                    ForEach(Array(remoteConfig.trendingList.prefix(10).enumerated()), id: \.element.id) { index, song in
+                        TrendingCardView(song: song, rank: index + 1) {
                             selectedSongForPlayback = SongPlaybackItem(song: song)
                         }
                     }
@@ -175,13 +175,13 @@ struct ExploreTabViewNew: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    // Handle "Xem tất cả" tap
-                }) {
-                    Text("Xem tất cả")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                }
+//                Button(action: {
+//                    // Handle "Xem tất cả" tap
+//                }) {
+//                    Text("Xem tất cả")
+//                        .font(.system(size: 14, weight: .medium))
+//                        .foregroundColor(.white.opacity(0.7))
+//                }
             }
             
             // Horizontal scroll with 3 rows, 5 columns per view
@@ -231,7 +231,7 @@ struct ExploreTabViewNew: View {
     // MARK: - Filter Songs by Genre
     private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
         let genreName = genre.rawValue.lowercased()
-        return Array(remoteConfig.hottestList
+        return Array(remoteConfig.allSongsList
             .filter { song in
                 // Check if song tags contain genre name
                 song.tags.lowercased().contains(genreName)
@@ -256,13 +256,13 @@ struct GenreSectionView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    // Handle "Xem tất cả" tap
-                }) {
-                    Text("Xem tất cả")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                }
+//                Button(action: {
+//                    // Handle "Xem tất cả" tap
+//                }) {
+//                    Text("Xem tất cả")
+//                        .font(.system(size: 14, weight: .medium))
+//                        .foregroundColor(.white.opacity(0.7))
+//                }
             }
             
             if songs.isEmpty {
@@ -327,20 +327,20 @@ struct GenreSongCardView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     // Listen Count - Top Left Corner
-                    HStack(spacing: 4) {
-                        Image(systemName: "headphones")
-                            .font(.system(size: 10))
-                            .foregroundColor(.white)
-                        Text(formatCount(status?.playCount ?? 0))
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.black.opacity(0.5))
-                    )
+//                    HStack(spacing: 4) {
+//                        Image(systemName: "headphones")
+//                            .font(.system(size: 10))
+//                            .foregroundColor(.white)
+//                        Text(formatCount(status?.playCount ?? 0))
+//                            .font(.system(size: 11, weight: .medium))
+//                            .foregroundColor(.white)
+//                    }
+//                    .padding(.horizontal, 6)
+//                    .padding(.vertical, 4)
+//                    .background(
+//                        RoundedRectangle(cornerRadius: 6)
+//                            .fill(Color.black.opacity(0.5))
+//                    )
                     .padding(6)
                 }
                 
@@ -394,11 +394,12 @@ struct GenreSongCardView: View {
 // MARK: - Trending Card View
 struct TrendingCardView: View {
     let song: SunoData
+    let rank: Int
     let onTap: () -> Void
     
     var body: some View {
         Button(action: onTap) {
-            ZStack(alignment: .bottom) {
+            ZStack {
                 // Cover Image - Full width/height of item
                 AsyncImage(url: getImageURL(for: song)) { phase in
                     Group {
@@ -425,11 +426,18 @@ struct TrendingCardView: View {
                 .frame(width: 200, height: 200)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 
+                // Rank Label - Center overlay
+                Text("No.\(rank)")
+                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .shadow(color: .black.opacity(0.8), radius: 8, x: 0, y: 2)
+                    .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 12, x: 0, y: 0)
+                
                 // Song Title Overlay - Bottom, Full Width, Max 1 Line
                 VStack {
                     Spacer()
                     Text(song.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)

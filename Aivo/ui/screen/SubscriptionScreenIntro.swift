@@ -1,5 +1,6 @@
 import SwiftUI
 import StoreKit
+import UIKit
 
 struct SubscriptionScreenIntro: View {
     let onDismiss: (() -> Void)?
@@ -7,6 +8,7 @@ struct SubscriptionScreenIntro: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject private var creditManager = CreditManager.shared
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
     @StateObject private var musicPlayer = MusicPlayer.shared
     @State private var selectedPlan: Plan = .yearly
     @State private var isPurchasing = false
@@ -21,6 +23,10 @@ struct SubscriptionScreenIntro: View {
     @State private var subscriptionSong: SunoData?
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
+    @State private var isRestoring = false
+    @State private var showRestoreSuccess = false
+    @State private var showRestoreError = false
+    @State private var restoreErrorMessage = ""
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -34,12 +40,12 @@ struct SubscriptionScreenIntro: View {
 
             VStack(spacing: 0) {
                 header
-                Spacer(minLength: 20)
+                Spacer(minLength: 6)
                 
                 // Cover với play/pause button ở giữa
                 coverWithPlayButton
-                    .padding(.top, 20)
-                    .padding(.bottom, 30)
+                    .padding(.top, 2)
+                    .padding(.bottom, 20)
                 
                 if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
                     // Active subscription view
@@ -74,6 +80,16 @@ struct SubscriptionScreenIntro: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alreadySubscribedMessage)
+        }
+        .alert("Restore Successful", isPresented: $showRestoreSuccess) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your purchases have been restored successfully.")
+        }
+        .alert("Restore Failed", isPresented: $showRestoreError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(restoreErrorMessage.isEmpty ? "Failed to restore purchases. Please try again." : restoreErrorMessage)
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SubscriptionPurchaseSuccess"))) { _ in
             // Handle successful purchase
@@ -215,7 +231,7 @@ struct SubscriptionScreenIntro: View {
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 200, height: 200)
                         .clipShape(Circle())
-                        .shadow(color: .black.opacity(0.9), radius: 20, x: 0, y: 10)
+                        .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
                         // Use rotation3DEffect for better GPU performance
                         .rotation3DEffect(
                             .degrees(rotationAngle),
@@ -308,7 +324,6 @@ struct SubscriptionScreenIntro: View {
 
     private var header: some View {
         HStack {
-            
             Button(action: {
                 onDismiss?()
                 dismiss()
@@ -319,7 +334,33 @@ struct SubscriptionScreenIntro: View {
                     .frame(width: 42, height: 42)
                     .clipShape(Circle())
             }
+            
             Spacer()
+            
+            Button(action: handleRestore) {
+                if isRestoring {
+                    HStack {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .frame(width: 20, height: 20)
+                        Text("Restore")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.55))
+                    }
+                    
+                } else {
+                    Text("Restore")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.55))
+                }
+            }
+            .disabled(isRestoring)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 8)
+//            .background(
+//                RoundedRectangle(cornerRadius: 8)
+//                    .fill(Color.white.opacity(0.1))
+//            )
         }
         .padding(.top, 50)
     }
@@ -428,13 +469,14 @@ struct SubscriptionScreenIntro: View {
     }
 
     private var features: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
             // Dynamic credits based on selected plan
             let creditsAmount = selectedPlan == .yearly ? 1200 : 1000
             featureRowWithHighlightedCredits(creditsAmount: creditsAmount)
             featureRow("Access to All Features")
             featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
+            featureRow("Unlimited export Song")
         }
         .padding(.top, 20)
     }
@@ -812,11 +854,11 @@ struct SubscriptionScreenIntro: View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
                 Button("Terms of use") {
-                    // Open terms
+                    openTermsUrl()
                 }
                 Text("|")
                 Button("Privacy Policy") {
-                    // Open privacy
+                    openPrivacyPolicyUrl()
                 }
             }
             .font(.system(size: 12, weight: .medium))
@@ -825,10 +867,53 @@ struct SubscriptionScreenIntro: View {
         }
     }
     
+    // MARK: - Open URL Methods
+    private func openTermsUrl() {
+        if let url = URL(string: remoteConfig.termsUrl) {
+            UIApplication.shared.open(url)
+            Logger.d("📱 [SubscriptionScreenIntro] Opening Terms URL: \(remoteConfig.termsUrl)")
+        } else {
+            Logger.e("❌ [SubscriptionScreenIntro] Invalid Terms URL: \(remoteConfig.termsUrl)")
+        }
+    }
+    
+    private func openPrivacyPolicyUrl() {
+        if let url = URL(string: remoteConfig.privacyPolicyUrl) {
+            UIApplication.shared.open(url)
+            Logger.d("📱 [SubscriptionScreenIntro] Opening Privacy Policy URL: \(remoteConfig.privacyPolicyUrl)")
+        } else {
+            Logger.e("❌ [SubscriptionScreenIntro] Invalid Privacy Policy URL: \(remoteConfig.privacyPolicyUrl)")
+        }
+    }
+    
     private func handleRestore() {
+        guard !isRestoring else { return }
+        
         Logger.i("📱 [SubscriptionScreenIntro] Restoring purchases")
+        isRestoring = true
+        
         Task {
             await subscriptionManager.restorePurchases()
+            
+            await MainActor.run {
+                isRestoring = false
+                
+                // Check if restore was successful
+                if subscriptionManager.isPremium {
+                    showRestoreSuccess = true
+                    // Refresh status to update UI
+                    Task {
+                        await subscriptionManager.refreshStatus()
+                    }
+                } else if let errorMsg = subscriptionManager.errorMessage, !errorMsg.isEmpty {
+                    restoreErrorMessage = errorMsg
+                    showRestoreError = true
+                } else {
+                    // No subscription found after restore
+                    restoreErrorMessage = "No active subscription found to restore."
+                    showRestoreError = true
+                }
+            }
         }
     }
     

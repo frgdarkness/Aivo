@@ -419,6 +419,7 @@ enum SongGenre: String, CaseIterable {
             .rnb,              // R&B tình cảm, hợp vocal nữ
             .rap,
             .hiphop,           // hip-hop đại chúng
+            .kpop,
             .classical,             // K-Pop thịnh hành ở châu Á
             .jazz,     // pop mộc, kiểu Ed Sheeran
         ]

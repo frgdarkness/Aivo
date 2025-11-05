@@ -15,8 +15,13 @@ class RemoteConfigManager: ObservableObject {
     @Published var hottestList: [SunoData] = []
     @Published var newList: [SunoData] = []
     @Published var trendingList: [SunoData] = []
+    @Published var allSongsList: [SunoData] = []
+    @Published var subscriptionSongsList: [SunoData] = []
     @Published var coverModelList: [CoverSongModel] = []
     @Published var songStatus: [SongStatus] = []
+    @Published var privacyPolicyUrl: String = "https://homeaidecor.app/privacy.html"
+    @Published var termsUrl: String = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula"
+    
     
     private init() {
         setupRemoteConfig()
@@ -61,8 +66,25 @@ class RemoteConfigManager: ObservableObject {
             let status = try await remoteConfig.fetch()
             Logger.d("### RemoteConfigManager: Fetch status: \(status)")
             
-            //adminEmail = remoteConfig.value(forKey: "ADMIN_EMAIL") as! String
-            //supportUrl = remoteConfig.value(forKey: "SUPPORT_URL") as! String
+            let adminValue = remoteConfig.configValue(forKey: "ADMIN_EMAIL").stringValue
+            if !adminValue.isEmpty {
+                adminEmail = adminValue
+            }
+
+            let supportValue = remoteConfig.configValue(forKey: "SUPPORT_URL").stringValue
+            if !supportValue.isEmpty {
+                supportUrl = supportValue
+            }
+            
+            let privacyValue = remoteConfig.configValue(forKey: "PRIVACY_POLICY_URL").stringValue
+            if !privacyValue.isEmpty {
+                privacyPolicyUrl = privacyValue
+            }
+
+            let termsValue = remoteConfig.configValue(forKey: "TERMS_URL").stringValue
+            if !termsValue.isEmpty {
+                termsUrl = termsValue
+            }
             
             // Always try to activate, even if fetch didn't get new data
             let activateStatus = try await remoteConfig.activate()
@@ -125,12 +147,34 @@ class RemoteConfigManager: ObservableObject {
             // Build new songs
             if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "NEW_SONGS").stringValue) {
                 newList = songs
-                trendingList = songs
                 Logger.d("### RemoteConfigManager: Loaded \(songs.count) new songs from remote config")
             } else {
                 newList = loadSunoDataFromResource(filename: "new_songs")
-                trendingList = newList
                 Logger.d("### RemoteConfigManager: Loaded \(newList.count) new songs from resource")
+            }
+            
+            if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "TRENDING_SONGS").stringValue) {
+                trendingList = songs
+                Logger.d("### RemoteConfigManager: Loaded \(songs.count) trending songs from remote config")
+            } else {
+                trendingList = loadSunoDataFromResource(filename: "trending_songs")
+                Logger.d("### RemoteConfigManager: Loaded \(newList.count) trending songs from resource")
+            }
+            
+            if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "ALL_SONGS").stringValue) {
+                allSongsList = songs
+                Logger.d("### RemoteConfigManager: Loaded \(songs.count) all songs from remote config")
+            } else {
+                allSongsList = loadSunoDataFromResource(filename: "all_songs")
+                Logger.d("### RemoteConfigManager: Loaded \(newList.count) all songs from resource")
+            }
+            
+            if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "SUBSCRIPTION_SONGS").stringValue) {
+                subscriptionSongsList = songs
+                Logger.d("### RemoteConfigManager: Loaded \(songs.count) subscription songs from remote config")
+            } else {
+                subscriptionSongsList = loadSunoDataFromResource(filename: "subscription_songs")
+                Logger.d("### RemoteConfigManager: Loaded \(newList.count) subscription songs from resource")
             }
             
             // Build intro songs

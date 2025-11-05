@@ -190,7 +190,7 @@ final class SubscriptionManager: ObservableObject {
     func restorePurchases() async {
         Logger.i("restorePurchases: start")
         do {
-            //try await AppStore.sync()
+            try await AppStore.sync()
             await refreshStatus(forceSync: false)
             Logger.i("restorePurchases: success")
         } catch {

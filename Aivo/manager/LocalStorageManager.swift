@@ -19,7 +19,7 @@ final class LocalStorageManager: ObservableObject {
     private init() {
         loadLocalProfile()
         loadRemoteProfileStatus()
-        loadPremiumStatus()
+        //loadPremiumStatus()
         
         // Ensure localProfile is never null
         if localProfile == nil {
