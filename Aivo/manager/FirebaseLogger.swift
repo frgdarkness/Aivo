@@ -153,6 +153,18 @@ extension FirebaseLogger {
     static let EVENT_SCREEN_SKETCH = "screen_sketch"
     static let EVENT_SCREEN_TEXT_TO_DESIGN = "screen_text_to_design"
     
+    // Music App Screen Events
+    static let EVENT_SCREEN_SUBSCRIPTION = "screen_subscription"
+    static let EVENT_SCREEN_SUBSCRIPTION_INTRO = "screen_subscription_intro"
+    static let EVENT_SCREEN_GENERATE_LYRICS = "screen_generate_lyrics"
+    static let EVENT_SCREEN_GENERATE_SONG = "screen_generate_song"
+    static let EVENT_SCREEN_COVER = "screen_cover"
+    static let EVENT_SCREEN_PROFILE = "screen_profile"
+    static let EVENT_SCREEN_EXPLORE = "screen_explore"
+    static let EVENT_SCREEN_LIBRARY = "screen_library"
+    static let EVENT_SCREEN_PLAY_SONG = "screen_play_song"
+    static let EVENT_SCREEN_CREDIT_HISTORY = "screen_credit_history"
+    
     // Flow Events
     static let EVENT_FETCH_CONFIG_START = "event_fetch_config_start"
     static let EVENT_FETCH_CONFIG_FINISH = "event_fetch_config_finish"
@@ -170,6 +182,17 @@ extension FirebaseLogger {
     static let EVENT_DECORATOR = "event_decorator"
     static let EVENT_FREE_GENERATE = "event_free_generate"
     static let EVENT_PREMIUM_GENERATE = "event_premium_generate"
+    
+    // Music Generation Events
+    static let EVENT_GENERATE_LYRICS_START = "event_generate_lyrics_start"
+    static let EVENT_GENERATE_LYRICS_SUCCESS = "event_generate_lyrics_success"
+    static let EVENT_GENERATE_LYRICS_FAILED = "event_generate_lyrics_failed"
+    static let EVENT_GENERATE_SONG_START = "event_generate_song_start"
+    static let EVENT_GENERATE_SONG_SUCCESS = "event_generate_song_success"
+    static let EVENT_GENERATE_SONG_FAILED = "event_generate_song_failed"
+    static let EVENT_GENERATE_COVER_START = "event_generate_cover_start"
+    static let EVENT_GENERATE_COVER_SUCCESS = "event_generate_cover_success"
+    static let EVENT_GENERATE_COVER_FAILED = "event_generate_cover_failed"
     
     // Error Events
     static let EVENT_ERROR = "event_error"

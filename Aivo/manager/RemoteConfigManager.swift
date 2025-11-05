@@ -21,7 +21,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var songStatus: [SongStatus] = []
     @Published var privacyPolicyUrl: String = "https://homeaidecor.app/privacy.html"
     @Published var termsUrl: String = "https://www.apple.com/legal/internet-services/itunes/dev/stdeula"
-    
+    @Published var sampleSongPrompts: [String] = []
     
     private init() {
         setupRemoteConfig()
@@ -203,6 +203,15 @@ class RemoteConfigManager: ObservableObject {
                 songStatus = loadSongStatusFromResource()
                 Logger.d("### RemoteConfigManager: Loaded \(songStatus.count) song statuses from resource")
             }
+            
+            // Build sample song prompts
+            if let prompts = parseSampleSongPrompts(from: remoteConfig.configValue(forKey: "SAMPLE_SONG_PROMPT").stringValue) {
+                sampleSongPrompts = prompts
+                Logger.d("### RemoteConfigManager: Loaded \(prompts.count) sample song prompts from remote config")
+            } else {
+                sampleSongPrompts = loadSampleSongPromptsFromResource()
+                Logger.d("### RemoteConfigManager: Loaded \(sampleSongPrompts.count) sample song prompts from resource")
+            }
         }
     }
     
@@ -264,6 +273,21 @@ class RemoteConfigManager: ObservableObject {
             return status
         } catch {
             Logger.e("### RemoteConfigManager: Error parsing SongStatus list: \(error)")
+            return nil
+        }
+    }
+    
+    private func parseSampleSongPrompts(from jsonString: String) -> [String]? {
+        guard !jsonString.isEmpty,
+              let data = jsonString.data(using: .utf8) else {
+            return nil
+        }
+        
+        do {
+            let prompts = try JSONDecoder().decode([String].self, from: data)
+            return prompts
+        } catch {
+            Logger.e("### RemoteConfigManager: Error parsing sample song prompts list: \(error)")
             return nil
         }
     }
@@ -330,6 +354,22 @@ class RemoteConfigManager: ObservableObject {
             return status
         } catch {
             Logger.e("### RemoteConfigManager: Error loading song_status.json: \(error)")
+            return []
+        }
+    }
+    
+    private func loadSampleSongPromptsFromResource() -> [String] {
+        guard let url = Bundle.main.url(forResource: "sample_song_prompt", withExtension: "json") else {
+            Logger.d("### RemoteConfigManager: Resource file sample_song_prompt.json not found")
+            return []
+        }
+        
+        do {
+            let data = try Data(contentsOf: url)
+            let prompts = try JSONDecoder().decode([String].self, from: data)
+            return prompts
+        } catch {
+            Logger.e("### RemoteConfigManager: Error loading sample_song_prompt.json: \(error)")
             return []
         }
     }

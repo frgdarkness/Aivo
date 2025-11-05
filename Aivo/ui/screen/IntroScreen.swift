@@ -32,6 +32,10 @@ struct IntroScreen: View {
             .padding(.horizontal, 20)
             .padding(.top, 50)
         }
+        .onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_INTRO)
+        }
         .fullScreenCover(isPresented: $showProcessing) {
             GenerateSongProcessingScreen(
                 requestType: .generateSong,

@@ -46,6 +46,9 @@ struct SubscriptionScreen: View {
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
         .onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_SUBSCRIPTION)
+            
             Task {
                 await subscriptionManager.fetchProducts()
                 await subscriptionManager.refreshStatus()

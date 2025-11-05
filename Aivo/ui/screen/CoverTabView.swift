@@ -42,6 +42,9 @@ struct CoverTabView: View {
     
     var body: some View {
         let _ = onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_COVER)
+            
             if availableModels.isEmpty {
                 availableModels = CoverSongModel.loadModels()
             }
@@ -506,6 +509,14 @@ struct CoverTabView: View {
         Logger.d("🎤 [CoverTab] Selected Model: \(selectedModel?.displayName ?? "None")")
         Logger.d("🎤 [CoverTab] Model ID: \(selectedModel?.modelName ?? "default")")
         
+        // Log Firebase event
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_START, parameters: [
+            "source": selectedSource == .song ? "song" : "youtube",
+            "model_id": selectedModel?.modelName ?? "default",
+            "song_name": songName,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
         // Show processing screen
         showProcessingScreen = true
         
@@ -635,6 +646,13 @@ struct CoverTabView: View {
                     showProcessingScreen = false
                     
                     if let resultUrl = resultUrl {
+                        // Log Firebase success event
+                        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_SUCCESS, parameters: [
+                            "source": selectedSource == .song ? "song" : "youtube",
+                            "model_id": coverModelID,
+                            "timestamp": Date().timeIntervalSince1970
+                        ])
+                        
                         // Create and cache SunoData
                         cachedSunoData = createSunoDataFromCoverResult(audioUrl: resultUrl)
                         //resultAudioUrl = resultUrl
@@ -653,6 +671,11 @@ struct CoverTabView: View {
                             showPlaySongScreen = true
                         }
                     } else {
+                        // Log Firebase failed event
+                        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_FAILED, parameters: [
+                            "error": "No result URL returned",
+                            "timestamp": Date().timeIntervalSince1970
+                        ])
                         showToastMessage("Failed to generate cover song")
                     }
                 }
@@ -672,6 +695,13 @@ struct CoverTabView: View {
                     }
                     return
                 }
+                
+                // Log Firebase failed event
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_FAILED, parameters: [
+                    "error_type": String(describing: type(of: error)),
+                    "error_message": error.localizedDescription,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
                 
                 Logger.e("❌ [CoverTab] Error generating cover song: \(error)")
                 await MainActor.run {

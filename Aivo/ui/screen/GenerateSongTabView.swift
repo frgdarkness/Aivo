@@ -4,6 +4,7 @@ import SwiftUI
 struct GenerateSongTabView: View {
     @ObservedObject private var creditManager = CreditManager.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
     @State private var selectedInputType: InputType = .description
     @State private var songDescription = ""
     @State private var songLyrics = ""
@@ -61,6 +62,10 @@ struct GenerateSongTabView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 100) // Space for bottom navigation
+        }
+        .onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_GENERATE_SONG)
         }
         .fullScreenCover(isPresented: $showMultiMoodScreen) {
             SelectMultiMoodScreen(
@@ -733,6 +738,17 @@ struct GenerateSongTabView: View {
         print("🎵 [GenerateSong] Vocal gender: \(selectedVocalGender.rawValue)")
         print("🎵 [GenerateSong] Model: \(selectedModel.rawValue)")
         
+        // Log Firebase event
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_START, parameters: [
+            "input_type": selectedInputType.rawValue,
+            "has_song_name": !songName.isEmpty,
+            "is_instrumental": isInstrumental,
+            "model": selectedModel.rawValue,
+            "moods_count": selectedMoods.count,
+            "genres_count": selectedGenres.count,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
         // Show processing screen
         showGenerateSongScreen = true
         
@@ -802,6 +818,13 @@ struct GenerateSongTabView: View {
                     // Close processing screen
                     showGenerateSongScreen = false
                     
+                    // Log Firebase success event
+                    FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_SUCCESS, parameters: [
+                        "songs_count": generatedSongs.count,
+                        "model": selectedModel.rawValue,
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
+                    
                     // Set result and show result screen
                     resultSunoDataList = generatedSongs
                     showToastMessage("Songs generated successfully!")
@@ -836,6 +859,13 @@ struct GenerateSongTabView: View {
                     return
                 }
                 
+                // Log Firebase failed event
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_FAILED, parameters: [
+                    "error_type": String(describing: type(of: error)),
+                    "error_message": error.localizedDescription,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
+                
                 print("❌ [GenerateSong] Error generating songs: \(error)")
                 await MainActor.run {
                     showGenerateSongScreen = false
@@ -860,6 +890,13 @@ struct GenerateSongTabView: View {
                     }
                     return
                 }
+                
+                // Log Firebase failed event
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_FAILED, parameters: [
+                    "error_type": String(describing: type(of: error)),
+                    "error_message": error.localizedDescription,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
                 
                 print("❌ [GenerateSong] Error generating songs: \(error)")
                 await MainActor.run {
@@ -959,27 +996,21 @@ struct GenerateSongTabView: View {
     private func getInspired() {
         print("💡 [GetInspired] Loading sample prompts...")
         
-        guard let url = Bundle.main.url(forResource: "sample_song_prompt", withExtension: "json") else {
-            print("❌ [GetInspired] Could not find sample_song_prompt.json")
-            showToastMessage("Could not load inspiration prompts")
-            return
-        }
+        // Use prompts from RemoteConfigManager (loaded from remote or local)
+        let prompts = remoteConfig.sampleSongPrompts
         
-        do {
-            let data = try Data(contentsOf: url)
-            let prompts = try JSONDecoder().decode([String].self, from: data)
-            
+        if !prompts.isEmpty {
             if let randomPrompt = prompts.randomElement() {
                 print("💡 [GetInspired] Selected prompt: \(randomPrompt)")
                 songDescription = randomPrompt
                 //showToastMessage("Inspiration loaded!")
             } else {
-                print("❌ [GetInspired] No prompts found in file")
+                print("❌ [GetInspired] No prompts found in list")
                 showToastMessage("No inspiration prompts available")
             }
-        } catch {
-            print("❌ [GetInspired] Error loading prompts: \(error)")
-            showToastMessage("Failed to load inspiration prompts")
+        } else {
+            print("❌ [GetInspired] No prompts available")
+            showToastMessage("Could not load inspiration prompts")
         }
     }
     

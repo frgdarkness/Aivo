@@ -147,6 +147,10 @@ struct GenerateLyricsScreen: View {
                 }
             }
         )
+        .onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_GENERATE_LYRICS)
+        }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             if SubscriptionManager.shared.isPremium {
                 SubscriptionScreen()
@@ -398,6 +402,12 @@ struct GenerateLyricsScreen: View {
 
         Logger.i("📝 [GenerateLyrics] Starting lyrics generation...")
         Logger.d("📝 [GenerateLyrics] Prompt: \(prompt)")
+        
+        // Log Firebase event
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_START, parameters: [
+            "prompt_length": prompt.count,
+            "timestamp": Date().timeIntervalSince1970
+        ])
 
         Task {
             do {
@@ -411,6 +421,12 @@ struct GenerateLyricsScreen: View {
                     lyricsResults = results
                     showToastMessage("Lyrics generated successfully!")
                     
+                    // Log Firebase success event
+                    FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_SUCCESS, parameters: [
+                        "results_count": results.count,
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
+                    
                     // Deduct credits only after successful generation
                     Task {
                         await CreditManager.shared.deductForSuccessfulRequest(count: 4)
@@ -421,6 +437,14 @@ struct GenerateLyricsScreen: View {
                 }
             } catch let sunoError as SunoError {
                 Logger.e("❌ [GenerateLyrics] Error: \(sunoError)")
+                
+                // Log Firebase failed event
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_FAILED, parameters: [
+                    "error_type": String(describing: type(of: sunoError)),
+                    "error_message": sunoError.localizedDescription,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
+                
                 await MainActor.run {
                     isGenerating = false
                     

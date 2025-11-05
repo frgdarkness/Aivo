@@ -76,6 +76,9 @@ struct GenerateSunoSongResultScreen: View {
             }
         }
         .onAppear {
+            // Log screen view
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_PLAY_SONG)
+            
             Logger.d("🎵 [SunoResult] Screen appeared with \(sunoDataList.count) songs")
             
             // Always reset to 0 when screen appears to ensure valid index
