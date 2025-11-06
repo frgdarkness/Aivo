@@ -96,11 +96,12 @@ struct PlayMySongScreen: View {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            if SubscriptionManager.shared.isPremium {
-                SubscriptionScreen()
-            } else {
-                SubscriptionScreenIntro()
-            }
+            SubscriptionScreenIntro()
+//            if SubscriptionManager.shared.isPremium {
+//                SubscriptionScreen()
+//            } else {
+//                SubscriptionScreenIntro()
+//            }
         }
         .overlay {
             if showEditSheet, let song = currentSong {

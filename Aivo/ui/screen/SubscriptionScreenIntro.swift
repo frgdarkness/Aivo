@@ -27,6 +27,7 @@ struct SubscriptionScreenIntro: View {
     @State private var showRestoreSuccess = false
     @State private var showRestoreError = false
     @State private var restoreErrorMessage = ""
+    @State private var showBuyCreditDialog = false
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -62,6 +63,7 @@ struct SubscriptionScreenIntro: View {
         }
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
+        .buyCreditDialog(isPresented: $showBuyCreditDialog)
         .onAppear {
             // Log screen view
             FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_SUBSCRIPTION_INTRO)
@@ -431,36 +433,55 @@ struct SubscriptionScreenIntro: View {
     
     // MARK: - Credit Info View (from CreditDialogModifier)
     private var creditInfoView: some View {
-        VStack(spacing: 16) {
-            // Coin icon + Credits count
-            VStack(spacing: 12) {
-                Image("icon_coin_512")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .shadow(radius: 8, y: 4)
-                
-                HStack(spacing: 8) {
-                    Text("\(creditManager.credits)")
-                        .font(.system(size: 42, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Credits")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 16) {
+                // Coin icon + Credits count
+                VStack(spacing: 12) {
+                    Image("icon_coin_512")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .shadow(radius: 8, y: 4)
+                    
+                    HStack(spacing: 8) {
+                        Text("\(creditManager.credits)")
+                            .font(.system(size: 42, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Credits")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
                 }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 28)
+            .padding(.top, 28)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+            )
+            
+            // Add button ở góc trên phải
+            Button(action: {
+                showBuyCreditDialog = true
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .background(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 28, height: 28)
+                    )
+                    .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 4, x: 0, y: 2)
+            }
+            .padding(.top, 12)
+            .padding(.trailing, 12)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 28)
-        .padding(.top, 28)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                )
-        )
     }
     
     // Helper function to format date

@@ -9,6 +9,10 @@ class RemoteConfigManager: ObservableObject {
     @Published var isLoading = false
     @Published var statusValue = ""
     @Published var creditPerRequest = 30
+    @Published var creditsPerSong = 30
+    @Published var creditsPerCover = 20
+    @Published var creditsPerLyric = 5
+    
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
     @Published var introSongList: [IntroSongJSON] = []
@@ -43,7 +47,12 @@ class RemoteConfigManager: ObservableObject {
             "STATUS": "Firebase HomeAI IOS defalt status" as NSString,
             "CREDIT_PER_REQUEST": 30 as NSNumber,
             "ADMIN_EMAIL": "hananyogev77@gmail.com" as NSString,
-            "SUPPORT_URL": "https://www.google.com/" as NSString
+            "SUPPORT_URL": "https://www.google.com/" as NSString,
+            "PRIVACY_POLICY_URL": "https://homeaidecor.app/privacy.html" as NSString,
+            "TERMS_URL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula" as NSString,
+            "CREDITS_PER_SONG": 30 as NSNumber,
+            "CREDITS_PER_COVER": 20 as NSNumber,
+            "CREDITS_PER_LYRIC": 5 as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)

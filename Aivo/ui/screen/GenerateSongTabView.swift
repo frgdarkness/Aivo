@@ -123,11 +123,12 @@ struct GenerateSongTabView: View {
             GenerateLyricsScreen(lyricsText: $generatedLyrics)
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            if SubscriptionManager.shared.isPremium {
-                SubscriptionScreen()
-            } else {
-                SubscriptionScreenIntro()
-            }
+            SubscriptionScreenIntro()
+//            if SubscriptionManager.shared.isPremium {
+//                SubscriptionScreen()
+//            } else {
+//                SubscriptionScreenIntro()
+//            }
         }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {

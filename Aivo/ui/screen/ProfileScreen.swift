@@ -28,6 +28,8 @@ struct ProfileScreen: View {
     @State private var showImagePicker = false
     @State private var showToastMessage = false
     @State private var toastMessageText = ""
+    @State private var showBuyCreditDialog = false
+    @State private var showPremiumRequiredAlert = false
     #if DEBUG
     @State private var showTestScreen = false
     #endif
@@ -183,6 +185,12 @@ struct ProfileScreen: View {
             TestScreen()
         }
         #endif
+        .buyCreditDialog(isPresented: $showBuyCreditDialog)
+        .alert("Premium Required", isPresented: $showPremiumRequiredAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Only support for Premium Member")
+        }
     }
     
     // MARK: - Header View
@@ -384,10 +392,11 @@ struct ProfileScreen: View {
             
             // Credit Row - Layer riêng mờ hơn
             HStack {
-//                Image("icon_coin")
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-//                    .frame(width: 16, height: 16)
+                // Icon credit trước chữ "Credit"
+                Image("icon_coin")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 18, height: 18)
                 
                 Text("Credit")
                     .font(.system(size: 16, weight: .medium))
@@ -399,21 +408,30 @@ struct ProfileScreen: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
                 
-                Image("icon_coin")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
-//                Button(action: {
-//                    // Add credit action - có thể mở subscription screen
-//                }) {
-//                    Image(systemName: "plus.circle.fill")
-//                        .font(.system(size: 18))
-//                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
-//                }
+//                Image("icon_coin")
+//                    .resizable()
+//                    .aspectRatio(contentMode: .fit)
+//                    .frame(width: 18, height: 18)
+                
+                // Add credit button
+                Button(action: {
+                    if subscriptionManager.isPremium {
+                        showBuyCreditDialog = true
+                    } else {
+                        showPremiumRequiredAlert = true
+                    }
+                }) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(AivoTheme.Primary.orange)
+                }
+                .padding(.leading, 0)
             }
-            .padding(16)
+            .padding(12)
             .background(Color.gray.opacity(0.25))
             .cornerRadius(12)
+            .opacity(subscriptionManager.isPremium ? 1.0 : 0.5)
+            .disabled(!subscriptionManager.isPremium)
         }
         .padding(16)
         .background(Color.gray.opacity(0.15))
