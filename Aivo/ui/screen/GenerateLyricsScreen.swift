@@ -92,7 +92,12 @@ struct GenerateLyricsScreen: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var creditManager = CreditManager.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
     @Binding var lyricsText: String
+    
+    private var creditsRequired: Int {
+        remoteConfig.creditsPerLyric
+    }
 
     @State private var prompt: String = ""
     @State private var isGenerating: Bool = false
@@ -224,7 +229,7 @@ struct GenerateLyricsScreen: View {
                     // Credit cost display (only show when not generating)
                     if !isGenerating {
                         HStack(spacing: 2) {
-                            Text("(-4")
+                            Text("(-\(creditsRequired)")
                                 .font(.headline)
                                 .fontWeight(.bold)
                             Image("icon_coin")
@@ -372,7 +377,7 @@ struct GenerateLyricsScreen: View {
 
     // MARK: - Helper Methods
     private var hasEnoughCreditsForLyrics: Bool {
-        return creditManager.credits >= 4
+        return creditManager.credits >= creditsRequired
     }
     
     // Hide keyboard helper
@@ -393,8 +398,8 @@ struct GenerateLyricsScreen: View {
         }
         
         // Check credits before starting
-        guard creditManager.credits >= 4 else {
-            showToastMessage("Not enough credits! You need 4 credits to generate lyrics.")
+        guard creditManager.credits >= creditsRequired else {
+            showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate lyrics.")
             return
         }
 
@@ -430,8 +435,8 @@ struct GenerateLyricsScreen: View {
                     
                     // Deduct credits only after successful generation
                     Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: 4)
-                        Logger.i("📝 [GenerateLyrics] Deducted 4 credits for successful lyrics generation")
+                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
+                        Logger.i("📝 [GenerateLyrics] Deducted \(creditsRequired) credits for successful lyrics generation")
                         // Save to history
                         CreditHistoryManager.shared.addRequest(.generateLyric)
                     }

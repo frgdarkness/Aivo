@@ -5,6 +5,10 @@ struct GenerateSongTabView: View {
     @ObservedObject private var creditManager = CreditManager.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject private var remoteConfig = RemoteConfigManager.shared
+    
+    private var creditsRequired: Int {
+        remoteConfig.creditsPerSong
+    }
     @State private var selectedInputType: InputType = .description
     @State private var songDescription = ""
     @State private var songLyrics = ""
@@ -104,9 +108,9 @@ struct GenerateSongTabView: View {
                     
                     // Deduct credits and save to history even if cancelled
                     Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: 20)
+                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
                         CreditHistoryManager.shared.addRequest(.generateSong)
-                        Logger.i("🎵 [GenerateSong] Deducted 20 credits and saved history for cancelled generation")
+                        Logger.i("🎵 [GenerateSong] Deducted \(creditsRequired) credits and saved history for cancelled generation")
                     }
                 }
             )
@@ -678,7 +682,7 @@ struct GenerateSongTabView: View {
                 
                 // Credit cost display
                 HStack(spacing: 2) {
-                    Text("(-20")
+                    Text("(-\(creditsRequired)")
                         .font(.system(size: 16, weight: .semibold))
                     Image("icon_coin")
                         .resizable()
@@ -704,7 +708,7 @@ struct GenerateSongTabView: View {
     }
     
     private var hasEnoughCreditsForGenerate: Bool {
-        return creditManager.credits >= 20
+        return creditManager.credits >= creditsRequired
     }
     
     private var isCreateButtonEnabled: Bool {
@@ -724,8 +728,8 @@ struct GenerateSongTabView: View {
         }
         
         // Check credits before starting
-        guard creditManager.credits >= 20 else {
-            showToastMessage("Not enough credits! You need 20 credits to generate a song.")
+        guard creditManager.credits >= creditsRequired else {
+            showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a song.")
             return
         }
         
@@ -833,8 +837,8 @@ struct GenerateSongTabView: View {
                     
                     // Deduct credits only after successful generation
                     Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: 20)
-                        Logger.i("🎵 [GenerateSong] Deducted 20 credits for successful generation")
+                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
+                        Logger.i("🎵 [GenerateSong] Deducted \(creditsRequired) credits for successful generation")
                         // Save to history
                         CreditHistoryManager.shared.addRequest(.generateSong)
                     }

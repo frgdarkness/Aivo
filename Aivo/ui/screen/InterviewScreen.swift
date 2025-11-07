@@ -4,24 +4,31 @@ import SwiftUI
 struct InterviewScreen: View {
     let onContinue: () -> Void
     
+    // Animation states
+    @State private var showWelcome = false
+    @State private var showButton = false
+    
     var body: some View {
         ZStack {
             // Background image
-            Image("intro_first")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
-                .overlay(
-                    // Dark overlay để text nổi bật
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.black.opacity(0.1),
-                            Color.black.opacity(0.8)
-                        ]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+//            Image("intro_first")
+//                .resizable()
+//                .aspectRatio(contentMode: .fill)
+//                .ignoresSafeArea()
+//                .overlay(
+//                    // Dark overlay để text nổi bật
+//                    LinearGradient(
+//                        gradient: Gradient(colors: [
+//                            Color.black.opacity(0.1),
+//                            Color.black.opacity(0.8)
+//                        ]),
+//                        startPoint: .top,
+//                        endPoint: .bottom
+//                    )
+//                )
+            //AivoSunsetBackground()
+            
+            
             
 //            VStack(spacing: 2) {
 //                Text("Welcome to")
@@ -42,6 +49,7 @@ struct InterviewScreen: View {
 //            }
 //            .padding(.bottom, 60)
             
+            // Content VStack
             VStack(spacing: 0) {
                 Spacer()
                 
@@ -51,7 +59,6 @@ struct InterviewScreen: View {
                         .font(.system(size: 32, weight: .medium))
                         .foregroundColor(.white)
                     
-                    // AIVO text với màu orange
                     HStack(spacing: 4) {
                         Text("AIVO")
                             .font(.system(size: 38, weight: .black, design: .rounded))
@@ -63,6 +70,10 @@ struct InterviewScreen: View {
                             .foregroundColor(.white)
                     }
                 }
+                // ✨ Animation cho Welcome
+                .opacity(showWelcome ? 1 : 0)
+                .offset(y: showWelcome ? 0 : 30)
+                .animation(.easeOut(duration: 1.0).delay(0.3), value: showWelcome)
                 .padding(.bottom, 32)
                 
                 // Continue Button
@@ -80,7 +91,35 @@ struct InterviewScreen: View {
                 }
                 .padding(.horizontal, 40)
                 .padding(.bottom, 50)
+                // ✨ Animation cho button
+                .opacity(showButton ? 1 : 0)
+                .offset(y: showButton ? 0 : 40)
+                .animation(.easeOut(duration: 0.9).delay(1.0), value: showButton)
             }
+        }
+        .background(
+            //AivoSunsetBackground()
+        
+            Image("intro_first")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .ignoresSafeArea()
+                .overlay(
+                    // Dark overlay để text nổi bật
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color.black.opacity(0.1),
+                            Color.black.opacity(0.8)
+                        ]),
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+        ).ignoresSafeArea()
+        .onAppear {
+            // Bắt đầu hiệu ứng tuần tự
+            showWelcome = true
+            showButton = true
         }
     }
 }

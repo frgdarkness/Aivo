@@ -5,6 +5,11 @@ import Kingfisher
 struct CoverTabView: View {
     @ObservedObject private var creditManager = CreditManager.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
+    
+    private var creditsRequired: Int {
+        remoteConfig.creditsPerCover
+    }
     @State private var selectedSong = ""
     @State private var songName = ""  // Add song name state
     @State private var lyric: String = ""
@@ -88,9 +93,9 @@ struct CoverTabView: View {
                     
                     // Deduct credits and save to history even if cancelled
                     Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: 10)
+                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
                         CreditHistoryManager.shared.addRequest(.coverSong)
-                        Logger.i("🎤 [CoverTab] Deducted 10 credits and saved history for cancelled cover generation")
+                        Logger.i("🎤 [CoverTab] Deducted \(creditsRequired) credits and saved history for cancelled cover generation")
                     }
                 }
             )
@@ -450,7 +455,7 @@ struct CoverTabView: View {
 
                 // Credit cost display
                 HStack(spacing: 2) {
-                    Text("(-10")
+                    Text("(-\(creditsRequired)")
                         .font(.headline)
                         .fontWeight(.bold)
                     Image("icon_coin")
@@ -477,7 +482,7 @@ struct CoverTabView: View {
     }
     
     private var hasEnoughCreditsForCover: Bool {
-        return creditManager.credits >= 10
+        return creditManager.credits >= creditsRequired
     }
     
     // MARK: - Helper Properties
@@ -499,8 +504,8 @@ struct CoverTabView: View {
         }
         
         // Check credits before starting
-        guard creditManager.credits >= 10 else {
-            showToastMessage("Not enough credits! You need 10 credits to generate a cover song.")
+        guard creditManager.credits >= creditsRequired else {
+            showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a cover song.")
             return
         }
         
@@ -661,8 +666,8 @@ struct CoverTabView: View {
                         
                         // Deduct credits only after successful generation
                         Task {
-                            await CreditManager.shared.deductForSuccessfulRequest(count: 10)
-                            Logger.i("🎤 [CoverTab] Deducted 10 credits for successful cover generation")
+                            await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
+                            Logger.i("🎤 [CoverTab] Deducted \(creditsRequired) credits for successful cover generation")
                             // Save to history
                             CreditHistoryManager.shared.addRequest(.coverSong)
                         }

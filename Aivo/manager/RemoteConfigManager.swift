@@ -74,25 +74,45 @@ class RemoteConfigManager: ObservableObject {
         do {
             let status = try await remoteConfig.fetch()
             Logger.d("### RemoteConfigManager: Fetch status: \(status)")
-            
-            let adminValue = remoteConfig.configValue(forKey: "ADMIN_EMAIL").stringValue
-            if !adminValue.isEmpty {
-                adminEmail = adminValue
-            }
-
-            let supportValue = remoteConfig.configValue(forKey: "SUPPORT_URL").stringValue
-            if !supportValue.isEmpty {
-                supportUrl = supportValue
-            }
-            
-            let privacyValue = remoteConfig.configValue(forKey: "PRIVACY_POLICY_URL").stringValue
-            if !privacyValue.isEmpty {
-                privacyPolicyUrl = privacyValue
-            }
-
-            let termsValue = remoteConfig.configValue(forKey: "TERMS_URL").stringValue
-            if !termsValue.isEmpty {
-                termsUrl = termsValue
+            await MainActor.run {
+                let adminValue = remoteConfig.configValue(forKey: "ADMIN_EMAIL").stringValue
+                if !adminValue.isEmpty {
+                    adminEmail = adminValue
+                }
+                
+                let supportValue = remoteConfig.configValue(forKey: "SUPPORT_URL").stringValue
+                if !supportValue.isEmpty {
+                    supportUrl = supportValue
+                }
+                
+                let privacyValue = remoteConfig.configValue(forKey: "PRIVACY_POLICY_URL").stringValue
+                if !privacyValue.isEmpty {
+                    privacyPolicyUrl = privacyValue
+                }
+                
+                let termsValue = remoteConfig.configValue(forKey: "TERMS_URL").stringValue
+                if !termsValue.isEmpty {
+                    termsUrl = termsValue
+                }
+                
+                // Load credit values from remote config
+                let creditsPerSongValue = remoteConfig.configValue(forKey: "CREDITS_PER_SONG").numberValue
+                if creditsPerSongValue.intValue > 0 {
+                    creditsPerSong = creditsPerSongValue.intValue
+                    Logger.d("### RemoteConfigManager: CREDITS_PER_SONG: \(creditsPerSong)")
+                }
+                
+                let creditsPerCoverValue = remoteConfig.configValue(forKey: "CREDITS_PER_COVER").numberValue
+                if creditsPerCoverValue.intValue > 0 {
+                    creditsPerCover = creditsPerCoverValue.intValue
+                    Logger.d("### RemoteConfigManager: CREDITS_PER_COVER: \(creditsPerCover)")
+                }
+                
+                let creditsPerLyricValue = remoteConfig.configValue(forKey: "CREDITS_PER_LYRIC").numberValue
+                if creditsPerLyricValue.intValue > 0 {
+                    creditsPerLyric = creditsPerLyricValue.intValue
+                    Logger.d("### RemoteConfigManager: CREDITS_PER_LYRIC: \(creditsPerLyric)")
+                }
             }
             
             // Always try to activate, even if fetch didn't get new data
