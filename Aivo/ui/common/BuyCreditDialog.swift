@@ -26,7 +26,7 @@ struct BuyCreditDialogModifier: ViewModifier {
             if isPresented {
                 // Nền mờ tối
                 Rectangle()
-                    .fill(Color.black.opacity(0.45))
+                    .fill(Color.black.opacity(0.75))
                     .ignoresSafeArea()
                     .transition(.opacity)
                     .onTapGesture { 
@@ -81,6 +81,14 @@ struct BuyCreditDialogModifier: ViewModifier {
             Button("OK") { }
         } message: {
             Text(errorMessage)
+        }
+    }
+    
+    private func autoSelect5000Package() {
+        let creditPackages = getCreditPackages()
+        // Find index of 5000 credits package
+        if let index = creditPackages.firstIndex(where: { $0.credits == 5000 }) {
+            selectedPackageIndex = index
         }
     }
     
@@ -182,6 +190,14 @@ private struct BuyCreditDialogCard: View {
     @ObservedObject var storeManager: CreditStoreManager
     @ObservedObject var creditManager: CreditManager
     
+    private func autoSelect5000Package() {
+        let packages = creditPackages
+        // Find index of 5000 credits package
+        if let index = packages.firstIndex(where: { $0.credits == 5000 }) {
+            selectedPackageIndex = index
+        }
+    }
+    
     private var creditPackages: [BuyCreditDialogPackage] {
         if storeManager.isLoading || storeManager.products.isEmpty {
             return [
@@ -246,6 +262,11 @@ private struct BuyCreditDialogCard: View {
                     .font(.system(size: 26, weight: .heavy))
                     .foregroundColor(.white)
                     .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 2)
+                
+                Image("icon_coin")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 24, height: 24)
                 Spacer()
                 Button(action: onClose) {
                     Image(systemName: "xmark")
@@ -334,17 +355,31 @@ private struct BuyCreditDialogCard: View {
                 .stroke(
                     LinearGradient(
                         colors: [
-                            Color.white.opacity(0.15),
-                            Color.white.opacity(0.05)
+                            Color(red: 1.0, green: 0.85, blue: 0.4), // Vàng (goldenSun)
+                            Color(red: 1.0, green: 0.75, blue: 0.2)  // Vàng cam
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
-                    lineWidth: 1
+                    lineWidth: 2
                 )
         )
         .shadow(color: .black.opacity(0.6), radius: 30, x: 0, y: 15)
         .shadow(color: AivoTheme.Primary.orange.opacity(0.2), radius: 40, x: 0, y: 20)
+        .onAppear {
+            // Auto select 5000 credits package when dialog appears
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                autoSelect5000Package()
+            }
+        }
+        .onChange(of: storeManager.products) { _ in
+            // Auto select 5000 credits package when products are loaded
+            if !storeManager.products.isEmpty && !storeManager.isLoading {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    autoSelect5000Package()
+                }
+            }
+        }
     }
     
     private var loadingPackageRow: some View {
@@ -360,7 +395,7 @@ private struct BuyCreditDialogCard: View {
                     // Radio placeholder
                     Circle()
                         .stroke(Color.white.opacity(0.3), lineWidth: 2)
-                        .frame(width: 26, height: 26)
+                        .frame(width: 22, height: 22)
                         .padding(.leading, 18)
                     
                     Text("Loading...")
@@ -387,7 +422,7 @@ private struct BuyCreditDialogCard: View {
                     ZStack {
                         Circle()
                             .stroke(AivoTheme.Primary.orange, lineWidth: 2)
-                            .frame(width: 26, height: 26)
+                            .frame(width: 22, height: 22)
                         if isSelected {
                             Circle()
                                 .fill(AivoTheme.Primary.orange)
@@ -401,11 +436,6 @@ private struct BuyCreditDialogCard: View {
                         Text("\(package.credits)")
                             .foregroundColor(.white)
                             .font(.system(size: 18, weight: .semibold))
-                        
-                        Image("icon_coin")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
                     }
                     
                     Spacer()

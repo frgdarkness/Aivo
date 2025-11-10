@@ -8,6 +8,7 @@ struct HomeView: View {
     @State private var showSunoSongResult = false
     @State private var showSubscription = false
     @State private var showProfile = false
+    @State private var showBuyCreditDialog = false
     
     // Hardcoded SunoData for testing
     private let hardcodedSunoData: [SunoData] = [
@@ -110,6 +111,7 @@ struct HomeView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: showProfile)
+        .buyCreditDialog(isPresented: $showBuyCreditDialog)
     }
     
     // MARK: - Header View
@@ -167,8 +169,17 @@ struct HomeView: View {
                         radius: 8, x: 0, y: 3)
             }
             
-            // Credit Badge View
-            CreditBadgeView()
+            // Credit Badge View - Tap to open buy credit dialog or subscription
+            Button(action: {
+                if subscriptionManager.isPremium {
+                    showBuyCreditDialog = true
+                } else {
+                    showSubscription = true
+                }
+            }) {
+                CreditBadgeView()
+            }
+            .buttonStyle(.plain)
             
             // Settings
             Button(action: {

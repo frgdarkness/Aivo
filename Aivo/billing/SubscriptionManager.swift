@@ -22,11 +22,11 @@ final class SubscriptionManager: ObservableObject {
     
     // MARK: - Product IDs
     enum ProductID: String, CaseIterable {
-//        case weekly = "AIVO_PREMIUM_WEEKLY"
-//        case yearly = "AIVO_PREMIUM_YEARLY"
+        case weekly = "AIVO_PREMIUM_WEEKLY"
+        case yearly = "AIVO_PREMIUM_YEARLY"
         
-        case weekly = "aivo.premium.weekly"
-        case yearly = "aivo.premium.yearly"
+//        case weekly = "aivo.premium.weekly"
+//        case yearly = "aivo.premium.yearly"
 
         var sortOrder: Int {
             switch self {
