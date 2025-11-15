@@ -194,6 +194,18 @@ extension FirebaseLogger {
     static let EVENT_GENERATE_COVER_SUCCESS = "event_generate_cover_success"
     static let EVENT_GENERATE_COVER_FAILED = "event_generate_cover_failed"
     
+    // Intro Step Events
+    static let EVENT_INTRO_STEP_1 = "event_intro_step_1"
+    static let EVENT_INTRO_STEP_2 = "event_intro_step_2"
+    static let EVENT_INTRO_STEP_3 = "event_intro_step_3"
+    
+    // Download Events
+    static let EVENT_DOWNLOAD_SONG_REQUEST = "event_download_song_request"
+    static let EVENT_DOWNLOAD_SONG_SUCCESS = "event_download_song_success"
+    
+    // Export Events
+    static let EVENT_EXPORT_SONG = "event_export_song"
+    
     // Error Events
     static let EVENT_ERROR = "event_error"
     static let EVENT_NETWORK_ERROR = "event_network_error"

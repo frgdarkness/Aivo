@@ -103,6 +103,14 @@ struct PlayMySongScreen: View {
 //                SubscriptionScreenIntro()
 //            }
         }
+        .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
+            Button("Upgrade to Premium", role: .none) {
+                showSubscriptionScreen = true
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You can only export 1 song per day as a free user. Upgrade to Premium for unlimited exports.")
+        }
         .overlay {
             if showEditSheet, let song = currentSong {
                 EditSongInfoDialog(song: song) {
@@ -810,13 +818,31 @@ struct PlayMySongScreen: View {
     }
 
     private func exportCurrentSong() {
-        // Check subscription first
-        guard subscriptionManager.isPremium else {
-            showSubscriptionScreen = true
-            return
+        guard let song = currentSong else { return }
+        
+        // Check export limit for free users
+        if !subscriptionManager.isPremium {
+            let userDefaults = UserDefaultsManager.shared
+            if !userDefaults.canExportSong() {
+                // Show alert that export limit reached
+                showPremiumAlert = true
+                return
+            }
         }
         
-        guard let song = currentSong else { return }
+        // Log Firebase event for export
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_EXPORT_SONG, parameters: [
+            "song_id": song.id,
+            "song_title": song.title,
+            "is_premium": subscriptionManager.isPremium,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
+        // Mark export as used for free users
+        if !subscriptionManager.isPremium {
+            UserDefaultsManager.shared.markExportUsed()
+        }
+        
         let localFilePath = getLocalFilePath(for: song)
         if FileManager.default.fileExists(atPath: localFilePath.path) {
             currentFileURL = localFilePath

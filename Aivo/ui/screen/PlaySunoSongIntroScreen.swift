@@ -424,6 +424,13 @@ struct PlaySunoSongIntroScreen: View {
         Logger.d("📥 [PlaySunoSongIntro] Starting download for song: \(song.title)")
         Logger.d("📥 [PlaySunoSongIntro] Audio URL: \(song.audioUrl)")
         
+        // Log Firebase event for download request
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
+            "song_id": song.id,
+            "song_title": song.title,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
         guard let url = URL(string: song.audioUrl) else { 
             Logger.e("❌ [PlaySunoSongIntro] Invalid URL for song: \(song.title)")
             return
@@ -450,6 +457,13 @@ struct PlaySunoSongIntroScreen: View {
             },
             onComplete: { fileURL in
                 Logger.d("✅ [PlaySunoSongIntro] Download completed for song: \(song.title)")
+                
+                // Log Firebase event for download success
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
+                    "song_id": song.id,
+                    "song_title": song.title,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
                 
                 // Validate file size before proceeding
                 let fileManager = FileManager.default

@@ -179,9 +179,9 @@ final class LocalStorageManager: ObservableObject {
     }
     
     func shouldGrantWeeklyCredits() -> Bool {
-        guard isPremiumUser else { 
+        guard isPremiumUser else {
             Logger.d("💎 Should not grant credits: user is not premium")
-            return false 
+            return false
         }
         
         let currentDate = Date()
@@ -260,7 +260,7 @@ final class LocalStorageManager: ObservableObject {
     func syncProfileIfNeeded() async {
         await ProfileSyncManager.shared.syncProfileIfNeeded()
     }
-
+    
     
     // MARK: - Profile Creation
     
@@ -314,11 +314,21 @@ final class LocalStorageManager: ObservableObject {
     
     /// Unified method to generate profile ID (persists across app reinstalls)
     private func generateProfileID() -> String {
+        // Lấy ngày hiện tại dạng ddMMyy
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "ddMMyy"
+        let dateString = dateFormatter.string(from: Date())
+        
+        // Tạo raw data để hash
         let deviceID = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
         let ts = Int(Date().timeIntervalSince1970)
         let rnd = Int.random(in: 1000...9999)
         let raw = "\(deviceID)_\(ts)_\(rnd)"
+        
+        // Hash base64
         let hash = raw.data(using: .utf8)?.base64EncodedString() ?? UUID().uuidString
-        return "user_\(hash.prefix(20))"
+        
+        // Trả về kết quả dạng user_ddMMyy_xxxxxxxx
+        return "user_\(dateString)_\(hash.prefix(10))"
     }
 }

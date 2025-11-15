@@ -151,6 +151,14 @@ struct GenerateSunoSongResultScreen: View {
 //                SubscriptionScreenIntro()
 //            }
         }
+        .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
+            Button("Upgrade to Premium", role: .none) {
+                showSubscriptionScreen = true
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("You can only export 1 song per day as a free user. Upgrade to Premium for unlimited exports.")
+        }
     }
     
     // MARK: - Header View
@@ -281,14 +289,32 @@ struct GenerateSunoSongResultScreen: View {
                                    }
                                },
                                onExport: {
-                                   // Check subscription first
-                                   if subscriptionManager.isPremium {
-                                       if let fileURL = downloadedFileURLs[song.id] {
-                                           currentFileURL = fileURL
-                                           showExportSheet = true
+                                   // Check export limit for free users
+                                   if !subscriptionManager.isPremium {
+                                       let userDefaults = UserDefaultsManager.shared
+                                       if !userDefaults.canExportSong() {
+                                           // Show alert that export limit reached
+                                           showPremiumAlert = true
+                                           return
                                        }
-                                   } else {
-                                       showSubscriptionScreen = true
+                                   }
+                                   
+                                   // Log Firebase event for export
+                                   FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_EXPORT_SONG, parameters: [
+                                       "song_id": song.id,
+                                       "song_title": song.title,
+                                       "is_premium": subscriptionManager.isPremium,
+                                       "timestamp": Date().timeIntervalSince1970
+                                   ])
+                                   
+                                   // Mark export as used for free users
+                                   if !subscriptionManager.isPremium {
+                                       UserDefaultsManager.shared.markExportUsed()
+                                   }
+                                   
+                                   if let fileURL = downloadedFileURLs[song.id] {
+                                       currentFileURL = fileURL
+                                       showExportSheet = true
                                    }
                                }
                            )
@@ -439,6 +465,13 @@ struct GenerateSunoSongResultScreen: View {
         Logger.d("📥 [SunoResult] Starting download for song: \(song.title)")
         Logger.d("📥 [SunoResult] Audio URL: \(song.audioUrl)")
         
+        // Log Firebase event for download request
+        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
+            "song_id": song.id,
+            "song_title": song.title,
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
         guard let url = URL(string: song.audioUrl) else { 
             Logger.e("❌ [SunoResult] Invalid URL for song: \(song.title)")
             return
@@ -465,6 +498,13 @@ struct GenerateSunoSongResultScreen: View {
             },
             onComplete: { fileURL in
                 Logger.d("✅ [SunoResult] Download completed for song: \(song.title)")
+                
+                // Log Firebase event for download success
+                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
+                    "song_id": song.id,
+                    "song_title": song.title,
+                    "timestamp": Date().timeIntervalSince1970
+                ])
                 
                 // Validate file size before proceeding
                 let fileManager = FileManager.default

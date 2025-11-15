@@ -175,6 +175,27 @@ struct IntroScreen: View {
     
     // MARK: - Actions
     private func handleContinue() {
+        // Log Firebase event for each step completion
+        switch currentStep {
+        case 1:
+            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_1, parameters: [
+                "mood": selectedMood?.displayName ?? "none",
+                "timestamp": Date().timeIntervalSince1970
+            ])
+        case 2:
+            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_2, parameters: [
+                "genre": selectedGenre?.displayName ?? "none",
+                "timestamp": Date().timeIntervalSince1970
+            ])
+        case 3:
+            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_3, parameters: [
+                "theme": selectedTheme?.displayName ?? "none",
+                "timestamp": Date().timeIntervalSince1970
+            ])
+        default:
+            break
+        }
+        
         if currentStep < 3 {
             withAnimation(.easeInOut(duration: 0.3)) {
                 currentStep += 1
