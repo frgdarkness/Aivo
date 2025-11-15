@@ -43,23 +43,41 @@ struct SubscriptionScreenIntro: View {
                 header
                 Spacer(minLength: 6)
                 
-                // Cover với play/pause button ở giữa
-                coverWithPlayButton
-                    .padding(.top, 2)
-                    .padding(.bottom, 20)
-                
-                if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
-                    // Active subscription view
-                    activeSubscriptionView(subscription: currentSub)
-                } else {
-                    // Purchase view
-                    purchaseView
+                // Scrollable content area
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Cover với play/pause button ở giữa
+                        coverWithPlayButton
+                            .padding(.top, 2)
+                            .padding(.bottom, 20)
+                        
+                        if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
+                            // Active subscription view
+                            activeSubscriptionView(subscription: currentSub)
+                        } else {
+                            // Purchase view
+                            purchaseView
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
                 
+                // Footer - Always visible at bottom (sticky)
                 footer
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+                    .background(
+                        // Subtle background để footer nổi bật hơn
+                        LinearGradient(
+                            colors: [
+                                Color.clear,
+                                AivoTheme.Primary.blackOrangeDark.opacity(0.95)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
@@ -211,7 +229,7 @@ struct SubscriptionScreenIntro: View {
                     // Background circle (mờ)
                     Circle()
                         .stroke(Color.white.opacity(0.2), lineWidth: 4)
-                        .frame(width: 220, height: 220)
+                        .frame(width: 200, height: 200)
                     
                     // Progress circle (màu cam)
                     Circle()
@@ -227,14 +245,14 @@ struct SubscriptionScreenIntro: View {
                             ),
                             style: StrokeStyle(lineWidth: 4, lineCap: .round)
                         )
-                        .frame(width: 220, height: 220)
+                        .frame(width: 200, height: 200)
                         .rotationEffect(.degrees(-90)) // Bắt đầu từ trên cùng
                     
                     // Cover tròn với rotation animation (luôn dùng cover_default_resize)
                     Image("cover_default_resize")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 200, height: 200)
+                        .frame(width: 190, height: 190)
                         .clipShape(Circle())
                         .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
                         // Use rotation3DEffect for better GPU performance
@@ -258,7 +276,7 @@ struct SubscriptionScreenIntro: View {
                 // Hiện loading indicator khi đang download
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                    .frame(width: 200, height: 200)
+                    .frame(width: 190, height: 190)
             }
             
             // Play/Pause button ở giữa cover (chỉ hiện khi không download)
@@ -403,7 +421,8 @@ struct SubscriptionScreenIntro: View {
                 .padding(.top, 18)
                 .padding(.bottom, 12)
             
-            //Spacer()
+            // Add minimum spacing to ensure footer is visible
+            Spacer(minLength: 20)
         }
     }
     
@@ -415,6 +434,8 @@ struct SubscriptionScreenIntro: View {
             planCards
             autoRenewalView
             ctaButton
+            // Add minimum spacing to ensure footer is visible
+            Spacer(minLength: 20)
         }
     }
     
@@ -502,7 +523,7 @@ struct SubscriptionScreenIntro: View {
             featureRow("Premium quality AI Song")
             featureRow("Unlimited export Song")
         }
-        .padding(.top, 20)
+        .padding(.top, 14)
     }
 
     private func featureRowWithHighlightedCredits(creditsAmount: Int) -> some View {
@@ -614,7 +635,7 @@ struct SubscriptionScreenIntro: View {
                     .opacity(0.6)
             }
         }
-        .padding(.top, 28)
+        .padding(.top, 20)
     }
 
     private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, per: String, isSelected: Bool, showTag: Bool, onTap: @escaping () -> Void) -> some View {
@@ -789,7 +810,7 @@ struct SubscriptionScreenIntro: View {
             )
         }
         .disabled(isPurchasing || subscriptionManager.isLoading)
-        .padding(.top, 18)
+        .padding(.top, 8)
         .onAppear {
             startPulseAnimation()
         }
@@ -877,18 +898,32 @@ struct SubscriptionScreenIntro: View {
     private var footer: some View {
         VStack(spacing: 8) {
             HStack(spacing: 12) {
-                Button("Terms of use") {
+                Button(action: {
                     openTermsUrl()
+                }) {
+                    Text("Terms of use")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .underline()
                 }
+                
                 Text("|")
-                Button("Privacy Policy") {
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+                
+                Button(action: {
                     openPrivacyPolicyUrl()
+                }) {
+                    Text("Privacy Policy")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .underline()
                 }
             }
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.white.opacity(0.7))
             .padding(.top, 10)
+            .padding(.bottom, 8)
         }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Open URL Methods

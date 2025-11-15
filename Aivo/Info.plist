@@ -18,12 +18,15 @@
 	<string>3d17a3e3a2fcf4fbac376d21d892a7db</string>
 	<key>FacebookDisplayName</key>
 	<string>Aivo</string>
+    
+    
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-6477278509727921~8016800436</string>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>Intent</string>
 	</array>
+    
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>

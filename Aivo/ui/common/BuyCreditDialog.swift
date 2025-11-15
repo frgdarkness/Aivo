@@ -7,6 +7,7 @@
 
 import SwiftUI
 import StoreKit
+import UIKit
 
 // MARK: - Buy Credit Dialog Modifier
 struct BuyCreditDialogModifier: ViewModifier {
@@ -189,6 +190,7 @@ private struct BuyCreditDialogCard: View {
     let onPurchase: () -> Void
     @ObservedObject var storeManager: CreditStoreManager
     @ObservedObject var creditManager: CreditManager
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
     
     private func autoSelect5000Package() {
         let packages = creditPackages
@@ -255,77 +257,84 @@ private struct BuyCreditDialogCard: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            // Header
-            HStack {
-                Text("Buy Credits")
-                    .font(.system(size: 26, weight: .heavy))
-                    .foregroundColor(.white)
-                    .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 2)
-                
-                Image("icon_coin")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white.opacity(0.7))
-                        .frame(width: 32, height: 32)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+        VStack(spacing: 0) {
+            // Main content
+            VStack(spacing: 20) {
+                // Header
+                HStack {
+                    Text("Buy Credits")
+                        .font(.system(size: 26, weight: .heavy))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.4), radius: 4, x: 0, y: 2)
+                    
+                    Image("icon_coin")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 24, height: 24)
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.white.opacity(0.7))
+                            .frame(width: 32, height: 32)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
                 }
+                .padding(.top, 8)
+                
+                // Credit Packages
+                if storeManager.isLoading {
+                    VStack(spacing: 14) {
+                        ForEach(0..<3, id: \.self) { _ in
+                            loadingPackageRow
+                        }
+                    }
+                } else {
+                    VStack(spacing: 14) {
+                        ForEach(Array(creditPackages.enumerated()), id: \.element.credits) { index, package in
+                            creditPackageRow(package: package, index: index)
+                        }
+                    }
+                }
+                
+                // Purchase Button
+                Button(action: onPurchase) {
+                    HStack {
+                        if isPurchasing {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        }
+                        Text(isPurchasing ? "Processing..." : "Purchase")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 14)
+                    .background(
+                        selectedPackageIndex != nil && !storeManager.isLoading
+                            ? LinearGradient(
+                                colors: [AivoTheme.Primary.orange, AivoTheme.Primary.orange.opacity(0.85)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                            : LinearGradient(
+                                colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.5)],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .disabled(selectedPackageIndex == nil || isPurchasing || storeManager.isLoading)
                 .buttonStyle(.plain)
             }
-            .padding(.top, 8)
             
-            // Credit Packages
-            if storeManager.isLoading {
-                VStack(spacing: 14) {
-                    ForEach(0..<3, id: \.self) { _ in
-                        loadingPackageRow
-                    }
-                }
-            } else {
-                VStack(spacing: 14) {
-                    ForEach(Array(creditPackages.enumerated()), id: \.element.credits) { index, package in
-                        creditPackageRow(package: package, index: index)
-                    }
-                }
-            }
-            
-            // Purchase Button
-            Button(action: onPurchase) {
-                HStack {
-                    if isPurchasing {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.8)
-                    }
-                    Text(isPurchasing ? "Processing..." : "Purchase")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(
-                    selectedPackageIndex != nil && !storeManager.isLoading
-                        ? LinearGradient(
-                            colors: [AivoTheme.Primary.orange, AivoTheme.Primary.orange.opacity(0.85)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                        : LinearGradient(
-                            colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.5)],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .disabled(selectedPackageIndex == nil || isPurchasing || storeManager.isLoading)
-            .buttonStyle(.plain)
+            // Footer - Terms of Use and Privacy Policy
+            footer
+                .padding(.top, 16)
         }
         .padding(20)
         .background(
@@ -379,6 +388,56 @@ private struct BuyCreditDialogCard: View {
                     autoSelect5000Package()
                 }
             }
+        }
+    }
+    
+    // MARK: - Footer
+    private var footer: some View {
+        VStack(spacing: 8) {
+            HStack(spacing: 12) {
+                Button(action: {
+                    openTermsUrl()
+                }) {
+                    Text("Terms of use")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .underline()
+                }
+                
+                Text("|")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(.white.opacity(0.5))
+                
+                Button(action: {
+                    openPrivacyPolicyUrl()
+                }) {
+                    Text("Privacy Policy")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                        .underline()
+                }
+            }
+            .padding(.bottom, 4)
+        }
+        .frame(maxWidth: .infinity)
+    }
+    
+    // MARK: - Open URL Methods
+    private func openTermsUrl() {
+        if let url = URL(string: remoteConfig.termsUrl) {
+            UIApplication.shared.open(url)
+            Logger.d("📱 [BuyCreditDialog] Opening Terms URL: \(remoteConfig.termsUrl)")
+        } else {
+            Logger.e("❌ [BuyCreditDialog] Invalid Terms URL: \(remoteConfig.termsUrl)")
+        }
+    }
+    
+    private func openPrivacyPolicyUrl() {
+        if let url = URL(string: remoteConfig.privacyPolicyUrl) {
+            UIApplication.shared.open(url)
+            Logger.d("📱 [BuyCreditDialog] Opening Privacy Policy URL: \(remoteConfig.privacyPolicyUrl)")
+        } else {
+            Logger.e("❌ [BuyCreditDialog] Invalid Privacy Policy URL: \(remoteConfig.privacyPolicyUrl)")
         }
     }
     
