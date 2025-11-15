@@ -151,6 +151,22 @@ class SunoAiMusicService: ObservableObject {
                 throw SunoError.httpError(httpResponse.statusCode)
             }
             
+            // ✅ CRITICAL: Check raw JSON for error message BEFORE decoding
+            // This prevents infinite retry loops when server returns error with artist name
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let responseData = json["data"] as? [String: Any],
+               let status = responseData["status"] as? String,
+               status == "SENSITIVE_WORD_ERROR" {
+                let errorMsg = (responseData["errorMessage"] as? String ?? "").lowercased()
+                print("❌ [SunoAI] Detected SENSITIVE_WORD_ERROR before decode: \(errorMsg)")
+                
+                // Check if error contains "artist name" - stop immediately
+                if errorMsg.contains("artist name") {
+                    print("❌ [SunoAI] Artist name detected in error message - stopping immediately")
+                    throw SunoError.artistNameNotAllowed
+                }
+            }
+            
             // Try to decode response with detailed error handling
             do {
                 let detailsResponse = try JSONDecoder().decode(SunoDetailsResponse.self, from: data)
@@ -355,6 +371,28 @@ class SunoAiMusicService: ObservableObject {
             } catch is CancellationError {
                 print("⚠️ [SunoAI] Task cancelled during polling")
                 throw CancellationError()
+            } catch let sunoError as SunoError {
+                // ✅ CRITICAL: Stop immediately for artist name error - no retry
+                if case .artistNameNotAllowed = sunoError {
+                    print("❌ [SunoAI] Artist name error detected - stopping polling immediately")
+                    throw sunoError
+                }
+                
+                // Check cancellation before handling other errors
+                if Task.isCancelled {
+                    print("⚠️ [SunoAI] Task cancelled, stopping polling")
+                    throw CancellationError()
+                }
+                
+                print("❌ [SunoAI] Polling attempt \(attempt) failed: \(sunoError)")
+                if attempt == maxRetries {
+                    print("❌ [SunoAI] All polling attempts failed")
+                    throw sunoError
+                }
+                // Wait before retry
+                print("⏳ [SunoAI] Continuing to next attempt...")
+                try Task.checkCancellation()
+                try await Task.sleep(nanoseconds: retryInterval)
             } catch {
                 // Check cancellation before handling error
                 if Task.isCancelled {

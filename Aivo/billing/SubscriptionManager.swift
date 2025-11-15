@@ -8,6 +8,7 @@
 import Foundation
 import StoreKit
 import Combine
+import FBSDKCoreKit
 
 @MainActor
 final class SubscriptionManager: ObservableObject {
@@ -157,6 +158,19 @@ final class SubscriptionManager: ObservableObject {
                 switch verification {
                 case .verified(let tx):
                     Logger.i("purchase: verified tx id=\(tx.id)")
+                    
+                    // ✅ Log purchase to Facebook App Events for conversion tracking
+                    let amount = Double(truncating: product.price as NSDecimalNumber)
+                    // Get currency from current locale or default to USD
+                    let currency = Locale.current.currencyCode ?? "USD"
+                    let period = ProductID(rawValue: product.id)?.period == .weekly ? "weekly" : "yearly"
+                    FacebookEventLogger.shared.logSubscriptionPurchase(
+                        amount: amount,
+                        currency: currency,
+                        productID: product.id,
+                        period: period
+                    )
+                    
                     await handleVerified(tx)
                     await checkBonusCreditForSubscription()
                 case .unverified(_, let err):

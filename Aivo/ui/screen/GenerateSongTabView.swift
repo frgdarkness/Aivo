@@ -34,6 +34,7 @@ struct GenerateSongTabView: View {
     @State private var generationTask: Task<Void, Never>?
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var showArtistNameAlert = false
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -133,6 +134,11 @@ struct GenerateSongTabView: View {
 //            } else {
 //                SubscriptionScreenIntro()
 //            }
+        }
+        .alert("Content Policy Violation", isPresented: $showArtistNameAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("This content violates our policy due to the use of an artist name. Please remove it and try again.")
         }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
@@ -481,7 +487,7 @@ struct GenerateSongTabView: View {
             VStack(spacing: 0) {
                 // Main container that looks like a button when collapsed
                 VStack(spacing: 0) {
-                    // Header - always visible
+                    // Header - always visible, full area clickable
                     Button(action: {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             isAdvancedExpanded.toggle()
@@ -502,6 +508,8 @@ struct GenerateSongTabView: View {
                                 .foregroundColor(.white)
                         }
                         .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     
@@ -876,15 +884,14 @@ struct GenerateSongTabView: View {
                     showGenerateSongScreen = false
                     
                     // Show specific error message based on error type
-                    let errorMessage: String
                     switch error {
                     case .artistNameNotAllowed:
-                        errorMessage = "⚠️ Artist names are not allowed!\n\nPlease remove artist names from your song description and try again.\n\nExample:\n❌ \"Create a song like Ed Sheeran\"\n✅ \"Create a romantic acoustic ballad\""
+                        // Show alert for artist name error (user requested alert, not toast)
+                        showArtistNameAlert = true
                     default:
-                        errorMessage = "Failed to generate songs: \(error.localizedDescription)"
+                        let errorMessage = "Failed to generate songs: \(error.localizedDescription)"
+                        showToastMessage(errorMessage)
                     }
-                    
-                    showToastMessage(errorMessage)
                 }
             } catch {
                 // Check cancellation before handling error
@@ -1054,6 +1061,16 @@ struct PaddedTextEditor: UIViewRepresentable {
         tv.autocapitalizationType = autocap
         tv.autocorrectionType = autocorrect ? .yes : .no
         tv.delegate = context.coordinator
+        
+        // Add toolbar with Done button
+        let toolbar = UIToolbar()
+        toolbar.sizeToFit()
+        let flexSpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let doneButton = UIBarButtonItem(title: "Done", style: .done, target: context.coordinator, action: #selector(Coordinator.dismissKeyboard))
+        doneButton.tintColor = .black
+        toolbar.items = [flexSpace, doneButton]
+        tv.inputAccessoryView = toolbar
+        
         return tv
     }
 
@@ -1075,6 +1092,9 @@ struct PaddedTextEditor: UIViewRepresentable {
         init(_ parent: PaddedTextEditor) { self.parent = parent }
         func textViewDidChange(_ textView: UITextView) {
             parent.text = textView.text ?? ""
+        }
+        @objc func dismissKeyboard() {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
 }

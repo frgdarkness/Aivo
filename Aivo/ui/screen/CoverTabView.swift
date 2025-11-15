@@ -48,6 +48,7 @@ struct CoverTabView: View {
     var body: some View {
         let _ = onAppear {
             // Log screen view
+            Logger.d("onAppear CoverTabView")
             FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_COVER)
             
             if availableModels.isEmpty {
@@ -168,6 +169,8 @@ struct CoverTabView: View {
             }
         )
         .onAppear {
+            Logger.d("onAppear CoverTabView")
+            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_COVER)
             if availableModels.isEmpty {
                 availableModels = CoverSongModel.loadModels()
                 Logger.i("📋 [CoverTab] Loaded \(availableModels.count) cover models")

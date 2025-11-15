@@ -8,6 +8,7 @@
 import Foundation
 import StoreKit
 import UIKit
+import FBSDKCoreKit
 
 @MainActor
 final class CreditStoreManager: ObservableObject {
@@ -210,6 +211,22 @@ final class CreditStoreManager: ObservableObject {
             
             await CreditManager.shared.increaseCredits(by: credits)
             Logger.i("creditsGranted: + \(credits) -> total=\(CreditManager.shared.credits)")
+            
+            // ✅ Log purchase to Facebook App Events for conversion tracking
+            if let product = products.first(where: { $0.id == productID }) {
+                let amount = Double(truncating: product.price as NSDecimalNumber)
+                // Get currency from current locale or default to USD
+                let currency = Locale.current.currencyCode ?? "USD"
+                FacebookEventLogger.shared.logPurchase(
+                    amount: amount,
+                    currency: currency,
+                    productID: productID,
+                    parameters: [
+                        "credits": credits,
+                        "product_name": product.displayName
+                    ]
+                )
+            }
             
             do {
                 try await ProfileSyncManager.shared.syncProfileToRemote()

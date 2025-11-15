@@ -47,6 +47,33 @@ struct SunoTaskDetails: Codable {
     let errorCode: String?
     let errorMessage: String?
     let createTime: Int64
+    
+    // Custom decoder to handle errorCode as either Int or String
+    enum CodingKeys: String, CodingKey {
+        case taskId, parentMusicId, param, response, status, type, operationType, errorMessage, createTime
+        case errorCode
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        taskId = try container.decode(String.self, forKey: .taskId)
+        parentMusicId = try container.decode(String.self, forKey: .parentMusicId)
+        param = try container.decode(String.self, forKey: .param)
+        response = try container.decodeIfPresent(SunoTaskResponse.self, forKey: .response)
+        status = try container.decode(SunoStatus.self, forKey: .status)
+        type = try container.decode(String.self, forKey: .type)
+        operationType = try container.decode(String.self, forKey: .operationType)
+        errorMessage = try container.decodeIfPresent(String.self, forKey: .errorMessage)
+        createTime = try container.decode(Int64.self, forKey: .createTime)
+        
+        // Handle errorCode as either Int or String
+        if let errorCodeInt = try? container.decode(Int.self, forKey: .errorCode) {
+            errorCode = String(errorCodeInt)
+        } else {
+            errorCode = try container.decodeIfPresent(String.self, forKey: .errorCode)
+        }
+    }
 }
 
 struct SunoTaskResponse: Codable {

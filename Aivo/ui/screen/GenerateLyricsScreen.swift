@@ -29,14 +29,18 @@ struct PromptInput: View {
                             .padding(12)
                     }
 
-                    TextField("", text: $text, axis: .vertical)
+                    TextField("", text: $text)
                         .textFieldStyle(.plain)
                         .font(.system(size: 16))
                         .foregroundColor(.white)
                         .padding(12)
                         .padding(.bottom, 28) // chừa chỗ cho counter
                         .background(bg)
-                        .lineLimit(minLines...maxLines)
+                        .lineLimit(1)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }
                         .onChange(of: text) { newValue in
                             if newValue.count > maxChars {
                                 text = String(newValue.prefix(maxChars))
@@ -44,17 +48,22 @@ struct PromptInput: View {
                         }
                 }
             } else {
-                // iOS 15 fallback: TextEditor + placeholder thủ công
+                // iOS 15 fallback: TextField (single line)
                 ZStack(alignment: .topLeading) {
-                    TextEditor(text: $text)
+                    TextField("", text: $text)
                         .font(.system(size: 16))
                         .foregroundColor(.white)
-                        .padding(8) // TextEditor có inset riêng
+                        .padding(8)
                         .frame(
                             minHeight: estimatedHeight(lines: minLines),
                             maxHeight: estimatedHeight(lines: maxLines)
                         )
                         .background(bg)
+                        .lineLimit(1)
+                        .submitLabel(.done)
+                        .onSubmit {
+                            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        }
                         .onChange(of: text) { newValue in
                             if newValue.count > maxChars {
                                 text = String(newValue.prefix(maxChars))

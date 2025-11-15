@@ -207,7 +207,7 @@ struct IntroScreen: View {
                                 return
                             }
                             
-                            try? await Task.sleep(nanoseconds: 4_000_000_000) // 5 seconds
+                            try? await Task.sleep(nanoseconds: 2_000_000_000) // 5 seconds
                             
                             // Check again after sleep
                             guard !Task.isCancelled else {

@@ -40,8 +40,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
               didFinishLaunchingWithOptions: launchOptions
             )
         
+        // ✅ CRITICAL: Activate Facebook App Events for conversion tracking
+        AppEvents.shared.activateApp()
+        
         if #available(iOS 14, *) {
-            ATTrackingManager.requestTrackingAuthorization { _ in }
+            ATTrackingManager.requestTrackingAuthorization { status in
+                // Update Facebook tracking based on ATT status
+                DispatchQueue.main.async {
+                    if status == .authorized {
+                        FBAdSettings.setAdvertiserTrackingEnabled(true)
+                    } else {
+                        FBAdSettings.setAdvertiserTrackingEnabled(false)
+                    }
+                }
+            }
         } else {
             FBAdSettings.setAdvertiserTrackingEnabled(true)
         }
@@ -77,6 +89,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Show app open ad when app becomes active
         //AppOpenAdManager.shared.showAdIfAvailable()
+        
+        // ✅ CRITICAL: Activate Facebook App Events when app becomes active
+        // This ensures Facebook can track app opens and conversions
+        AppEvents.shared.activateApp()
         
         // Reactivate audio session for background playback support
         MusicPlayer.shared.reactivateAudioSession()
