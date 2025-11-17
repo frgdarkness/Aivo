@@ -425,7 +425,7 @@ struct PlaySunoSongIntroScreen: View {
         Logger.d("📥 [PlaySunoSongIntro] Audio URL: \(song.audioUrl)")
         
         // Log Firebase event for download request
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
             "song_id": song.id,
             "song_title": song.title,
             "timestamp": Date().timeIntervalSince1970
@@ -459,7 +459,7 @@ struct PlaySunoSongIntroScreen: View {
                 Logger.d("✅ [PlaySunoSongIntro] Download completed for song: \(song.title)")
                 
                 // Log Firebase event for download success
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
                     "song_id": song.id,
                     "song_title": song.title,
                     "timestamp": Date().timeIntervalSince1970

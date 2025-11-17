@@ -171,6 +171,22 @@ final class SubscriptionManager: ObservableObject {
                         period: period
                     )
                     
+                    // ✅ Log subscription purchase to Firebase and AppsFlyer
+                    AnalyticsLogger.shared.logEventWithBundle("event_buy_subscription", parameters: [
+                        "product_id": product.id,
+                        "price": amount,
+                        "currency": currency,
+                        "period": period,
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
+                    
+                    // ✅ Also log to AppsFlyer as revenue event (for attribution)
+                    AppsFlyerLogger.shared.logSubscribe(
+                        productId: product.id,
+                        price: amount,
+                        currency: currency
+                    )
+                    
                     await handleVerified(tx)
                     await checkBonusCreditForSubscription()
                 case .unverified(_, let err):
@@ -207,6 +223,15 @@ final class SubscriptionManager: ObservableObject {
             try await AppStore.sync()
             await refreshStatus(forceSync: false)
             Logger.i("restorePurchases: success")
+            
+            // ✅ Log restore subscription to Firebase and AppsFlyer
+            if isPremium {
+                AnalyticsLogger.shared.logEventWithBundle("event_restore_subscription", parameters: [
+                    "product_id": currentSubscription?.productID ?? "unknown",
+                    "period": currentSubscription?.period.displayName ?? "unknown",
+                    "timestamp": Date().timeIntervalSince1970
+                ])
+            }
         } catch {
             errorMessage = "Restore failed: \(error.localizedDescription)"
             Logger.e("restorePurchases: error \(error.localizedDescription)")

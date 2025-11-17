@@ -40,15 +40,16 @@ class AppsFlyerLogger {
     ///   - screenName: Name of the screen being viewed
     ///   - screenClass: Class name of the screen (optional)
     func logScreenView(_ screenName: String, screenClass: String? = nil) {
-        var parameters: [String: Any] = [
-            "screen_name": screenName
-        ]
-        
-        if let screenClass = screenClass {
-            parameters["screen_class"] = screenClass
-        }
-        
-        logEventWithBundle("af_screen_view", parameters: parameters)
+        logEvent(screenName)
+//        var parameters: [String: Any] = [
+//            "screen_name": screenName
+//        ]
+//        
+//        if let screenClass = screenClass {
+//            parameters["screen_class"] = screenClass
+//        }
+//        
+//        logEventWithBundle("af_screen_view", parameters: parameters)
     }
     
     // MARK: - User Journey Tracking
@@ -125,32 +126,84 @@ class AppsFlyerLogger {
     
     // MARK: - Revenue Events (AppsFlyer Specific)
     
-    /// Log purchase event (in-app purchase)
+    /// Log purchase event (single item) - AppsFlyer Standard Format
     /// - Parameters:
     ///   - productId: Product identifier
     ///   - price: Price of the product
     ///   - currency: Currency code (e.g., "USD")
-    func logPurchase(productId: String, price: Double, currency: String) {
+    ///   - quantity: Quantity purchased (default: 1)
+    /// 
+    /// Format for single item: {"af_content_id": "123", "af_price": "25", "af_quantity": "1", "af_revenue": "25", "af_currency": "USD"}
+    func logPurchase(productId: String, price: Double, currency: String, quantity: Int = 1) {
+        // AppsFlyer standard format for single item purchase
+        // Reference: https://support.appsflyer.com/hc/en-us/articles/115005544169
+        let totalRevenue = price * Double(quantity)
+        
         logEventWithBundle(AFEventPurchase, parameters: [
-            AFEventParamContentId: productId,
-            AFEventParamRevenue: price,
-            AFEventParamCurrency: currency,
+            AFEventParamContentId: productId,           // Product ID (string)
+            AFEventParamPrice: String(price),           // Unit price (string for consistency)
+            AFEventParamQuantity: String(quantity),     // Quantity (string for consistency)
+            AFEventParamRevenue: String(totalRevenue),  // Total revenue (string)
+            AFEventParamCurrency: currency,             // Currency code
+            AFEventParamContentType: "product",         // Content type
+            "af_order_id": UUID().uuidString,          // Unique order ID
             "timestamp": Date().timeIntervalSince1970
         ])
+        
+        Logger.d("💰 AppsFlyer Purchase: product=\(productId), price=\(price), quantity=\(quantity), revenue=\(totalRevenue), currency=\(currency)")
     }
     
-    /// Log subscription event
+    /// Log subscription event (single item) - AppsFlyer Standard Format
     /// - Parameters:
     ///   - productId: Subscription product identifier
     ///   - price: Subscription price
     ///   - currency: Currency code
+    /// 
+    /// Format: {"af_content_id": "premium_weekly", "af_price": "9.99", "af_revenue": "9.99", "af_currency": "USD"}
     func logSubscribe(productId: String, price: Double, currency: String) {
+        // AppsFlyer standard format for single subscription
         logEventWithBundle(AFEventSubscribe, parameters: [
-            AFEventParamContentId: productId,
-            AFEventParamRevenue: price,
-            AFEventParamCurrency: currency,
+            AFEventParamContentId: productId,           // Subscription product ID (string)
+            AFEventParamPrice: String(price),           // Price (string)
+            AFEventParamRevenue: String(price),         // Revenue (string)
+            AFEventParamCurrency: currency,             // Currency code
+            AFEventParamContentType: "subscription",    // Content type
+            "af_subscription_id": UUID().uuidString,   // Unique subscription ID
             "timestamp": Date().timeIntervalSince1970
         ])
+        
+        Logger.d("💰 AppsFlyer Subscribe: product=\(productId), price=\(price), currency=\(currency)")
+    }
+    
+    /// Log purchase with multiple items (cart) - AppsFlyer Standard Format
+    /// - Parameters:
+    ///   - items: Array of purchase items (productId, price, quantity)
+    ///   - currency: Currency code (e.g., "USD")
+    func logPurchaseMultipleItems(items: [(productId: String, price: Double, quantity: Int)], currency: String) {
+        guard !items.isEmpty else { return }
+        
+        // Calculate total revenue
+        let totalRevenue = items.reduce(0.0) { $0 + ($1.price * Double($1.quantity)) }
+        
+        // Build arrays for each field
+        let contentIds = items.map { $0.productId }
+        let prices = items.map { String($0.price) }
+        let quantities = items.map { String($0.quantity) }
+        
+        // AppsFlyer standard format for multiple items
+        // Example: {"af_content_id": ["123","988","399"], "af_quantity": ["2","1","1"], "af_price": ["25","50","10"], "af_revenue": "110", "af_currency": "USD"}
+        logEventWithBundle(AFEventPurchase, parameters: [
+            AFEventParamContentId: contentIds,          // Array of product IDs
+            AFEventParamPrice: prices,                  // Array of unit prices
+            AFEventParamQuantity: quantities,           // Array of quantities
+            AFEventParamRevenue: totalRevenue,          // Total revenue
+            AFEventParamCurrency: currency,             // Currency code
+            AFEventParamContentType: "product",         // Content type
+            "af_order_id": UUID().uuidString,          // Unique order ID
+            "timestamp": Date().timeIntervalSince1970
+        ])
+        
+        Logger.d("💰 AppsFlyer Multi-Purchase: items=\(items.count), totalRevenue=\(totalRevenue), currency=\(currency)")
     }
     
     // MARK: - Custom Music App Events
@@ -302,6 +355,11 @@ extension AppsFlyerLogger {
     
     // Export Events
     static let EVENT_EXPORT_SONG = "export_song"
+    
+    // Purchase Events
+    static let EVENT_BUY_CREDIT = "event_buy_credit"
+    static let EVENT_BUY_SUBSCRIPTION = "event_buy_subscription"
+    static let EVENT_RESTORE_SUBSCRIPTION = "event_restore_subscription"
     
     // Error Events
     static let EVENT_ERROR = "error"

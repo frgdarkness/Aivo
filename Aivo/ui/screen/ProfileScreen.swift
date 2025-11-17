@@ -116,7 +116,7 @@ struct ProfileScreen: View {
         }
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_PROFILE)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_PROFILE)
             
             checkMailAvailability()
             editingUserName = userName

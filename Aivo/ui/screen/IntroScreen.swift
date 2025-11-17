@@ -33,8 +33,8 @@ struct IntroScreen: View {
             .padding(.top, 50)
         }
         .onAppear {
-            // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_INTRO)
+            // Log screen view to both Firebase and AppsFlyer
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_INTRO)
         }
         .fullScreenCover(isPresented: $showProcessing) {
             GenerateSongProcessingScreen(
@@ -175,20 +175,20 @@ struct IntroScreen: View {
     
     // MARK: - Actions
     private func handleContinue() {
-        // Log Firebase event for each step completion
+        // Log event for each step completion to both Firebase and AppsFlyer
         switch currentStep {
         case 1:
-            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_1, parameters: [
+            AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_INTRO_STEP_1, parameters: [
                 "mood": selectedMood?.displayName ?? "none",
                 "timestamp": Date().timeIntervalSince1970
             ])
         case 2:
-            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_2, parameters: [
+            AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_INTRO_STEP_2, parameters: [
                 "genre": selectedGenre?.displayName ?? "none",
                 "timestamp": Date().timeIntervalSince1970
             ])
         case 3:
-            FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_INTRO_STEP_3, parameters: [
+            AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_INTRO_STEP_3, parameters: [
                 "theme": selectedTheme?.displayName ?? "none",
                 "timestamp": Date().timeIntervalSince1970
             ])

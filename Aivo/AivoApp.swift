@@ -31,7 +31,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         AppOpenAdManager.shared.loadAd()
         
         // Log app start event to both Firebase and AppsFlyer
-        FirebaseLogger.shared.logAppStart()
+        AnalyticsLogger.shared.logAppStart()
         AppsFlyerLogger.shared.logAppStart()
         
         // 🔥 AppsFlyer Configuration
@@ -50,11 +50,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         
         // 📝 Log AppsFlyer configuration
         print("🔥 [AppsFlyer] Initialized with:")
-        print("🔥 [AppsFlyer] Dev Key: 2DJteu5ecJUiAFiBYaCf5Q")
-        print("🔥 [AppsFlyer] Apple App ID: 6754759511")
+//        print("🔥 [AppsFlyer] Dev Key: 2DJteu5ecJUiAFiBYaCf5Q")
+//        print("🔥 [AppsFlyer] Apple App ID: 6754759511")
         print("🔥 [AppsFlyer] Debug Mode: true")
         print("🔥 [AppsFlyer] Delegate: \(String(describing: AppsFlyerLib.shared().delegate))")
-        
+        printAppsFlyerId()
         NotificationCenter.default.addObserver(self, selector: NSSelectorFromString("sendLaunch"), name: UIApplication.didBecomeActiveNotification, object: nil)
         
         
@@ -108,6 +108,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         }
         
         return true
+    }
+    
+    func printAppsFlyerId() {
+        let afId = AppsFlyerLib.shared().getAppsFlyerUID()
+        Logger.d("🔥 AppsFlyer UID (Test Device): \(afId)")
+        let idfv = UIDevice.current.identifierForVendor?.uuidString
+        Logger.d("📱 IDFV: \(idfv ?? "nil")")
     }
     
     func applicationDidBecomeActive(_ application: UIApplication) {

@@ -206,6 +206,11 @@ extension FirebaseLogger {
     // Export Events
     static let EVENT_EXPORT_SONG = "event_export_song"
     
+    // Purchase Events
+    static let EVENT_BUY_CREDIT = "event_buy_credit"
+    static let EVENT_BUY_SUBSCRIPTION = "event_buy_subscription"
+    static let EVENT_RESTORE_SUBSCRIPTION = "event_restore_subscription"
+    
     // Error Events
     static let EVENT_ERROR = "event_error"
     static let EVENT_NETWORK_ERROR = "event_network_error"

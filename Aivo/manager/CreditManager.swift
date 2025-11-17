@@ -42,7 +42,7 @@ class CreditManager: ObservableObject {
         localStorage.setLastPremiumCreditGrantDate(Date())
         
         // Log event
-        FirebaseLogger.shared.logEventWithBundle("event_premium_weekly_credits_granted", parameters: [
+        AnalyticsLogger.shared.logEventWithBundle("event_premium_weekly_credits_granted", parameters: [
             "credits_granted": amount,
             "total_credits": credits,
             "source": "premium_subscription"
@@ -132,7 +132,7 @@ class CreditManager: ObservableObject {
     
 
         // Log credit increase
-        FirebaseLogger.shared.logEventWithBundle("event_credits_added", parameters: [
+        AnalyticsLogger.shared.logEventWithBundle("event_credits_added", parameters: [
             "credits_added": amount,
             "total_credits": credits,
             "source": "in_app_purchase"

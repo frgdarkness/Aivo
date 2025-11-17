@@ -831,7 +831,7 @@ struct PlayMySongScreen: View {
         }
         
         // Log Firebase event for export
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_EXPORT_SONG, parameters: [
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
             "song_id": song.id,
             "song_title": song.title,
             "is_premium": subscriptionManager.isPremium,

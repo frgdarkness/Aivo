@@ -163,7 +163,7 @@ struct GenerateLyricsScreen: View {
         )
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_GENERATE_LYRICS)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_GENERATE_LYRICS)
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionScreenIntro()
@@ -419,7 +419,7 @@ struct GenerateLyricsScreen: View {
         Logger.d("📝 [GenerateLyrics] Prompt: \(prompt)")
         
         // Log Firebase event
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_START, parameters: [
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_LYRICS_START, parameters: [
             "prompt_length": prompt.count,
             "timestamp": Date().timeIntervalSince1970
         ])
@@ -437,7 +437,7 @@ struct GenerateLyricsScreen: View {
                     showToastMessage("Lyrics generated successfully!")
                     
                     // Log Firebase success event
-                    FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_SUCCESS, parameters: [
+                    AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_LYRICS_SUCCESS, parameters: [
                         "results_count": results.count,
                         "timestamp": Date().timeIntervalSince1970
                     ])
@@ -454,7 +454,7 @@ struct GenerateLyricsScreen: View {
                 Logger.e("❌ [GenerateLyrics] Error: \(sunoError)")
                 
                 // Log Firebase failed event
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_LYRICS_FAILED, parameters: [
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_LYRICS_FAILED, parameters: [
                     "error_type": String(describing: type(of: sunoError)),
                     "error_message": sunoError.localizedDescription,
                     "timestamp": Date().timeIntervalSince1970

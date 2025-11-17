@@ -84,7 +84,7 @@ struct SubscriptionScreenIntro: View {
         .buyCreditDialog(isPresented: $showBuyCreditDialog)
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_SUBSCRIPTION_INTRO)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_SUBSCRIPTION_INTRO)
             
             Task {
                 await subscriptionManager.fetchProducts()

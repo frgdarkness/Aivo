@@ -129,7 +129,7 @@ struct AdminScreen: View {
         }
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_ADMIN)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_ADMIN)
         }
     }
 }

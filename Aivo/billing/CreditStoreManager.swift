@@ -22,13 +22,13 @@ final class CreditStoreManager: ObservableObject {
     // MARK: - Product IDs
     enum ProductIdentifier: String, CaseIterable {
         
-//        case credits500  = "APP_500_CREDITS_LOCAL"
-//        case credits1000 = "APP_1000_CREDITS_LOCAL"
-//        case credits5000 = "APP_5000_CREDITS_LOCAL"
+        case credits500  = "APP_500_CREDITS_LOCAL"
+        case credits1000 = "APP_1000_CREDITS_LOCAL"
+        case credits5000 = "APP_5000_CREDITS_LOCAL"
         
-        case credits500  = "AIVO_500_CREDITS"
-        case credits1000 = "AIVO_1000_CREDITS"
-        case credits5000 = "AIVO_5000_CREDITS"
+//        case credits500  = "AIVO_500_CREDITS"
+//        case credits1000 = "AIVO_1000_CREDITS"
+//        case credits5000 = "AIVO_5000_CREDITS"
 
         var credits: Int {
             switch self {

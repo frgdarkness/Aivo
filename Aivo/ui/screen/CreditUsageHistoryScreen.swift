@@ -46,7 +46,7 @@ struct CreditUsageHistoryScreen: View {
         }
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_CREDIT_HISTORY)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_CREDIT_HISTORY)
         }
     }
     

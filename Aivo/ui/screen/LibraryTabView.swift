@@ -32,7 +32,7 @@ struct LibraryTabView: View {
         }
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_LIBRARY)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_LIBRARY)
             
             loadDownloadedSongs()
         }

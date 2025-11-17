@@ -110,12 +110,21 @@ struct BuyCreditDialogModifier: ViewModifier {
         isPurchasing = true
         storeManager.purchaseProduct(product)
         
-        // Log Firebase event
-        FirebaseLogger.shared.logEventWithBundle("event_buy_credit", parameters: [
+        // Log to both Firebase and AppsFlyer
+        AnalyticsLogger.shared.logEventWithBundle("event_buy_credit", parameters: [
             "credits": package.credits,
             "price": package.price,
             "timestamp": Date().timeIntervalSince1970
         ])
+        
+        // Also log to AppsFlyer as revenue event (for attribution)
+        let amount = Double(package.price) ?? 0.0
+        let currency = Locale.current.currencyCode ?? "USD"
+        AppsFlyerLogger.shared.logPurchase(
+            productId: product.id,
+            price: amount,
+            currency: currency
+        )
     }
     
     private func getCreditPackages() -> [BuyCreditDialogPackage] {

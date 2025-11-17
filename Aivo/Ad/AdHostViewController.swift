@@ -31,7 +31,7 @@ final class AdHostViewController: UIViewController, FullScreenContentDelegate {
             ad.present(from: host) {
                 // userDidEarnRewardHandler – không cần làm gì ở đây
                 Logger.d("🎬 Reward ad presented")
-                FirebaseLogger.shared.logEvent("event_reward_ad_presented")
+                AnalyticsLogger.shared.logEvent("event_reward_ad_presented")
             }
         }
     }

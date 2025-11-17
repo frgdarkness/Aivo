@@ -116,7 +116,7 @@ struct BuyCreditScreen: View {
             }
             
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_BUY_CREDIT)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_BUY_CREDIT)
             // Auto select 5000 when available
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 let pkgs = creditPackages

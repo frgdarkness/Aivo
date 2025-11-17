@@ -60,7 +60,7 @@ struct SelectLanguageScreen: View {
             } else {
                 selectedLanguage = LanguageData.supportedLanguages.first
             }
-            //FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_LANGUAGE)
+            //AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_LANGUAGE)
         }
     }
 

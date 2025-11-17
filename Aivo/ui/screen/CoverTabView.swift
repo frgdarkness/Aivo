@@ -47,9 +47,9 @@ struct CoverTabView: View {
     
     var body: some View {
         let _ = onAppear {
-            // Log screen view
+            // Log screen view to both Firebase and AppsFlyer
             Logger.d("onAppear CoverTabView")
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_COVER)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_COVER)
             
             if availableModels.isEmpty {
                 availableModels = CoverSongModel.loadModels()
@@ -170,7 +170,7 @@ struct CoverTabView: View {
         )
         .onAppear {
             Logger.d("onAppear CoverTabView")
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_COVER)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_COVER)
             if availableModels.isEmpty {
                 availableModels = CoverSongModel.loadModels()
                 Logger.i("📋 [CoverTab] Loaded \(availableModels.count) cover models")
@@ -518,8 +518,8 @@ struct CoverTabView: View {
         Logger.d("🎤 [CoverTab] Selected Model: \(selectedModel?.displayName ?? "None")")
         Logger.d("🎤 [CoverTab] Model ID: \(selectedModel?.modelName ?? "default")")
         
-        // Log Firebase event
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_START, parameters: [
+        // Log event to both Firebase and AppsFlyer
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_START, parameters: [
             "source": selectedSource == .song ? "song" : "youtube",
             "model_id": selectedModel?.modelName ?? "default",
             "song_name": songName,
@@ -655,8 +655,8 @@ struct CoverTabView: View {
                     showProcessingScreen = false
                     
                     if let resultUrl = resultUrl {
-                        // Log Firebase success event
-                        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_SUCCESS, parameters: [
+                        // Log success event to both Firebase and AppsFlyer
+                        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_SUCCESS, parameters: [
                             "source": selectedSource == .song ? "song" : "youtube",
                             "model_id": coverModelID,
                             "timestamp": Date().timeIntervalSince1970
@@ -680,8 +680,8 @@ struct CoverTabView: View {
                             showPlaySongScreen = true
                         }
                     } else {
-                        // Log Firebase failed event
-                        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_FAILED, parameters: [
+                        // Log failed event to both Firebase and AppsFlyer
+                        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_FAILED, parameters: [
                             "error": "No result URL returned",
                             "timestamp": Date().timeIntervalSince1970
                         ])
@@ -705,8 +705,8 @@ struct CoverTabView: View {
                     return
                 }
                 
-                // Log Firebase failed event
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_COVER_FAILED, parameters: [
+                // Log failed event to both Firebase and AppsFlyer
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_FAILED, parameters: [
                     "error_type": String(describing: type(of: error)),
                     "error_message": error.localizedDescription,
                     "timestamp": Date().timeIntervalSince1970

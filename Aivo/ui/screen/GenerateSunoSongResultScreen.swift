@@ -77,7 +77,7 @@ struct GenerateSunoSongResultScreen: View {
         }
         .onAppear {
             // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_PLAY_SONG)
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_PLAY_SONG)
             
             Logger.d("🎵 [SunoResult] Screen appeared with \(sunoDataList.count) songs")
             
@@ -300,7 +300,7 @@ struct GenerateSunoSongResultScreen: View {
                                    }
                                    
                                    // Log Firebase event for export
-                                   FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_EXPORT_SONG, parameters: [
+                                   AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
                                        "song_id": song.id,
                                        "song_title": song.title,
                                        "is_premium": subscriptionManager.isPremium,
@@ -466,7 +466,7 @@ struct GenerateSunoSongResultScreen: View {
         Logger.d("📥 [SunoResult] Audio URL: \(song.audioUrl)")
         
         // Log Firebase event for download request
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_DOWNLOAD_SONG_REQUEST, parameters: [
             "song_id": song.id,
             "song_title": song.title,
             "timestamp": Date().timeIntervalSince1970
@@ -500,7 +500,7 @@ struct GenerateSunoSongResultScreen: View {
                 Logger.d("✅ [SunoResult] Download completed for song: \(song.title)")
                 
                 // Log Firebase event for download success
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_DOWNLOAD_SONG_SUCCESS, parameters: [
                     "song_id": song.id,
                     "song_title": song.title,
                     "timestamp": Date().timeIntervalSince1970
