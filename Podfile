@@ -25,6 +25,9 @@ target 'Aivo' do
   pod 'FBSDKLoginKit'
   pod 'FBSDKShareKit'
   pod 'FBAudienceNetwork'
+  
+  # Appsflyer SDK
+  pod 'AppsFlyerFramework'
 
   target 'AivoTests' do
     inherit! :search_paths

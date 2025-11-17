@@ -321,7 +321,7 @@ struct GenerateSongProcessingScreen: View {
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
             
-            Text("(2-3 Min)")
+            Text("(2-5 Min)")
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(.white.opacity(0.8))
         }

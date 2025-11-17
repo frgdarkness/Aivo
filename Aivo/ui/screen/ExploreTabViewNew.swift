@@ -231,12 +231,16 @@ struct ExploreTabViewNew: View {
     // MARK: - Filter Songs by Genre
     private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
         let genreName = genre.rawValue.lowercased()
-        return Array(remoteConfig.allSongsList
-            .filter { song in
-                // Check if song tags contain genre name
-                song.tags.lowercased().contains(genreName)
-            }
-            .prefix(10))
+        var filteredSongs = remoteConfig.allSongsList.filter { song in
+            // Check if song tags contain genre name
+            song.tags.lowercased().contains(genreName)
+        }
+        
+        // Shuffle the filtered list
+        filteredSongs.shuffle()
+        
+        // Take first 10 items
+        return Array(filteredSongs.prefix(10))
     }
 }
 

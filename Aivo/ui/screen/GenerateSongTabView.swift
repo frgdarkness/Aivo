@@ -35,6 +35,7 @@ struct GenerateSongTabView: View {
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
     @State private var showArtistNameAlert = false
+    @State private var selectedLanguage: String = "English"
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -347,6 +348,31 @@ struct GenerateSongTabView: View {
                         }
                     }
                     .frame(height: editorHeight)
+                }
+                
+                // Language Selection (only for description mode)
+                if selectedInputType == .description {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Language")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white)
+                        
+                        TextField("Enter language (e.g., English, Vietnamese, Spanish)", text: $selectedLanguage)
+                            .font(.system(size: 14))
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.black.opacity(0.30))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(AivoTheme.Primary.orange.opacity(0.30), lineWidth: 1)
+                                    )
+                            )
+                    }
+                    .padding(.top, 2)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .animation(.easeInOut(duration: 0.3), value: selectedInputType)
                 }
             }
         }
@@ -977,6 +1003,11 @@ struct GenerateSongTabView: View {
             
             if !songDescription.isEmpty {
                 prompt += songDescription
+            }
+            
+            // Add language specification for description mode
+            if !selectedLanguage.isEmpty {
+                prompt += "\nNote: Generate the song in \(selectedLanguage) language."
             }
         }
         
