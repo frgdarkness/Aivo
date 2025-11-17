@@ -2,31 +2,38 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    
+	<key>AppsFlyerDevKey</key>
+	<string>2DJteu5ecJUiAFiBYaCf5Q</string>
+	<key>APPSFLYER_DEV_KEY</key>
+	<string>2DJteu5ecJUiAFiBYaCf5Q</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.aivo.songai</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>appsflyerapp</string>
 				<string>fb1714090055938138</string>
 			</array>
 		</dict>
 	</array>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This identifier will be used to deliver personalized ads to you.</string>
 	<key>FacebookAppID</key>
 	<string>1714090055938138</string>
 	<key>FacebookClientToken</key>
 	<string>3d17a3e3a2fcf4fbac376d21d892a7db</string>
 	<key>FacebookDisplayName</key>
 	<string>Aivo</string>
-    
-    
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-6477278509727921~8016800436</string>
 	<key>INIntentsSupported</key>
 	<array>
 		<string>Intent</string>
 	</array>
-    
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>

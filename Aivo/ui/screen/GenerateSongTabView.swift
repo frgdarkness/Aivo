@@ -70,8 +70,8 @@ struct GenerateSongTabView: View {
             .padding(.bottom, 100) // Space for bottom navigation
         }
         .onAppear {
-            // Log screen view
-            FirebaseLogger.shared.logScreenView(FirebaseLogger.EVENT_SCREEN_GENERATE_SONG)
+            // Log screen view to both Firebase and AppsFlyer
+            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_GENERATE_SONG)
         }
         .fullScreenCover(isPresented: $showMultiMoodScreen) {
             SelectMultiMoodScreen(
@@ -777,8 +777,8 @@ struct GenerateSongTabView: View {
         print("🎵 [GenerateSong] Vocal gender: \(selectedVocalGender.rawValue)")
         print("🎵 [GenerateSong] Model: \(selectedModel.rawValue)")
         
-        // Log Firebase event
-        FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_START, parameters: [
+        // Log to both Firebase and AppsFlyer
+        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_START, parameters: [
             "input_type": selectedInputType.rawValue,
             "has_song_name": !songName.isEmpty,
             "is_instrumental": isInstrumental,
@@ -857,8 +857,8 @@ struct GenerateSongTabView: View {
                     // Close processing screen
                     showGenerateSongScreen = false
                     
-                    // Log Firebase success event
-                    FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_SUCCESS, parameters: [
+                    // Log success event to both Firebase and AppsFlyer
+                    AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_SUCCESS, parameters: [
                         "songs_count": generatedSongs.count,
                         "model": selectedModel.rawValue,
                         "timestamp": Date().timeIntervalSince1970
@@ -898,8 +898,8 @@ struct GenerateSongTabView: View {
                     return
                 }
                 
-                // Log Firebase failed event
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_FAILED, parameters: [
+                // Log failed event to both Firebase and AppsFlyer
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_FAILED, parameters: [
                     "error_type": String(describing: type(of: error)),
                     "error_message": error.localizedDescription,
                     "timestamp": Date().timeIntervalSince1970
@@ -929,8 +929,8 @@ struct GenerateSongTabView: View {
                     return
                 }
                 
-                // Log Firebase failed event
-                FirebaseLogger.shared.logEventWithBundle(FirebaseLogger.EVENT_GENERATE_SONG_FAILED, parameters: [
+                // Log failed event to both Firebase and AppsFlyer
+                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_FAILED, parameters: [
                     "error_type": String(describing: type(of: error)),
                     "error_message": error.localizedDescription,
                     "timestamp": Date().timeIntervalSince1970

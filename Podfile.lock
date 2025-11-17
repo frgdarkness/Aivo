@@ -4,6 +4,9 @@ PODS:
     - GoogleUtilities/Environment (~> 8.0)
     - GoogleUtilities/UserDefaults (~> 8.0)
     - PromisesObjC (~> 2.4)
+  - AppsFlyerFramework (6.17.7):
+    - AppsFlyerFramework/Main (= 6.17.7)
+  - AppsFlyerFramework/Main (6.17.7)
   - FBAEMKit (18.0.1):
     - FBSDKCoreKit_Basics (= 18.0.1)
   - FBAudienceNetwork (6.20.1)
@@ -184,6 +187,7 @@ PODS:
 
 DEPENDENCIES:
   - Alamofire (~> 5.9)
+  - AppsFlyerFramework
   - FBAudienceNetwork
   - FBSDKCoreKit
   - FBSDKLoginKit
@@ -204,6 +208,7 @@ SPEC REPOS:
   trunk:
     - Alamofire
     - AppCheckCore
+    - AppsFlyerFramework
     - FBAEMKit
     - FBAudienceNetwork
     - FBSDKCoreKit
@@ -244,6 +249,7 @@ SPEC REPOS:
 SPEC CHECKSUMS:
   Alamofire: 7193b3b92c74a07f85569e1a6c4f4237291e7496
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
+  AppsFlyerFramework: ae7caf1688348f2d7a742037bd4fc6966d39d362
   FBAEMKit: b2ed182002dbcb65d5a60059c9693d322186cd00
   FBAudienceNetwork: 08e86d63a05b3a5a59414af12e4af8d756943c80
   FBSDKCoreKit: 7f96852f2539bdb88ba8d47e5ab4ae70a6f8d691
@@ -281,6 +287,6 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
 
-PODFILE CHECKSUM: a43ceebde6eb09b7109dc6cb0f22cd9adbe30213
+PODFILE CHECKSUM: 5a2e0bc97a32f7dbd95f5704df5e78e143dc6d73
 
 COCOAPODS: 1.16.2
