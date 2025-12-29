@@ -7,6 +7,7 @@
 
 import Foundation
 import AppsFlyerLib
+import StoreKit
 
 class AppsFlyerLogger {
     static let shared = AppsFlyerLogger()
@@ -54,9 +55,34 @@ class AppsFlyerLogger {
     
     // MARK: - User Journey Tracking
     
-    /// Log app start event
+    /// Log app start event (every time app starts)
     func logAppStart() {
-        logEvent("app_start")
+        logEvent("event_start_app")
+    }
+    
+    /// Log first start event (only once after install)
+    /// - Note: This is tracked using UserDefaults to ensure it only fires once
+    func logFirstStart() {
+        let userDefaultsKey = "AIVO_HAS_LOGGED_FIRST_START"
+        
+        // Check if we've already logged first start
+        if UserDefaults.standard.bool(forKey: userDefaultsKey) {
+            Logger.d("🔥 AppsFlyer: First start already logged, skipping")
+            return
+        }
+        
+        // Log first start event
+        logEventWithBundle("event_first_start", parameters: [
+            "timestamp": Date().timeIntervalSince1970,
+            "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+            "build_number": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        ])
+        
+        // Mark as logged
+        UserDefaults.standard.set(true, forKey: userDefaultsKey)
+        UserDefaults.standard.synchronize()
+        
+        Logger.i("🔥 AppsFlyer: First start logged successfully")
     }
     
     /// Log app background event
@@ -126,53 +152,61 @@ class AppsFlyerLogger {
     
     // MARK: - Revenue Events (AppsFlyer Specific)
     
-    /// Log purchase event (single item) - AppsFlyer Standard Format
+    /// Log purchase event from StoreKit Product - AppsFlyer Standard Format
     /// - Parameters:
-    ///   - productId: Product identifier
-    ///   - price: Price of the product
-    ///   - currency: Currency code (e.g., "USD")
+    ///   - product: StoreKit Product object
     ///   - quantity: Quantity purchased (default: 1)
     /// 
     /// Format for single item: {"af_content_id": "123", "af_price": "25", "af_quantity": "1", "af_revenue": "25", "af_currency": "USD"}
-    func logPurchase(productId: String, price: Double, currency: String, quantity: Int = 1) {
+    func logPurchase(product: Product, quantity: Int = 1) {
+        // Get price and currency directly from Product
+        let price = product.price // Decimal
+        let currency = product.priceFormatStyle.currencyCode ?? "USD"
+        
+        // Convert Decimal to Double (AppsFlyer requires Double)
+        let priceDouble = NSDecimalNumber(decimal: price).doubleValue
+        let totalRevenue = priceDouble * Double(quantity)
+        
         // AppsFlyer standard format for single item purchase
         // Reference: https://support.appsflyer.com/hc/en-us/articles/115005544169
-        let totalRevenue = price * Double(quantity)
-        
         logEventWithBundle(AFEventPurchase, parameters: [
-            AFEventParamContentId: productId,           // Product ID (string)
-            AFEventParamPrice: String(price),           // Unit price (string for consistency)
-            AFEventParamQuantity: String(quantity),     // Quantity (string for consistency)
-            AFEventParamRevenue: String(totalRevenue),  // Total revenue (string)
-            AFEventParamCurrency: currency,             // Currency code
-            AFEventParamContentType: "product",         // Content type
-            "af_order_id": UUID().uuidString,          // Unique order ID
+            AFEventParamContentId: product.id,              // Product ID (string)
+            AFEventParamPrice: String(priceDouble),         // Unit price (string for consistency)
+            AFEventParamQuantity: String(quantity),         // Quantity (string for consistency)
+            AFEventParamRevenue: String(totalRevenue),      // Total revenue (string)
+            AFEventParamCurrency: currency,                 // Currency code
+            AFEventParamContentType: "product",             // Content type
+            "af_order_id": UUID().uuidString,              // Unique order ID
             "timestamp": Date().timeIntervalSince1970
         ])
         
-        Logger.d("💰 AppsFlyer Purchase: product=\(productId), price=\(price), quantity=\(quantity), revenue=\(totalRevenue), currency=\(currency)")
+        Logger.d("💰 AppsFlyer Purchase: product=\(product.id), price=\(priceDouble), quantity=\(quantity), revenue=\(totalRevenue), currency=\(currency)")
     }
     
-    /// Log subscription event (single item) - AppsFlyer Standard Format
-    /// - Parameters:
-    ///   - productId: Subscription product identifier
-    ///   - price: Subscription price
-    ///   - currency: Currency code
+    /// Log subscription event from StoreKit Product - AppsFlyer Standard Format
+    /// - Parameter product: StoreKit Product object
     /// 
     /// Format: {"af_content_id": "premium_weekly", "af_price": "9.99", "af_revenue": "9.99", "af_currency": "USD"}
-    func logSubscribe(productId: String, price: Double, currency: String) {
+    func logSubscribe(product: Product) {
+        // Get price and currency directly from Product
+        let price = product.price // Decimal
+        let currency = product.priceFormatStyle.currencyCode ?? "USD"
+        
+        // Convert Decimal to Double (AppsFlyer requires Double)
+        let priceDouble = NSDecimalNumber(decimal: price).doubleValue
+        
         // AppsFlyer standard format for single subscription
         logEventWithBundle(AFEventSubscribe, parameters: [
-            AFEventParamContentId: productId,           // Subscription product ID (string)
-            AFEventParamPrice: String(price),           // Price (string)
-            AFEventParamRevenue: String(price),         // Revenue (string)
-            AFEventParamCurrency: currency,             // Currency code
-            AFEventParamContentType: "subscription",    // Content type
-            "af_subscription_id": UUID().uuidString,   // Unique subscription ID
+            AFEventParamContentId: product.id,              // Subscription product ID (string)
+            AFEventParamPrice: String(priceDouble),         // Price (string)
+            AFEventParamRevenue: String(priceDouble),       // Revenue (string)
+            AFEventParamCurrency: currency,                 // Currency code
+            AFEventParamContentType: "subscription",        // Content type
+            "af_subscription_id": UUID().uuidString,       // Unique subscription ID
             "timestamp": Date().timeIntervalSince1970
         ])
         
-        Logger.d("💰 AppsFlyer Subscribe: product=\(productId), price=\(price), currency=\(currency)")
+        Logger.d("💰 AppsFlyer Subscribe: product=\(product.id), price=\(priceDouble), currency=\(currency)")
     }
     
     /// Log purchase with multiple items (cart) - AppsFlyer Standard Format
@@ -279,7 +313,9 @@ class AppsFlyerLogger {
 extension AppsFlyerLogger {
     
     // App Events
-    static let EVENT_APP_START = "app_start"
+    static let EVENT_FIRST_START = "event_first_start"
+    static let EVENT_START_APP = "event_start_app"
+    static let EVENT_APP_START = "event_start_app" // Alias for backward compatibility
     static let EVENT_APP_BACKGROUND = "app_background"
     static let EVENT_APP_FOREGROUND = "app_foreground"
     

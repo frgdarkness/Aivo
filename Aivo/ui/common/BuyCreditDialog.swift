@@ -8,6 +8,7 @@
 import SwiftUI
 import StoreKit
 import UIKit
+import AppsFlyerLib
 
 // MARK: - Buy Credit Dialog Modifier
 struct BuyCreditDialogModifier: ViewModifier {
@@ -118,13 +119,8 @@ struct BuyCreditDialogModifier: ViewModifier {
         ])
         
         // Also log to AppsFlyer as revenue event (for attribution)
-        let amount = Double(package.price) ?? 0.0
-        let currency = Locale.current.currencyCode ?? "USD"
-        AppsFlyerLogger.shared.logPurchase(
-            productId: product.id,
-            price: amount,
-            currency: currency
-        )
+        // Pass Product directly for accurate price and currency
+        AppsFlyerLogger.shared.logPurchase(product: product, quantity: 1)
     }
     
     private func getCreditPackages() -> [BuyCreditDialogPackage] {

@@ -159,11 +159,13 @@ final class SubscriptionManager: ObservableObject {
                 case .verified(let tx):
                     Logger.i("purchase: verified tx id=\(tx.id)")
                     
-                    // ✅ Log purchase to Facebook App Events for conversion tracking
-                    let amount = Double(truncating: product.price as NSDecimalNumber)
-                    // Get currency from current locale or default to USD
-                    let currency = Locale.current.currencyCode ?? "USD"
+                    // Get price and currency directly from Product (accurate)
+                    let price = product.price // Decimal
+                    let currency = product.priceFormatStyle.currencyCode ?? "USD"
+                    let amount = NSDecimalNumber(decimal: price).doubleValue
                     let period = ProductID(rawValue: product.id)?.period == .weekly ? "weekly" : "yearly"
+                    
+                    // ✅ Log purchase to Facebook App Events for conversion tracking
                     FacebookEventLogger.shared.logSubscriptionPurchase(
                         amount: amount,
                         currency: currency,
@@ -181,11 +183,8 @@ final class SubscriptionManager: ObservableObject {
                     ])
                     
                     // ✅ Also log to AppsFlyer as revenue event (for attribution)
-                    AppsFlyerLogger.shared.logSubscribe(
-                        productId: product.id,
-                        price: amount,
-                        currency: currency
-                    )
+                    // Pass Product directly for accurate price and currency
+                    AppsFlyerLogger.shared.logSubscribe(product: product)
                     
                     await handleVerified(tx)
                     await checkBonusCreditForSubscription()

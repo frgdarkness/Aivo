@@ -54,9 +54,34 @@ class FirebaseLogger {
     
     // MARK: - User Journey Tracking
     
-    /// Log app start event
+    /// Log app start event (every time app starts)
     func logAppStart() {
-        logEvent("startApp")
+        logEvent("event_start_app")
+    }
+    
+    /// Log first start event (only once after install)
+    /// - Note: This is tracked using UserDefaults to ensure it only fires once
+    func logFirstStart() {
+        let userDefaultsKey = "AIVO_HAS_LOGGED_FIRST_START_FIREBASE"
+        
+        // Check if we've already logged first start
+        if UserDefaults.standard.bool(forKey: userDefaultsKey) {
+            Logger.d("📊 Firebase: First start already logged, skipping")
+            return
+        }
+        
+        // Log first start event
+        logEventWithBundle("event_first_start", parameters: [
+            "timestamp": Date().timeIntervalSince1970,
+            "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown",
+            "build_number": Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "unknown"
+        ])
+        
+        // Mark as logged
+        UserDefaults.standard.set(true, forKey: userDefaultsKey)
+        UserDefaults.standard.synchronize()
+        
+        Logger.i("📊 Firebase: First start logged successfully")
     }
     
     /// Log app background event
@@ -129,7 +154,9 @@ class FirebaseLogger {
 extension FirebaseLogger {
     
     // App Events
-    static let EVENT_APP_START = "startApp"
+    static let EVENT_FIRST_START = "event_first_start"
+    static let EVENT_START_APP = "event_start_app"
+    static let EVENT_APP_START = "event_start_app" // Alias for backward compatibility
     static let EVENT_APP_BACKGROUND = "app_background"
     static let EVENT_APP_FOREGROUND = "app_foreground"
     

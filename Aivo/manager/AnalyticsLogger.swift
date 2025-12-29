@@ -45,10 +45,16 @@ class AnalyticsLogger {
     
     // MARK: - User Journey Tracking
     
-    /// Log app start event to both platforms
+    /// Log app start event to both platforms (every time app starts)
     func logAppStart() {
         FirebaseLogger.shared.logAppStart()
         AppsFlyerLogger.shared.logAppStart()
+    }
+    
+    /// Log first start event to both platforms (only once after install)
+    func logFirstStart() {
+        FirebaseLogger.shared.logFirstStart()
+        AppsFlyerLogger.shared.logFirstStart()
     }
     
     /// Log app background event to both platforms

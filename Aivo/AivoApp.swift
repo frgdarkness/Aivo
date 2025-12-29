@@ -30,9 +30,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         // Load app open ad after SDK initialization
         AppOpenAdManager.shared.loadAd()
         
-        // Log app start event to both Firebase and AppsFlyer
+        // 🎯 Log first start event (only once after install)
+        AnalyticsLogger.shared.logFirstStart()
+        
+        // 📊 Log app start event (every time app starts)
         AnalyticsLogger.shared.logAppStart()
-        AppsFlyerLogger.shared.logAppStart()
         
         // 🔥 AppsFlyer Configuration
         AppsFlyerLib.shared().appsFlyerDevKey = "2DJteu5ecJUiAFiBYaCf5Q"

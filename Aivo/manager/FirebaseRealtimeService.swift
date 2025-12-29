@@ -67,7 +67,7 @@ final class FirebaseRealtimeService: ObservableObject {
 
         let path = userProfilePath(profileID)
         return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<UserProfile, Error>) in
-            dbRef.child(path).observeSingleEvent(of: .value) { snap in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snap in
                 guard let value = snap.value else {
                     cont.resume(throwing: FirebaseError.profileNotFound)
                     return
@@ -86,7 +86,10 @@ final class FirebaseRealtimeService: ObservableObject {
                 } catch {
                     cont.resume(throwing: FirebaseError.invalidData)
                 }
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error getting profile: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
 
@@ -140,7 +143,7 @@ final class FirebaseRealtimeService: ObservableObject {
 
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
             // 📍 Bước 1: Kiểm tra xem profile có tồn tại trên Firebase chưa
-            dbRef.child(path).observeSingleEvent(of: .value) { snapshot in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snapshot in
                 if snapshot.exists() {
                     // ✅ Nếu tồn tại -> update
                     self.dbRef.child(path).updateChildValues(json) { err, _ in
@@ -164,7 +167,10 @@ final class FirebaseRealtimeService: ObservableObject {
                         }
                     }
                 }
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error updating profile: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
 
@@ -216,7 +222,7 @@ final class FirebaseRealtimeService: ObservableObject {
         let path = userSubscriptionsRoot(profileID)
         
         return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<[SubscriptionInfo], Error>) in
-            dbRef.child(path).observeSingleEvent(of: .value) { snapshot in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snapshot in
                 guard let value = snapshot.value as? [String: [String: Any]] else {
                     Logger.d("📭 No subscriptions found for profile: \(profileID)")
                     cont.resume(returning: [])
@@ -236,7 +242,10 @@ final class FirebaseRealtimeService: ObservableObject {
                 
                 Logger.d("✅ Found \(subscriptions.count) subscriptions for profile: \(profileID)")
                 cont.resume(returning: subscriptions)
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error getting subscriptions: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
     
@@ -246,7 +255,7 @@ final class FirebaseRealtimeService: ObservableObject {
         let path = userProfilePath(profileID)
 
         return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Bool, Error>) in
-            dbRef.child(path).observeSingleEvent(of: .value) { snapshot in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snapshot in
                 if snapshot.exists() {
                     Logger.d("✅ Profile exists: \(profileID)")
                     cont.resume(returning: true)
@@ -254,7 +263,10 @@ final class FirebaseRealtimeService: ObservableObject {
                     Logger.d("❌ Profile does not exist: \(profileID)")
                     cont.resume(returning: false)
                 }
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error checking profile: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
 
@@ -264,7 +276,7 @@ final class FirebaseRealtimeService: ObservableObject {
 
         let root = userPurchasesRoot(profileID)
         return try await withCheckedThrowingContinuation { cont in
-            dbRef.child(root).observeSingleEvent(of: .value) { snap in
+            dbRef.child(root).observeSingleEvent(of: .value, with: { snap in
                 guard let map = snap.value as? [String: Any] else {
                     cont.resume(returning: []); return
                 }
@@ -275,7 +287,10 @@ final class FirebaseRealtimeService: ObservableObject {
                 } catch {
                     cont.resume(throwing: FirebaseError.invalidData)
                 }
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error getting purchases: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
 
@@ -285,7 +300,7 @@ final class FirebaseRealtimeService: ObservableObject {
 
         let path = purchasePath(profileID, purchaseID)
         return try await withCheckedThrowingContinuation { cont in
-            dbRef.child(path).observeSingleEvent(of: .value) { snap in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snap in
                 guard let value = snap.value else {
                     cont.resume(throwing: FirebaseError.purchaseNotFound); return
                 }
@@ -296,7 +311,10 @@ final class FirebaseRealtimeService: ObservableObject {
                 } catch {
                     cont.resume(throwing: FirebaseError.invalidData)
                 }
-            }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error getting purchase: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
         }
     }
 
