@@ -29,6 +29,7 @@ struct PlayMySongScreen: View {
     @State private var showDeleteAlert = false
     @State private var rotationAngle: Double = 0
     @State private var headerHeight: CGFloat = 0   // <- chiều cao header
+    @State private var showAddToPlaylistSheet = false
     @State private var showEditSheet = false
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
@@ -86,6 +87,11 @@ struct PlayMySongScreen: View {
             }
         }
         .sheet(isPresented: $showPlaylist) { playlistView }
+        .sheet(isPresented: $showAddToPlaylistSheet) {
+            if let song = currentSong {
+                AddToPlaylistSheet(song: song)
+            }
+        }
         .sheet(isPresented: $showExportSheet) {
             if let url = currentFileURL { DocumentExporter(fileURL: url) }
         }
@@ -287,6 +293,27 @@ struct PlayMySongScreen: View {
                 .padding(.vertical, 12)
             }
 
+            Divider().background(Color.white.opacity(0.2))
+
+            Button {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showAddToPlaylistSheet = true
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus.square.on.square").font(.system(size: 16))
+                    Text("Add to Playlist")
+                        .font(.system(size: 16, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            
             Divider().background(Color.white.opacity(0.2))
 
             Button {

@@ -160,6 +160,12 @@ class MusicPlayer: NSObject, ObservableObject {
         loadSong(songs[newIndex], at: newIndex, in: songs)
     }
     
+    /// Add song to the end of the current queue
+    func addToQueue(_ song: SunoData) {
+        songs.append(song)
+        Logger.d("🎵 [MusicPlayer] Added to queue: \(song.title)")
+    }
+    
     /// Change play mode
     func changePlayMode() {
         let allModes = PlayMode.allCases

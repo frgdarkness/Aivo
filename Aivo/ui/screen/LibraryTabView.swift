@@ -3,158 +3,59 @@ import Kingfisher
 
 // MARK: - Library Tab View
 struct LibraryTabView: View {
-    @State private var songs: [LibrarySong] = [] // Empty by default to show empty state
+    @State private var tabs: [LibraryTabType] = [.local, .aiSongs, .playlist]
+    @State private var selectedTab: LibraryTabType = .local
+    
+    // Legacy states kept for now to avoid breaking other files if they reference them,
+    // but ideally we should only use what's needed for AI Songs.
+    // For AI Songs (My Songs), we reuse the logic.
     @State private var downloadedSongs: [SunoData] = []
     @State private var showPlayMySongScreen = false
     @State private var selectedSongIndex = 0
-    @State private var selectedTab: LibraryTabType = .mySong
     
     enum LibraryTabType: String, CaseIterable {
-        case mySong = "My Songs"
-        case favorites = "Favorites"
+        case local = "Local"
+        case aiSongs = "AI Songs"
+        case playlist = "Playlist"
     }
     
     var body: some View {
         VStack(spacing: 0) {
             // Tab Selection
-            if !downloadedSongs.isEmpty {
-                tabSelectionView
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
-            }
+            tabSelectionView
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
             
             // Content
-            if displayedSongs.isEmpty {
-                emptyStateView
-            } else {
-                downloadedSongsListView
+            Group {
+                switch selectedTab {
+                case .local:
+                    LocalSongsView()
+                case .aiSongs:
+                    aiSongsView
+                case .playlist:
+                    PlaylistTabView()
+                }
             }
         }
         .onAppear {
-            // Log screen view
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_LIBRARY)
-            
             loadDownloadedSongs()
         }
         .fullScreenCover(isPresented: $showPlayMySongScreen) {
             PlayMySongScreen(
-                songs: displayedSongs,
+                songs: downloadedSongs,
                 initialIndex: selectedSongIndex
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchLibraryCategory"))) { notification in
             if let category = notification.object as? String {
                 if category == "AI Generate" || category == "My Songs" {
-                    selectedTab = .mySong
-                    // Reload songs to show latest
+                    selectedTab = .aiSongs
                     loadDownloadedSongs()
                 }
             }
         }
-    }
-    
-    // MARK: - Computed Properties
-    private var displayedSongs: [SunoData] {
-        if selectedTab == .favorites {
-            return downloadedSongs.filter { FavoriteManager.shared.isFavorite(songId: $0.id) }
-        } else {
-            return downloadedSongs
-        }
-    }
-    
-    // MARK: - Empty State View
-    private var emptyStateView: some View {
-        VStack(spacing: 24) {
-            Spacer()
-            
-            // Record Player Card
-            VStack(spacing: 16) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(Color.gray.opacity(0.2))
-                        .frame(width: 200, height: 120)
-                    
-                    // Record Player
-                    HStack(spacing: 20) {
-                        // Vinyl Record
-                        ZStack {
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: 60, height: 60)
-                            
-                            Circle()
-                                .fill(Color.red)
-                                .frame(width: 20, height: 20)
-                            
-                            // Grooves
-                            ForEach(0..<3, id: \.self) { index in
-                                Circle()
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                    .frame(width: 40 + CGFloat(index * 8), height: 40 + CGFloat(index * 8))
-                            }
-                        }
-                        
-                        // Tonearm
-                        VStack(spacing: 8) {
-                            Rectangle()
-                                .fill(Color.white)
-                                .frame(width: 2, height: 30)
-                                .rotationEffect(.degrees(15))
-                            
-                            // Control Buttons
-                            VStack(spacing: 4) {
-                                ForEach(0..<4, id: \.self) { _ in
-                                    Circle()
-                                        .fill(Color.gray)
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Empty State Text
-                VStack(spacing: 8) {
-                    Text(selectedTab == .favorites ? "No favorites yet" : "Library is empty")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    HStack(spacing: 4) {
-                        Text(selectedTab == .favorites 
-                             ? "Add songs to your favorites" 
-                             : "Start using it now and discover")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                        
-                        if selectedTab == .mySong {
-                            Text("AIVO AI")
-                                .font(.system(size: 16, weight: .black, design: .monospaced))
-                                .foregroundColor(AivoTheme.Primary.orange)
-                        }
-                    }
-                }
-                
-                // Start Creating Button (only show for mySong tab)
-                if selectedTab == .mySong {
-                    Button(action: startCreating) {
-                        Text("Start Creating")
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(AivoTheme.Primary.orange)
-                            .cornerRadius(12)
-                            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
-                    }
-                    .padding(.horizontal, 40)
-                }
-            }
-            
-            Spacer()
-        }
-        .padding(.horizontal, 20)
     }
     
     // MARK: - Tab Selection View
@@ -162,7 +63,7 @@ struct LibraryTabView: View {
         let expandAnim = Animation.spring(response: 0.35, dampingFraction: 0.9, blendDuration: 0.2)
         
         return HStack(spacing: 0) {
-            ForEach(LibraryTabType.allCases, id: \.self) { type in
+            ForEach(tabs, id: \.self) { type in
                 Button {
                     withAnimation(expandAnim) {
                         selectedTab = type
@@ -171,7 +72,7 @@ struct LibraryTabView: View {
                     Text(type.rawValue)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(selectedTab == type ? .white : .white.opacity(0.7))
-                        .padding(.horizontal, 20)
+                        .frame(maxWidth: .infinity) // Equal width
                         .padding(.vertical, 12)
                         .background(
                             RoundedRectangle(cornerRadius: 8)
@@ -180,41 +81,97 @@ struct LibraryTabView: View {
                 }
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
+        .padding(4)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.black.opacity(0.3))
         )
     }
     
-    // MARK: - Songs List View
-    private var songsListView: some View {
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(songs, id: \.id) { song in
-                    LibrarySongRowView(song: song)
-                }
+    // MARK: - AI Songs View (Formerly My Songs)
+    private var aiSongsView: some View {
+        Group {
+            if downloadedSongs.isEmpty {
+                emptyStateView
+            } else {
+                downloadedSongsListView
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 100) // Space for bottom nav
         }
+    }
+    
+    // (Reuse existing emptyStateView but logic inside might need check)
+    // MARK: - Empty State View
+    private var emptyStateView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            // Record Player Card
+            VStack(spacing: 16) {
+                // Reuse the Vinyl UI code from before or simplification
+               Image(systemName: "music.mic")
+                    .font(.system(size: 60))
+                    .foregroundColor(.gray)
+                
+                // Empty State Text
+                VStack(spacing: 8) {
+                    Text("No AI Songs yet")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    HStack(spacing: 4) {
+                        Text("Start creating with")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                        
+                        Text("AIVO AI")
+                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                            .foregroundColor(AivoTheme.Primary.orange)
+                    }
+                }
+                
+                // Start Creating Button
+                Button(action: startCreating) {
+                    Text("Start Creating")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(AivoTheme.Primary.orange)
+                        .cornerRadius(12)
+                        .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+                }
+                .padding(.horizontal, 40)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 20)
     }
     
     // MARK: - Downloaded Songs List View
     private var downloadedSongsListView: some View {
         ScrollView {
             LazyVStack(spacing: 6) {
-                ForEach(Array(displayedSongs.enumerated()), id: \.element.id) { index, song in
+                ForEach(Array(downloadedSongs.enumerated()), id: \.element.id) { index, song in
                     DownloadedSongRowView(
-                        song: song, 
+                        song: song,
                         index: index,
-                        downloadedSongs: displayedSongs,
+                        downloadedSongs: downloadedSongs,
                         onTap: {
                             selectedSongIndex = index
-                            // Load song into MusicPlayer first
-                            MusicPlayer.shared.loadSong(song, at: index, in: displayedSongs)
+                            MusicPlayer.shared.loadSong(song, at: index, in: downloadedSongs)
                             showPlayMySongScreen = true
+                        },
+                        onAddToPlaylist: {
+                            songToAddToPlaylist = song
+                        },
+                        onAddToQueue: {
+                            MusicPlayer.shared.addToQueue(song)
+                        },
+                        onDelete: {
+                            deleteSong(song)
                         }
                     )
                 }
@@ -222,26 +179,36 @@ struct LibraryTabView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 100) // Space for bottom nav
         }
+        .sheet(item: $songToAddToPlaylist) { song in
+            AddToPlaylistSheet(song: song)
+        }
     }
     
     // MARK: - Actions
+    @State private var songToAddToPlaylist: SunoData? = nil
+    
+    private func deleteSong(_ song: SunoData) {
+        Task {
+            do {
+                try await SunoDataManager.shared.deleteSunoData(song)
+                loadDownloadedSongs()
+            } catch {
+                print("❌ Failed to delete song: \(error)")
+            }
+        }
+    }
+    
     private func startCreating() {
-        print("Starting to create...")
-        // This would typically navigate to the home tab or song creation flow
+         // Switch to Home for creation
+         NotificationCenter.default.post(name: NSNotification.Name("SwitchMainTab"), object: 0)
     }
     
     private func loadDownloadedSongs() {
-        print("📚 [Library] Loading downloaded songs...")
-        
         Task {
             do {
                 let sunoDataList = try await SunoDataManager.shared.loadAllSavedSunoData()
                 await MainActor.run {
                     self.downloadedSongs = sunoDataList
-                    print("📚 [Library] Loaded \(sunoDataList.count) songs into library")
-                    for song in sunoDataList {
-                        print("📚 [Library] - \(song.title) (\(song.modelName))")
-                    }
                 }
             } catch {
                 print("❌ [Library] Error loading downloaded songs: \(error)")
@@ -311,11 +278,14 @@ struct LibrarySongRowView: View {
 }
 
 // MARK: - Downloaded Song Row View
-struct DownloadedSongRowView: View {
+    struct DownloadedSongRowView: View {
     let song: SunoData
     let index: Int
     let downloadedSongs: [SunoData]
     let onTap: () -> Void
+    let onAddToPlaylist: () -> Void
+    let onAddToQueue: () -> Void
+    let onDelete: () -> Void
     
     private var isFavorite: Bool {
         FavoriteManager.shared.isFavorite(songId: song.id)
@@ -387,17 +357,29 @@ struct DownloadedSongRowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .layoutPriority(1)
 
-                // BUTTON: sát mép phải card
-                Button {
-                    onTap()
+                // Menu Button
+                Menu {
+                    Button(action: { onTap() }) {
+                        Label("Play", systemImage: "play")
+                    }
+                    
+                    Button(action: { onAddToPlaylist() }) {
+                        Label("Add to Playlist", systemImage: "music.note.list")
+                    }
+                    
+                    Button(action: { onAddToQueue() }) {
+                        Label("Add to Queue", systemImage: "text.append")
+                    }
+                    
+                    Button(role: .destructive, action: { onDelete() }) {
+                        Label("Delete", systemImage: "trash")
+                    }
                 } label: {
-                    Image(systemName: "play.fill")
-                        .font(.title2)
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 20))
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
-                        .background(
-                            Circle().fill(AivoTheme.Primary.orange)
-                        )
+                        .contentShape(Rectangle())
                 }
                 .padding(.trailing, 12)
             }

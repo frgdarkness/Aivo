@@ -154,6 +154,12 @@ struct SunoData: Codable, Identifiable, Equatable {
     }
 }
 
+extension SunoData {
+    var coverImageLocalPath: String? {
+        return SunoDataManager.shared.getLocalCoverPath(for: id)?.path
+    }
+}
+
 // MARK: - Enums
 enum SunoModel: String, Codable, CaseIterable {
     case V3_5 = "V3_5"

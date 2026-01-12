@@ -158,6 +158,11 @@ class SunoDataManager {
     }
     
     // MARK: - Load All Saved SunoData
+    
+    var savedSunoDataList: [SunoData] {
+        return fetchAllSavedSunoData()
+    }
+    
     // MARK: - Update Duration
     func updateSunoDataDuration(_ songId: String, duration: Double) async throws {
         Logger.d("💾 [SunoDataManager] Updating duration for song: \(songId)")
@@ -190,13 +195,17 @@ class SunoDataManager {
     }
     
     func loadAllSavedSunoData() async throws -> [SunoData] {
-        print("📚 [SunoDataManager] Loading all saved SunoData...")
+        return fetchAllSavedSunoData()
+    }
+    
+    func fetchAllSavedSunoData() -> [SunoData] {
+        // print("📚 [SunoDataManager] Loading all saved SunoData...") // Reduce log noise
         
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
         
         guard FileManager.default.fileExists(atPath: sunoDataDirectory.path) else {
-            print("📚 [SunoDataManager] No SunoData directory found")
+            // print("📚 [SunoDataManager] No SunoData directory found")
             return []
         }
         
@@ -236,12 +245,12 @@ class SunoDataManager {
             // Sort by saved date, newest first
             sunoDataList.sort { $0.createTime > $1.createTime }
             
-            print("📚 [SunoDataManager] Loaded \(sunoDataList.count) saved SunoData")
+            // print("📚 [SunoDataManager] Loaded \(sunoDataList.count) saved SunoData")
             return sunoDataList
             
         } catch {
             print("❌ [SunoDataManager] Error loading SunoData: \(error)")
-            throw error
+            return []
         }
     }
     
@@ -309,9 +318,13 @@ class SunoDataManager {
     
     func getLocalCoverPath(for songId: String) -> URL? {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let sunoDataDirectory = documentsPath.appendingPathComponent("SunoData")
+        var searchDirectories = [documentsPath.appendingPathComponent("SunoData")]
         
-        // Try different possible file names
+        // Also check LocalSongs directory if ID indicates it's a local song
+        if songId.hasPrefix("local_") {
+            searchDirectories.append(documentsPath.appendingPathComponent("LocalSongs"))
+        }
+        
         let possibleFileNames = [
             "\(songId)_cover.jpg",
             "\(songId)_cover.jpeg",
@@ -321,10 +334,12 @@ class SunoDataManager {
             "\(songId).png"
         ]
         
-        for fileName in possibleFileNames {
-            let filePath = sunoDataDirectory.appendingPathComponent(fileName)
-            if FileManager.default.fileExists(atPath: filePath.path) {
-                return filePath
+        for directory in searchDirectories {
+            for fileName in possibleFileNames {
+                let filePath = directory.appendingPathComponent(fileName)
+                if FileManager.default.fileExists(atPath: filePath.path) {
+                    return filePath
+                }
             }
         }
         
