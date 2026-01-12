@@ -111,6 +111,12 @@ struct UserPlaylistDetailView: View {
                                                     Label("Play", systemImage: "play")
                                                 }
                                                 
+                                                Button(action: {
+                                                   MusicPlayer.shared.addToQueue(song)
+                                                }) {
+                                                    Label("Add to Queue", systemImage: "text.append")
+                                                }
+                                                
                                                 Button(role: .destructive, action: {
                                                     removeSong(song)
                                                 }) {

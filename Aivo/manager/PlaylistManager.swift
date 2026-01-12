@@ -131,4 +131,20 @@ class PlaylistManager: ObservableObject {
         
         return getSmartPlaylistSongs(type: type, allSongs: allSongs)
     }
+    
+    func getSongs(for playlist: Playlist) -> [SunoData] {
+        var allSongs = SunoDataManager.shared.savedSunoDataList
+        allSongs.append(contentsOf: LocalSongManager.shared.fetchLocalSongs())
+        
+        let filtered = allSongs.filter { playlist.songIds.contains($0.id) }
+        
+        // Maintain order
+        var orderedSongs: [SunoData] = []
+        for id in playlist.songIds {
+            if let song = filtered.first(where: { $0.id == id }) {
+                orderedSongs.append(song)
+            }
+        }
+        return orderedSongs
+    }
 }

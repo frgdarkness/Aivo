@@ -81,9 +81,23 @@ struct PlaylistTabView: View {
                              
                              // User Playlists
                              ForEach(playlistManager.userPlaylists) { playlist in
-                                 Button(action: { selectedUserPlaylist = playlist }) {
-                                     UserPlaylistRow(playlist: playlist)
-                                 }
+                                 UserPlaylistRow(
+                                     playlist: playlist,
+                                     onTap: { selectedUserPlaylist = playlist },
+                                     onPlay: {
+                                         let songs = playlistManager.getSongs(for: playlist)
+                                         if !songs.isEmpty {
+                                             MusicPlayer.shared.loadSong(songs[0], at: 0, in: songs)
+                                         }
+                                     },
+                                     onAddToQueue: {
+                                         let songs = playlistManager.getSongs(for: playlist)
+                                         songs.forEach { MusicPlayer.shared.addToQueue($0) }
+                                     },
+                                     onDelete: {
+                                         playlistManager.deletePlaylist(playlist)
+                                     }
+                                 )
                              }
                          }
                      }
@@ -159,47 +173,74 @@ struct PlaylistTabView: View {
 
 struct UserPlaylistRow: View {
     let playlist: Playlist
+    let onTap: () -> Void
+    let onPlay: () -> Void
+    let onAddToQueue: () -> Void
+    let onDelete: () -> Void
     
     var body: some View {
         HStack(spacing: 16) {
-            // Cover
-            ZStack {
-                if let data = playlist.coverImageData, let uiImage = UIImage(data: data) {
-                    Image(uiImage: uiImage)
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } else if let colorHex = playlist.coverColor {
-                    Color(hex: colorHex)
-                        .overlay(
-                            Text(playlist.name.prefix(1).uppercased())
-                                .font(.system(size: 24, weight: .bold))
-                                .foregroundColor(.white)
-                        )
-                } else {
-                    Color.gray
+            // Main Clickable Area
+            Button(action: onTap) {
+                HStack(spacing: 16) {
+                    // Cover
+                    ZStack {
+                        if let data = playlist.coverImageData, let uiImage = UIImage(data: data) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                        } else if let colorHex = playlist.coverColor {
+                            Color(hex: colorHex)
+                                .overlay(
+                                    Text(playlist.name.prefix(1).uppercased())
+                                        .font(.system(size: 24, weight: .bold))
+                                        .foregroundColor(.white)
+                                )
+                        } else {
+                            Color.gray
+                        }
+                    }
+                    .frame(width: 56, height: 56)
+                    .cornerRadius(8)
+                    .clipped()
+                    
+                    // Info
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(playlist.name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.white)
+                        
+                        Text("\(playlist.songIds.count) songs")
+                            .font(.system(size: 14))
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
                 }
+                .contentShape(Rectangle()) // Ensure entire area is tappable
             }
-            .frame(width: 56, height: 56)
-            .cornerRadius(8)
-            .clipped()
+            .buttonStyle(PlainButtonStyle()) // Prevent default button styling affecting layout
             
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(playlist.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+            // Context Menu Button
+            Menu {
+                Button(action: onPlay) {
+                    Label("Play", systemImage: "play")
+                }
                 
-                Text("\(playlist.songIds.count) songs")
-                    .font(.system(size: 14))
+                Button(action: onAddToQueue) {
+                    Label("Add to Queue", systemImage: "text.append")
+                }
+                
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete Playlist", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 20))
                     .foregroundColor(.gray)
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
-            
-            Spacer()
-            
-            // Context Menu Button (Placeholder)
-            Image(systemName: "ellipsis")
-                .font(.system(size: 20))
-                .foregroundColor(.gray)
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
