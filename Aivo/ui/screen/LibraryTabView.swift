@@ -42,6 +42,15 @@ struct LibraryTabView: View {
                 initialIndex: selectedSongIndex
             )
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchLibraryCategory"))) { notification in
+            if let category = notification.object as? String {
+                if category == "AI Generate" || category == "My Songs" {
+                    selectedTab = .mySong
+                    // Reload songs to show latest
+                    loadDownloadedSongs()
+                }
+            }
+        }
     }
     
     // MARK: - Computed Properties

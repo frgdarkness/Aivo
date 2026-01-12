@@ -31,9 +31,12 @@ struct CoverTabView: View {
     @State private var selectedSongForCover: SelectedSong? = nil
     @State private var selectedAudioFileURL: URL? = nil
     @State private var showModelSelectionScreen = false
+    @ObservedObject private var backgroundManager = BackgroundGenerationManager.shared
+
     @State private var coverGenerationTask: Task<Void, Never>?
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var showBackgroundBusyAlert = false
     
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
@@ -79,28 +82,31 @@ struct CoverTabView: View {
             .padding(.horizontal, 20)
             .padding(.top, 20)
         }
+        // GenerateSongProcessingScreen
         .fullScreenCover(isPresented: $showProcessingScreen) {
-            GenerateSongProcessingScreen(
+             GenerateSongProcessingScreen(
                 requestType: .coverSong,
-                onComplete: {
+                onBackgroundProcess: {
+                    // Just dismiss the screen, let task run in background
                     showProcessingScreen = false
+                    showToastMessage("Cover generation continuing in background...")
                 },
                 onCancel: {
                     // Cancel cover generation process
                     Logger.i("⚠️ [CoverTab] Cover generation cancelled by user")
-                    coverGenerationTask?.cancel()
+                    backgroundManager.cancelGeneration()
                     showProcessingScreen = false
                     showToastMessage("Cover generation cancelled")
-                    
-                    // Deduct credits and save to history even if cancelled
-                    Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
-                        CreditHistoryManager.shared.addRequest(.coverSong)
-                        Logger.i("🎤 [CoverTab] Deducted \(creditsRequired) credits and saved history for cancelled cover generation")
-                    }
                 }
             )
+            .onChange(of: backgroundManager.isGenerating) { isGenerating in
+                 // If generation stops (success or error) while this screen is open, dismiss it
+                 if !isGenerating {
+                     showProcessingScreen = false
+                 }
+            }
         }
+
         .fullScreenCover(isPresented: $showPlaySongScreen) {
             if let sunoData = cachedSunoData {
                 GenerateSunoSongResultScreen(
@@ -193,6 +199,11 @@ struct CoverTabView: View {
                 }
             }
         )
+        .alert("A task is already running", isPresented: $showBackgroundBusyAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please wait for the current generation task to finish before starting a new one.")
+        }
         }
     }
 
@@ -500,6 +511,12 @@ struct CoverTabView: View {
 
     // MARK: - Actions
     private func generateCoverSong() {
+        // Check background generation status first
+        if BackgroundGenerationManager.shared.isGenerating {
+            showBackgroundBusyAlert = true
+            return
+        }
+        
         // Check subscription first
         guard subscriptionManager.isPremium else {
             showSubscriptionScreen = true
@@ -512,11 +529,7 @@ struct CoverTabView: View {
             return
         }
         
-        Logger.i("🎤 [CoverTab] Starting cover song generation...")
-        Logger.d("🎤 [CoverTab] Source: \(selectedSource == .song ? "Song" : "YouTube")")
-        Logger.d("🎤 [CoverTab] Song Name: \(songName)")
-        Logger.d("🎤 [CoverTab] Selected Model: \(selectedModel?.displayName ?? "None")")
-        Logger.d("🎤 [CoverTab] Model ID: \(selectedModel?.modelName ?? "default")")
+        Logger.i("🎤 [CoverTab] Starting cover song generation via BackgroundManager...")
         
         // Log event to both Firebase and AppsFlyer
         AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_START, parameters: [
@@ -526,197 +539,69 @@ struct CoverTabView: View {
             "timestamp": Date().timeIntervalSince1970
         ])
         
-        // Show processing screen
-        showProcessingScreen = true
-        
-        // Start generation in background
-        coverGenerationTask = Task {
-            // Check cancellation at start
-            guard !Task.isCancelled else {
-                Logger.i("⚠️ [CoverTab] Task was cancelled before starting")
-                await MainActor.run {
-                    showProcessingScreen = false
-                }
-                return
-            }
+        // Prepare data in a generic Task
+        Task {
+            var fileData: Data? = nil
+            var fileName: String? = nil
+            var audioUrl: String? = nil
+            let coverModelID = selectedModel?.modelName ?? "arianagrande"
+            let coverModelName = selectedModel?.displayName ?? "Unknown"
+            let coverImageUrl = selectedModel?.thumbUrl
             
-            do {
-                let modelsLabService = ModelsLabService.shared
-                let coverModelID = selectedModel?.modelName ?? "arianagrande"
-                let resultUrl: String?
-                
-                // Handle different sources
-                if selectedSource == .song {
-                    // Pick a Song flow - need to process selected song
-                    guard let selectedSong = selectedSongForCover else {
-                        Logger.e("❌ [CoverTab] No song selected")
-                        await MainActor.run {
-                            showProcessingScreen = false
-                            showToastMessage("Please select a song")
-                        }
-                        return
-                    }
-                    
-                    Logger.i("🎵 [CoverTab] Selected song: \(selectedSong.title)")
-                    
-                    // Check cancellation before processing
-                    try Task.checkCancellation()
-                    
-                    // Check if song has audio file from device picker
-                    if let deviceFileURL = selectedAudioFileURL {
-                        Logger.d("📁 [CoverTab] Using audio file from device picker")
-                        do {
-                            _ = deviceFileURL.startAccessingSecurityScopedResource()
-                            defer { deviceFileURL.stopAccessingSecurityScopedResource() }
-                            
-                            let fileData = try Data(contentsOf: deviceFileURL)
-                            let fileName = deviceFileURL.lastPathComponent
-                            
-                            // Check cancellation before API call
-                            try Task.checkCancellation()
-                            
-                            resultUrl = await modelsLabService.processVoiceCoverWithFile(
-                                fileData: fileData,
-                                fileName: fileName,
-                                modelID: coverModelID
-                            )
-                        } catch {
-                            Logger.e("❌ [CoverTab] Error reading file from device: \(error)")
-                            await MainActor.run {
-                                showProcessingScreen = false
-                                showToastMessage("Error reading audio file")
-                            }
-                            return
-                        }
-                    // Check if song has local audio file (for My Songs)
-                    } else if let localURL = getLocalAudioURL(for: selectedSong) {
-                        Logger.d("📁 [CoverTab] Using local audio file")
-                        let fileData = try Data(contentsOf: localURL)
-                        let fileName = "\(selectedSong.title).mp3"
-                        
-                        // Check cancellation before API call
-                        try Task.checkCancellation()
-                        
-                        resultUrl = await modelsLabService.processVoiceCoverWithFile(
-                            fileData: fileData,
-                            fileName: fileName,
-                            modelID: coverModelID
-                        )
-                    // Use remote audioUrl directly (for Hot Songs from JSON, similar to YouTube)
-                    } else if let audioUrl = selectedSong.audioUrl {
-                        Logger.d("🔗 [CoverTab] Using remote audio URL: \(audioUrl)")
-                        
-                        // Check cancellation before API call
-                        try Task.checkCancellation()
-                        
-                        resultUrl = await modelsLabService.processVoiceCover(
-                            audioUrl: audioUrl,
-                            modelID: coverModelID
-                        )
-                    } else {
-                        Logger.e("❌ [CoverTab] No audio URL or file available")
-                        await MainActor.run {
-                            showProcessingScreen = false
-                            showToastMessage("Song has no audio available")
-                        }
-                        return
-                    }
-                    
-                } else {
-                    // YouTube flow
-                    guard let normalizedURL = verifiedYouTubeURL else {
-                        Logger.e("❌ [CoverTab] No verified URL available")
-                        await MainActor.run {
-                            showProcessingScreen = false
-                            showToastMessage("Please verify YouTube URL first")
-                        }
-                        return
-                    }
-                    
-                    Logger.i("🔗 [CoverTab] Using verified URL: \(normalizedURL)")
-                    
-                    // Check cancellation before API call
-                    try Task.checkCancellation()
-                    
-                    resultUrl = await modelsLabService.processVoiceCover(
-                        audioUrl: normalizedURL,
-                        modelID: coverModelID
-                    )
-                }
-                
-                // Check cancellation after API call
-                try Task.checkCancellation()
-                
-                Logger.i("🎤 [CoverTab] Cover song generated successfully!")
-                Logger.d("🎤 [CoverTab] Result URL: \(resultUrl ?? "nil")")
-                
-                await MainActor.run {
-                    // Close processing screen
-                    showProcessingScreen = false
-                    
-                    if let resultUrl = resultUrl {
-                        // Log success event to both Firebase and AppsFlyer
-                        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_SUCCESS, parameters: [
-                            "source": selectedSource == .song ? "song" : "youtube",
-                            "model_id": coverModelID,
-                            "timestamp": Date().timeIntervalSince1970
-                        ])
-                        
-                        // Create and cache SunoData
-                        cachedSunoData = createSunoDataFromCoverResult(audioUrl: resultUrl)
-                        //resultAudioUrl = resultUrl
-                        showToastMessage("Cover song generated successfully!")
-                        
-                        // Deduct credits only after successful generation
-                        Task {
-                            await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
-                            Logger.i("🎤 [CoverTab] Deducted \(creditsRequired) credits for successful cover generation")
-                            // Save to history
-                            CreditHistoryManager.shared.addRequest(.coverSong)
-                        }
-                        
-                        Logger.i("🎵 [CoverTab] Opening GenerateSunoSongResultScreen with cover result")
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                            showPlaySongScreen = true
-                        }
-                    } else {
-                        // Log failed event to both Firebase and AppsFlyer
-                        AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_FAILED, parameters: [
-                            "error": "No result URL returned",
-                            "timestamp": Date().timeIntervalSince1970
-                        ])
-                        showToastMessage("Failed to generate cover song")
-                    }
-                }
-                
-            } catch is CancellationError {
-                // Task was cancelled, don't show error
-                Logger.i("⚠️ [CoverTab] Task cancelled during cover generation")
-                await MainActor.run {
-                    showProcessingScreen = false
-                }
-            } catch {
-                // Check cancellation before handling error
-                guard !Task.isCancelled else {
-                    Logger.i("⚠️ [CoverTab] Task cancelled, ignoring error")
-                    await MainActor.run {
-                        showProcessingScreen = false
-                    }
+            if selectedSource == .song {
+                guard let selectedSong = selectedSongForCover else {
+                    await MainActor.run { showToastMessage("Please select a song") }
                     return
                 }
                 
-                // Log failed event to both Firebase and AppsFlyer
-                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_COVER_FAILED, parameters: [
-                    "error_type": String(describing: type(of: error)),
-                    "error_message": error.localizedDescription,
-                    "timestamp": Date().timeIntervalSince1970
-                ])
-                
-                Logger.e("❌ [CoverTab] Error generating cover song: \(error)")
-                await MainActor.run {
-                    showProcessingScreen = false
-                    showToastMessage("Failed to generate cover song: \(error.localizedDescription)")
+                // Read File Data
+                if let deviceFileURL = selectedAudioFileURL {
+                    do {
+                        _ = deviceFileURL.startAccessingSecurityScopedResource()
+                        defer { deviceFileURL.stopAccessingSecurityScopedResource() }
+                        fileData = try Data(contentsOf: deviceFileURL)
+                        fileName = deviceFileURL.lastPathComponent
+                    } catch {
+                        await MainActor.run { showToastMessage("Error reading audio file") }
+                        return
+                    }
+                } else if let localURL = getLocalAudioURL(for: selectedSong) {
+                    do {
+                        fileData = try Data(contentsOf: localURL)
+                        fileName = "\(selectedSong.title).mp3"
+                    } catch {
+                         await MainActor.run { showToastMessage("Error reading local file") }
+                        return
+                    }
+                } else if let url = selectedSong.audioUrl {
+                    audioUrl = url
+                } else {
+                     await MainActor.run { showToastMessage("Song has no audio available") }
+                    return
                 }
+                
+            } else {
+                guard let normalizedURL = verifiedYouTubeURL else {
+                    await MainActor.run { showToastMessage("Please verify YouTube URL first") }
+                    return
+                }
+                audioUrl = normalizedURL
+            }
+            
+            // Call Background Manager
+            await MainActor.run {
+                showProcessingScreen = true
+                BackgroundGenerationManager.shared.startCoverGeneration(
+                    audioUrl: audioUrl,
+                    fileData: fileData,
+                    fileName: fileName,
+                    modelId: coverModelID,
+                    songName: songName,
+                    modelName: coverModelName,
+                    coverImageUrl: coverImageUrl,
+                    audioSource: selectedSource == .song ? "song" : "youtube"
+                )
+                //showToastMessage("Cover generation started in background!")
             }
         }
     }

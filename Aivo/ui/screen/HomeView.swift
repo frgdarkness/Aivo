@@ -3,12 +3,14 @@ import SwiftUI
 // MARK: - Main Home View (Container)
 struct HomeView: View {
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @ObservedObject private var backgroundManager = BackgroundGenerationManager.shared
     @State private var selectedTab: TabItem = .home
     @State private var showGenerateSongResult = false
     @State private var showSunoSongResult = false
     @State private var showSubscription = false
     @State private var showProfile = false
     @State private var showBuyCreditDialog = false
+    @State private var showFullPlayer = false
     
     // Hardcoded SunoData for testing
     private let hardcodedSunoData: [SunoData] = [
@@ -109,17 +111,63 @@ struct HomeView: View {
                     ))
                     .zIndex(1000)
             }
+            // Background Generation Success Dialog
+            if backgroundManager.showSuccessDialog {
+                GenerationSuccessDialog(
+                    sunoDataList: backgroundManager.resultSunoDataList,
+                    onPlayNow: {
+                        backgroundManager.showSuccessDialog = false
+                        // Play all generated songs
+                        let songs = backgroundManager.resultSunoDataList
+                        if let firstSong = songs.first {
+                            MusicPlayer.shared.loadSong(firstSong, at: 0, in: songs)
+                            // Show full player
+                            showFullPlayer = true
+                        }
+                    },
+                    onClose: {
+                        backgroundManager.showSuccessDialog = false
+                    }
+                )
+                .zIndex(2000)
+            }
         }
         .animation(.easeInOut(duration: 0.3), value: showProfile)
         .buyCreditDialog(isPresented: $showBuyCreditDialog)
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchMainTab"))) { notification in
+            if let index = notification.object as? Int {
+                // index matches TabItem case order: Home, Explore, Cover, Library
+                let tabs = TabItem.allCases
+                if index >= 0 && index < tabs.count {
+                    selectedTab = tabs[index]
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("PlaySunoSong"))) { notification in
+             if let song = notification.object as? SunoData {
+                 MusicPlayer.shared.loadSong(song, at: 0, in: [song])
+                 showFullPlayer = true
+             }
+        }
     }
     
     // MARK: - Header View
     private var headerView: some View {
         HStack {
-            Text("Aivo Music")
-                .font(.system(size: 24, weight: .black, design: .monospaced))
-                .foregroundColor(.white)
+            HStack(spacing: 8) {
+                Text("AIVO")
+                    .font(.system(size: 24, weight: .black, design: .monospaced))
+                    .foregroundColor(.white)
+                
+                // Generating Status Indicator
+                // Generating Status Indicator
+                if backgroundManager.isGenerating {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(.white)
+                        .transition(.opacity)
+                }
+            }
             
             Spacer()
             //SubscriptionManager.shared.isPremium
@@ -233,6 +281,12 @@ struct HomeView: View {
 //            } else {
 //                SubscriptionScreenIntro()
 //            }
+        }
+        .fullScreenCover(isPresented: $showFullPlayer) {
+             PlayMySongScreen(
+                 songs: MusicPlayer.shared.songs,
+                 initialIndex: MusicPlayer.shared.currentIndex
+             )
         }
         .fullScreenCover(isPresented: $showGenerateSongResult) {
             GenerateSongResultScreen(

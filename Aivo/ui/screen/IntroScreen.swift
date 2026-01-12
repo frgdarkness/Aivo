@@ -37,24 +37,39 @@ struct IntroScreen: View {
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_INTRO)
         }
         .fullScreenCover(isPresented: $showProcessing) {
-            GenerateSongProcessingScreen(
-                requestType: .generateSong,
-                onComplete: {
-                    // Processing screen will auto-dismiss after 5s
-                    // Then we'll show play screen
-                },
-                onCancel: {
-                    // Cancel processing and reset state
-                    Logger.i("⚠️ [IntroScreen] Processing cancelled by user")
-                    processingTask?.cancel()
-                    showProcessing = false
-                    // Reset selections if needed
-                    selectedMood = nil
-                    selectedGenre = nil
-                    selectedTheme = nil
-                    currentStep = 1
+            ZStack {
+                AivoSunsetBackground()
+                
+                VStack(spacing: 30) {
+                    Text("Just a Moment!")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    ProgressView()
+                        .scaleEffect(2.0)
+                        .tint(.white)
+                        .padding(20)
+                        
+                    Text("Creating your personalized song...")
+                        .font(.headline)
+                        .foregroundColor(.white.opacity(0.9))
+                        
+                    Button("Cancel") {
+                        // Cancel processing and reset state
+                        Logger.i("⚠️ [IntroScreen] Processing cancelled by user")
+                        processingTask?.cancel()
+                        showProcessing = false
+                        // Reset selections
+                        selectedMood = nil
+                        selectedGenre = nil
+                        selectedTheme = nil
+                        currentStep = 1
+                    }
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.7))
+                    .padding(.top, 20)
                 }
-            )
+            }
         }
         .fullScreenCover(item: $selectedSong) { song in
             PlaySunoSongIntroScreen(

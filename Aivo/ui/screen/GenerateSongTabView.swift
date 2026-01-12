@@ -33,9 +33,12 @@ struct GenerateSongTabView: View {
     @State private var bpmValue: Double = 100
     @State private var generationTask: Task<Void, Never>?
     @State private var showPremiumAlert = false
+    @ObservedObject private var backgroundManager = BackgroundGenerationManager.shared
+
     @State private var showSubscriptionScreen = false
     @State private var showArtistNameAlert = false
     @State private var selectedLanguage: String = "English"
+    @State private var showBackgroundBusyAlert = false
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -95,28 +98,31 @@ struct GenerateSongTabView: View {
                 }
             )
         }
+        // GenerateSongProcessingScreen
         .fullScreenCover(isPresented: $showGenerateSongScreen) {
             GenerateSongProcessingScreen(
                 requestType: .generateSong,
-                onComplete: {
+                onBackgroundProcess: {
+                    // Just dismiss the screen, let task run in background
                     showGenerateSongScreen = false
+                    showToastMessage("Generation continuing in background...")
                 },
                 onCancel: {
                     // Cancel generation process
                     Logger.i("⚠️ [GenerateSong] Generation cancelled by user")
-                    generationTask?.cancel()
+                    backgroundManager.cancelGeneration()
                     showGenerateSongScreen = false
                     showToastMessage("Generation cancelled")
-                    
-                    // Deduct credits and save to history even if cancelled
-                    Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
-                        CreditHistoryManager.shared.addRequest(.generateSong)
-                        Logger.i("🎵 [GenerateSong] Deducted \(creditsRequired) credits and saved history for cancelled generation")
-                    }
                 }
             )
+            .onChange(of: backgroundManager.isGenerating) { isGenerating in
+                 // If generation stops (success or error) while this screen is open, dismiss it
+                 if !isGenerating {
+                     showGenerateSongScreen = false
+                 }
+            }
         }
+
         .fullScreenCover(isPresented: $showSunoResultScreen) {
             GenerateSunoSongResultScreen(
                 sunoDataList: resultSunoDataList,
@@ -140,6 +146,11 @@ struct GenerateSongTabView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text("This content violates our policy due to the use of an artist name. Please remove it and try again.")
+        }
+        .alert("A task is already running", isPresented: $showBackgroundBusyAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please wait for the current generation task to finish before starting a new one.")
         }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
@@ -755,6 +766,12 @@ struct GenerateSongTabView: View {
     
     // MARK: - Helper Methods
     private func generateSong() {
+        // Check background generation status first
+        if BackgroundGenerationManager.shared.isGenerating {
+            showBackgroundBusyAlert = true
+            return
+        }
+        
         // Check subscription first
         guard subscriptionManager.isPremium else {
             showSubscriptionScreen = true
@@ -767,15 +784,7 @@ struct GenerateSongTabView: View {
             return
         }
         
-        print("🎵 [GenerateSong] Starting song generation...")
-        print("🎵 [GenerateSong] Input type: \(selectedInputType.rawValue)")
-        print("🎵 [GenerateSong] Description: \(songDescription)")
-        print("🎵 [GenerateSong] Lyrics: \(songLyrics)")
-        print("🎵 [GenerateSong] Moods: \(selectedMoods.map { $0.displayName })")
-        print("🎵 [GenerateSong] Genres: \(selectedGenres.map { $0.displayName })")
-        print("🎵 [GenerateSong] Song name: \(songName)")
-        print("🎵 [GenerateSong] Vocal gender: \(selectedVocalGender.rawValue)")
-        print("🎵 [GenerateSong] Model: \(selectedModel.rawValue)")
+        print("🎵 [GenerateSong] Starting song generation via BackgroundManager...")
         
         // Log to both Firebase and AppsFlyer
         AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_START, parameters: [
@@ -788,161 +797,42 @@ struct GenerateSongTabView: View {
             "timestamp": Date().timeIntervalSince1970
         ])
         
+        // Build prompt and parameters
+        let prompt = buildPrompt()
+        let customMode = prompt.count > 500
+        
+        let style = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+        let finalStyle = style.isEmpty ? nil : style
+        
+        let vocalGender: VocalGender
+        if isInstrumental {
+            vocalGender = .male
+        } else if selectedVocalGender == .random {
+            vocalGender = Bool.random() ? .male : .female
+        } else {
+            vocalGender = selectedVocalGender == .male ? .male : .female
+        }
+        
         // Show processing screen
         showGenerateSongScreen = true
         
-        // Start generation in background
-        generationTask = Task {
-            // Check cancellation at start
-            guard !Task.isCancelled else {
-                Logger.i("⚠️ [GenerateSong] Task was cancelled before starting")
-                await MainActor.run {
-                    showGenerateSongScreen = false
-                }
-                return
-            }
-            
-            do {
-                let sunoService = SunoAiMusicService.shared
-                
-                // Build prompt based on input type
-                let prompt = buildPrompt()
-                let promptLength = prompt.count
-                print("🎵 [GenerateSong] Generated prompt (length: \(promptLength)): \(prompt)")
-                
-                // Check if we need custom mode (prompt > 500 characters)
-                let customMode = promptLength > 500
-                print("🎵 [GenerateSong] Custom mode: \(customMode)")
-                
-                // Build style from selected genres (join with comma)
-                let style = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-                let finalStyle = style.isEmpty ? "Pop" : style
-                print("🎵 [GenerateSong] Style: \(finalStyle)")
-                
-                // Determine vocal gender for API
-                let vocalGender: VocalGender
-                if isInstrumental {
-                    vocalGender = .male // Default for instrumental, will be overridden by instrumental=true
-                } else if selectedVocalGender == .random {
-                    vocalGender = Bool.random() ? .male : .female
-                } else {
-                    vocalGender = selectedVocalGender == .male ? .male : .female
-                }
-                
-                print("🎵 [GenerateSong] Calling SunoAiMusicService.generateMusicWithRetry...")
-                print("🎵 [GenerateSong] Vocal gender: \(vocalGender.rawValue)")
-                print("🎵 [GenerateSong] Instrumental: \(isInstrumental)")
-                
-                // Check cancellation before API call
-                try Task.checkCancellation()
-                
-                let generatedSongs = try await sunoService.generateMusicWithRetry(
-                    prompt: prompt,
-                    style: finalStyle,
-                    title: songName.isEmpty ? "" : songName,
-                    customMode: customMode,
-                    instrumental: isInstrumental,
-                    model: selectedModel
-                )
-                
-                // Check cancellation after API call
-                try Task.checkCancellation()
-                
-                print("🎵 [GenerateSong] Successfully generated \(generatedSongs.count) songs")
-                for (index, song) in generatedSongs.enumerated() {
-                    print("🎵 [GenerateSong] Song \(index + 1): \(song.title)")
-                }
-                
-                await MainActor.run {
-                    // Close processing screen
-                    showGenerateSongScreen = false
-                    
-                    // Log success event to both Firebase and AppsFlyer
-                    AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_SUCCESS, parameters: [
-                        "songs_count": generatedSongs.count,
-                        "model": selectedModel.rawValue,
-                        "timestamp": Date().timeIntervalSince1970
-                    ])
-                    
-                    // Set result and show result screen
-                    resultSunoDataList = generatedSongs
-                    showToastMessage("Songs generated successfully!")
-                    print("🎵 [GenerateSong] Showing result screen...")
-                    
-                    // Deduct credits only after successful generation
-                    Task {
-                        await CreditManager.shared.deductForSuccessfulRequest(count: creditsRequired)
-                        Logger.i("🎵 [GenerateSong] Deducted \(creditsRequired) credits for successful generation")
-                        // Save to history
-                        CreditHistoryManager.shared.addRequest(.generateSong)
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        showSunoResultScreen = true
-                    }
-                }
-                
-            } catch is CancellationError {
-                // Task was cancelled, don't show error
-                Logger.i("⚠️ [GenerateSong] Task cancelled during generation")
-                await MainActor.run {
-                    showGenerateSongScreen = false
-                }
-            } catch let error as SunoError {
-                // Check cancellation before handling error
-                guard !Task.isCancelled else {
-                    Logger.i("⚠️ [GenerateSong] Task cancelled, ignoring error")
-                    await MainActor.run {
-                        showGenerateSongScreen = false
-                    }
-                    return
-                }
-                
-                // Log failed event to both Firebase and AppsFlyer
-                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_FAILED, parameters: [
-                    "error_type": String(describing: type(of: error)),
-                    "error_message": error.localizedDescription,
-                    "timestamp": Date().timeIntervalSince1970
-                ])
-                
-                print("❌ [GenerateSong] Error generating songs: \(error)")
-                await MainActor.run {
-                    showGenerateSongScreen = false
-                    
-                    // Show specific error message based on error type
-                    switch error {
-                    case .artistNameNotAllowed:
-                        // Show alert for artist name error (user requested alert, not toast)
-                        showArtistNameAlert = true
-                    default:
-                        let errorMessage = "Failed to generate songs: \(error.localizedDescription)"
-                        showToastMessage(errorMessage)
-                    }
-                }
-            } catch {
-                // Check cancellation before handling error
-                guard !Task.isCancelled else {
-                    Logger.i("⚠️ [GenerateSong] Task cancelled, ignoring error")
-                    await MainActor.run {
-                        showGenerateSongScreen = false
-                    }
-                    return
-                }
-                
-                // Log failed event to both Firebase and AppsFlyer
-                AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_FAILED, parameters: [
-                    "error_type": String(describing: type(of: error)),
-                    "error_message": error.localizedDescription,
-                    "timestamp": Date().timeIntervalSince1970
-                ])
-                
-                print("❌ [GenerateSong] Error generating songs: \(error)")
-                await MainActor.run {
-                    showGenerateSongScreen = false
-                    showToastMessage("Failed to generate songs: \(error.localizedDescription)")
-                }
-            }
-        }
+        // Start background generation
+        BackgroundGenerationManager.shared.startGeneration(
+            prompt: prompt,
+            style: finalStyle,
+            title: songName,
+            customMode: customMode,
+            instrumental: isInstrumental,
+            model: selectedModel,
+            vocalGender: vocalGender,
+            selectedMoods: selectedMoods,
+            selectedGenres: selectedGenres
+        )
+        // showToastMessage("Generation started in background! You can continue using the app.")
+        
+        // Note: Credit deduction handled by Manager/Server side logic or dependent on success?
+        // Ideally we should deduct here? No, if it fails immediately in background we want to not deduct.
+        // We will add deduction logic to BackgroundGenerationManager completion block later.
     }
     
     private func buildPrompt() -> String {
