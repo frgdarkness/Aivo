@@ -571,6 +571,12 @@ final class SubscriptionManager: ObservableObject {
             }
         }
 
+
+        // Log daily revenue
+        Task {
+            try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: transaction.productID)
+        }
+
         NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
     }
 

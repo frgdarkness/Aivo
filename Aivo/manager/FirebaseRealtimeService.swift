@@ -375,4 +375,43 @@ final class FirebaseRealtimeService: ObservableObject {
             Logger.e("❌ Failed to sync profile: \(error)")
         }
     }
+
+    // MARK: - Daily Revenue Logging
+    
+    private func dailyAnalyticsPath(_ date: String) -> String {
+        "\(basePath)/daily/\(date)"
+    }
+    
+    /// Increment daily counter for a package (thread-safe)
+    /// Usage: await incrementDailyCounter(packageId: "aivo.premium.yearly")
+    func incrementDailyCounter(packageId: String) async throws {
+        ensureFirebaseConfigured()
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "ddMMyyyy"
+        let dateKey = dateFormatter.string(from: Date())
+        
+        // Sanitize packageId to be safe for Firebase path (replace . with _)
+        let safePackageId = packageId.replacingOccurrences(of: ".", with: "_")
+        
+        let path = dailyAnalyticsPath(dateKey)
+        let counterPath = "\(path)/\(safePackageId)"
+        
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            dbRef.child(counterPath).runTransactionBlock({ currentData in
+                var value = currentData.value as? Int ?? 0
+                value += 1
+                currentData.value = value
+                return .success(withValue: currentData)
+            }) { error, committed, snapshot in
+                if let error = error {
+                    Logger.e("❌ [Firebase] Increment counter error: \(error.localizedDescription)")
+                    cont.resume(throwing: error)
+                } else {
+                    Logger.d("✅ [Firebase] Incremented \(safePackageId) for \(dateKey): \(snapshot?.value ?? 0)")
+                    cont.resume(returning: ())
+                }
+            }
+        }
+    }
 }
