@@ -130,6 +130,20 @@ struct PlayMySongScreen: View {
             rotationAngle = 0
         }
         .onChange(of: musicPlayer.currentSong?.id) { songId in
+            // Stop any ongoing animation and reset rotation immediately when song changes
+            withAnimation(.linear(duration: 0)) {
+                rotationAngle = 0
+            }
+            
+            // Restart animation if playing (with small delay to ensure reset takes effect)
+            if musicPlayer.isPlaying {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                        rotationAngle = 360
+                    }
+                }
+            }
+            
             // Load timestamped lyrics and update favorite state when song changes
             if let songId = songId {
                 loadTimestampedLyrics(for: songId)

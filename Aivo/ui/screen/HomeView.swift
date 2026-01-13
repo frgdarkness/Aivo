@@ -155,11 +155,11 @@ struct HomeView: View {
     private var headerView: some View {
         HStack {
             HStack(spacing: 8) {
-                Text("AIVO")
+                Text(backgroundManager.isGenerating ? "AIVO" : "AIVO Music")
                     .font(.system(size: 24, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
+                    .animation(nil, value: backgroundManager.isGenerating) // Disable animation for text change
                 
-                // Generating Status Indicator
                 // Generating Status Indicator
                 if backgroundManager.isGenerating {
                     ProgressView()
