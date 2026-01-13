@@ -82,15 +82,7 @@ final class SubscriptionManager: ObservableObject {
     private var updatesTask: Task<Void, Never>?
     private var processedTransactionIDs = Set<String>()
 
-    private var bonusCreditAmount: Int {
-        // Get bonus based on current subscription period
-        guard let currentSub = currentSubscription else { return 1000 } // Default to weekly
-        switch currentSub.period {
-        case .weekly: return 1000
-        case .yearly: return 1200
-        }
-    }
-    private let bonusIntervalDays: Double = 7
+
     
     // MARK: - Init
     private init() {
@@ -368,7 +360,71 @@ final class SubscriptionManager: ObservableObject {
         isPremium = isPremiumEnable
     }
     
-    // MARK: - Bonus Credit (weekly: 1000, yearly: 1200)
+    // MARK: - Bonus Credit Logic
+    
+    /// Cut-off date for new bonus policy (Jan 15, 2026)
+    private let bonusPolicyCutoffDate: Date = {
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 1
+        components.day = 15
+        return Calendar.current.date(from: components) ?? Date()
+    }()
+    
+    private var bonusCreditAmount: Int {
+        // Get bonus based on current subscription and cohort
+        guard let currentSub = currentSubscription else { return 1000 } // Default to weekly amount
+        
+        switch currentSub.period {
+        case .weekly:
+            return 1000
+        case .yearly:
+            // Check if user is "Grandfathered" (subscribed before Jan 15, 2026)
+            // Use local profile startDate as proxy for original purchase if transaction history is partial
+            // Ideally, we check the earliest transaction date for the active subscription chain
+            let profileStartDate = LocalStorageManager.shared.getLocalProfile().subscriptionStartDate ?? Date()
+            
+            if profileStartDate < bonusPolicyCutoffDate {
+                // Grandfathered: 1200 credits per WEEK
+                return 1200
+            } else {
+                // New Policy: 1200 credits per MONTH
+                return 1200
+            }
+        }
+    }
+    
+    private var bonusIntervalDays: Double {
+        guard let currentSub = currentSubscription else { return 7 }
+        
+        switch currentSub.period {
+        case .weekly:
+            return 7
+        case .yearly:
+            let profileStartDate = LocalStorageManager.shared.getLocalProfile().subscriptionStartDate ?? Date()
+            if profileStartDate < bonusPolicyCutoffDate {
+                // Grandfathered: Weekly bonus
+                return 7
+            } else {
+                // New Policy: Monthly bonus (approx 30 days)
+                return 30
+            }
+        }
+    }
+    
+    func getNextBonusDate() -> Date? {
+        guard isPremium else { return nil }
+        
+        // Return stored next date if available logic supported it, 
+        // but currently we calc based on last bonus date + interval
+        if let lastBonusDate = KeychainManager.shared.getLastBonusDate() {
+            return lastBonusDate.addingTimeInterval(bonusIntervalDays * 24 * 60 * 60)
+        }
+        
+        // If no last bonus date but premium, maybe just started?
+        return Date().addingTimeInterval(bonusIntervalDays * 24 * 60 * 60)
+    }
+    
     func checkBonusCreditForSubscription() async {
         guard isPremium else {
             Logger.d("checkBonusCreditForSubscription: user not premium, skip")
@@ -376,9 +432,8 @@ final class SubscriptionManager: ObservableObject {
         }
 
         let now = Date()
-        
-        // Get bonus amount based on current subscription period
         let bonusAmount = bonusCreditAmount
+        let interval = bonusIntervalDays
         
         // Priority 1: Load from Keychain (persists across app reinstalls)
         var lastBonusDate: Date? = KeychainManager.shared.getLastBonusDate()
@@ -395,7 +450,7 @@ final class SubscriptionManager: ObservableObject {
 
         if let last = lastBonusDate {
             let days = now.timeIntervalSince(last) / (60 * 60 * 24)
-            if days >= bonusIntervalDays {
+            if days >= interval {
                 await CreditManager.shared.increaseCredits(by: bonusAmount)
                 KeychainManager.shared.saveLastBonusDate(now)
                 // Also save to UserDefaults for backward compatibility
@@ -412,12 +467,12 @@ final class SubscriptionManager: ObservableObject {
                 }
                 
                 let periodName = currentSubscription?.period.displayName ?? "unknown"
-                Logger.i("checkBonusCreditForSubscription: +\(bonusAmount) credits (\(periodName) bonus), daysSinceLast=\(Int(days))")
+                Logger.i("checkBonusCreditForSubscription: +\(bonusAmount) credits (\(periodName) bonus), daysSinceLast=\(Int(days)), interval=\(interval)")
             } else {
-                Logger.d("checkBonusCreditForSubscription: not yet (\(Int(bonusIntervalDays - days)) days left)")
+                Logger.d("checkBonusCreditForSubscription: not yet (\(Int(interval - days)) days left)")
             }
         } else {
-            // lần đầu sau khi sub
+            // First time after sub
             await CreditManager.shared.increaseCredits(by: bonusAmount)
             KeychainManager.shared.saveLastBonusDate(now)
             // Also save to UserDefaults for backward compatibility

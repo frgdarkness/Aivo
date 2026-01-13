@@ -410,6 +410,17 @@ struct SubscriptionScreenIntro: View {
                         Spacer()
                     }
                 }
+                
+                // Next Bonus Date
+                if let nextBonus = subscriptionManager.getNextBonusDate() {
+                    HStack {
+                        Text("Next bonus date: \(formatDate(nextBonus))")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AivoTheme.Secondary.goldenSun)
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
             }
             .padding(.top, 8)
             

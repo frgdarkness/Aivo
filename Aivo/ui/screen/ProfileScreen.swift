@@ -30,6 +30,7 @@ struct ProfileScreen: View {
     @State private var toastMessageText = ""
     @State private var showBuyCreditDialog = false
     @State private var showPremiumRequiredAlert = false
+    @State private var showSubscriptionScreen = false
     #if DEBUG
     @State private var showTestScreen = false
     #endif
@@ -87,9 +88,10 @@ struct ProfileScreen: View {
             ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
             : Color.white.opacity(0.7)
     }
-    
+
     var body: some View {
         ZStack {
+            // ... (existing content)
             // Background
             AivoSunsetBackground()
             
@@ -115,11 +117,13 @@ struct ProfileScreen: View {
             }
         }
         .onAppear {
-            // Log screen view
-            AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_PROFILE)
-            
-            checkMailAvailability()
-            editingUserName = userName
+             // ...
+             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_PROFILE)
+             checkMailAvailability()
+             editingUserName = userName
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionScreen()
         }
         .sheet(isPresented: $showLanguageScreen) {
             SelectLanguageScreen { _ in
@@ -329,103 +333,67 @@ struct ProfileScreen: View {
     private var membershipCard: some View {
         VStack(spacing: 12) {
             // Membership Row - VIP icon và tên gói bên phải
-            HStack {
-                // VIP Button icon giống HomeView
-                HStack(spacing: 4) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
-                    Text(memberName)
-                        .font(.system(size: 16, weight: .medium))
-                        .fontWeight(.semibold)
-                        .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
+            Button(action: {
+                if subscriptionManager.isPremium {
+                    showSubscriptionScreen = true
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                // NỀN: chỉ có khi VIP
-                .background(
-                    Group {
-                        if subscriptionManager.isPremium {
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
-                                    Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
-                                    Color(red: 1.0, green: 0.45, blue: 0.1) 
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .clipShape(Capsule())
-                        } else {
-                            Color.clear.clipShape(Capsule())
-                        }
-                    }
-                )
-                // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
-                .overlay(
-                    Capsule().stroke(
-                        subscriptionManager.isPremium
-                        ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
-                        : Color.white.opacity(0.5),
-                        lineWidth: 1
-                    )
-                )
-                // Bóng nhẹ chỉ khi VIP để nổi bật
-                .shadow(color: subscriptionManager.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
-                        radius: 8, x: 0, y: 3)
-                
-                // Tên gói member bên phải icon
-//                Text(memberName)
-//                    .font(.system(size: 16, weight: .medium))
-//                    .foregroundColor(.white)
-                
-                Spacer()
-                
-//                Button(action: {
-//                    // Show membership info
-//                }) {
-//                    Image(systemName: "info.circle")
-//                        .font(.system(size: 14))
-//                        .foregroundColor(.gray)
-//                }
+            }) {
+                premiumBadgeRow
             }
+            .buttonStyle(PlainButtonStyle())
             
             // Credit Row - Layer riêng mờ hơn
-            HStack {
-                // Icon credit trước chữ "Credit"
-                Image("icon_coin")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 18, height: 18)
-                
-                Text("Credit")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Text("\(creditManager.credits)")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
-                
-//                Image("icon_coin")
-//                    .resizable()
-//                    .aspectRatio(contentMode: .fit)
-//                    .frame(width: 18, height: 18)
-                
-                // Add credit button
-                Button(action: {
-                    if subscriptionManager.isPremium {
-                        showBuyCreditDialog = true
-                    } else {
-                        showPremiumRequiredAlert = true
-                    }
-                }) {
-                    Image(systemName: "plus.circle.fill")
+            VStack(spacing: 8) {
+                // Credit count row
+                HStack {
+                    // Icon credit trước chữ "Credit"
+                    Image("icon_coin")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 18, height: 18)
+                    
+                    Text("Credit")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                    
+                    Spacer()
+                    
+                    Text("\(creditManager.credits)")
                         .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(AivoTheme.Primary.orange)
+                        .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
+                    
+                    // Add credit button
+                    Button(action: {
+                        if subscriptionManager.isPremium {
+                            showBuyCreditDialog = true
+                        } else {
+                            showPremiumRequiredAlert = true
+                        }
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(AivoTheme.Primary.orange)
+                    }
+                    .padding(.leading, 0)
                 }
-                .padding(.leading, 0)
+                
+                // Next Bonus Date for Premium Users
+                if subscriptionManager.isPremium, let nextBonus = subscriptionManager.getNextBonusDate() {
+                    Rectangle()
+                        .fill(Color.white.opacity(0.1))
+                        .frame(height: 1)
+                        .padding(.vertical, 4)
+                        
+                    HStack {
+                        Text("Next bonus date")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.white.opacity(0.7))
+                        Spacer()
+                        Text(formatDate(nextBonus))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(AivoTheme.Secondary.goldenSun)
+                    }
+                }
             }
             .padding(12)
             .background(Color.gray.opacity(0.25))
@@ -436,6 +404,65 @@ struct ProfileScreen: View {
         .padding(16)
         .background(Color.gray.opacity(0.15))
         .cornerRadius(12)
+    }
+    
+    // MARK: - Premium Badge Row
+    private var premiumBadgeRow: some View {
+        HStack {
+            // VIP Button icon giống HomeView
+            HStack(spacing: 4) {
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
+                Text(memberName)
+                    .font(.system(size: 16, weight: .medium))
+                    .fontWeight(.semibold)
+                    .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            // NỀN: chỉ có khi VIP
+            .background(
+                Group {
+                    if subscriptionManager.isPremium {
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
+                                Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
+                                Color(red: 1.0, green: 0.45, blue: 0.1)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                        .clipShape(Capsule())
+                    } else {
+                        Color.clear.clipShape(Capsule())
+                    }
+                }
+            )
+            // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
+            .overlay(
+                Capsule().stroke(
+                    subscriptionManager.isPremium
+                    ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                    : Color.white.opacity(0.5),
+                    lineWidth: 1
+                )
+            )
+            // Bóng nhẹ chỉ khi VIP để nổi bật
+            .shadow(color: subscriptionManager.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                    radius: 8, x: 0, y: 3)
+            
+            Spacer()
+        }
+    }
+    
+    // Helper function to format date
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
     
     // MARK: - Menu Items Section

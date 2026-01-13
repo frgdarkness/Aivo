@@ -187,6 +187,17 @@ struct SubscriptionScreen: View {
                         Spacer()
                     }
                 }
+                
+                // Next Bonus Date
+                if let nextBonus = subscriptionManager.getNextBonusDate() {
+                    HStack {
+                        Text("Next bonus date: \(formatDate(nextBonus))")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(AivoTheme.Secondary.goldenSun)
+                        Spacer()
+                    }
+                    .padding(.top, 2)
+                }
             }
             .padding(.top, 8)
             
@@ -278,10 +289,41 @@ struct SubscriptionScreen: View {
     }
 
     private var features: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            // Dynamic credits based on selected plan
-            let creditsAmount = selectedPlan == .yearly ? 1200 : 1000
-            featureRowWithHighlightedCredits(creditsAmount: creditsAmount)
+        // Dynamic credits based on selected plan or current subscription
+        let creditsAmount: Int
+        let perString: String
+        
+        if subscriptionManager.isPremium, let sub = subscriptionManager.currentSubscription {
+            // Active sub: show actual terms
+            if sub.period == .yearly {
+                // Check cohort for active user
+                let startDate = LocalStorageManager.shared.getLocalProfile().subscriptionStartDate ?? Date()
+                let components = DateComponents(year: 2026, month: 1, day: 15)
+                let cutoff = Calendar.current.date(from: components) ?? Date()
+                if startDate < cutoff {
+                    creditsAmount = 1200
+                    perString = "week"
+                } else {
+                    creditsAmount = 1200
+                    perString = "month"
+                }
+            } else {
+                creditsAmount = 1000
+                perString = "week"
+            }
+        } else {
+            // Not premium: Show what they WILL get if they select a plan
+            if selectedPlan == .yearly {
+                creditsAmount = 1200
+                perString = "month" // New users get monthly
+            } else {
+                creditsAmount = 1000
+                perString = "week"
+            }
+        }
+        
+        return VStack(alignment: .leading, spacing: 16) {
+            featureRowWithHighlightedCredits(creditsAmount: creditsAmount, period: perString)
             featureRow("Access to All Features")
             featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
@@ -290,7 +332,7 @@ struct SubscriptionScreen: View {
         .padding(.top, 20)
     }
 
-    private func featureRowWithHighlightedCredits(creditsAmount: Int) -> some View {
+    private func featureRowWithHighlightedCredits(creditsAmount: Int, period: String) -> some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
@@ -316,7 +358,7 @@ struct SubscriptionScreen: View {
                     .font(.system(size: 28, weight: .bold))
                     .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 4, x: 0, y: 2)
                 VStack {
-                    Text("credits per week")
+                    Text("credits per \(period)")
                         .foregroundColor(.white.opacity(0.85))
                         .font(.system(size: 17, weight: .medium))
                         .padding(.top, 6)
@@ -350,7 +392,7 @@ struct SubscriptionScreen: View {
             if let yearlyProduct = subscriptionManager.getProduct(for: .yearly) {
                 planCard(
                     title: "Yearly",
-                    subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: yearlyProduct)) credits per week",
+                    subtitle: "1200 credits per month", // New policy for fresh purchase
                     price: yearlyProduct.displayPrice,
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
@@ -360,7 +402,7 @@ struct SubscriptionScreen: View {
                 // Fallback loading state
                 planCard(
                     title: "Yearly",
-                    subtitle: "1200 credits per week",
+                    subtitle: "1200 credits per month",
                     price: "Loading...",
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
