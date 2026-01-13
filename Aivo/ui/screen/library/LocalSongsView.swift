@@ -15,9 +15,18 @@ struct LocalSongsView: View {
     var body: some View {
         VStack {
             if isLoading {
-                ProgressView("Loading...")
-                    .tint(.white)
-                    .foregroundColor(.white)
+                VStack(spacing: 16) {
+                    Spacer()
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: AivoTheme.Primary.orange))
+                        .scaleEffect(1.5)
+                    
+                    Text("Loading...")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if localSongs.isEmpty {
                 emptyState
             } else {
@@ -210,7 +219,7 @@ struct LocalSongsView: View {
                     .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 4)
             }
             .padding(.trailing, 20)
-            .padding(.bottom, 110) // Above tab bar/player
+            .padding(.bottom, 20) // Above tab bar/player
             , alignment: .bottomTrailing
         )
     }

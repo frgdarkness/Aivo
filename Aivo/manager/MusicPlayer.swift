@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import SwiftUI
+import MediaPlayer
 
 // MARK: - Music Player Manager
 class MusicPlayer: NSObject, ObservableObject {
@@ -37,6 +38,7 @@ class MusicPlayer: NSObject, ObservableObject {
     private override init() {
         super.init()
         setupAudioSession()
+        setupRemoteTransportControls()
     }
     
     // MARK: - Public Methods
@@ -75,6 +77,7 @@ class MusicPlayer: NSObject, ObservableObject {
         }
         
         setupAudioPlayer(with: audioURL)
+        updateNowPlayingInfo()
     }
     
     /// Play current song
@@ -87,6 +90,7 @@ class MusicPlayer: NSObject, ObservableObject {
         
         if success {
             startPlaybackTimer()
+            updateNowPlayingInfo()
         }
     }
     
@@ -97,6 +101,7 @@ class MusicPlayer: NSObject, ObservableObject {
         Logger.d("🎵 [MusicPlayer] Paused")
         
         stopPlaybackTimer()
+        updateNowPlayingInfo()
     }
     
     /// Stop current song
@@ -111,6 +116,7 @@ class MusicPlayer: NSObject, ObservableObject {
         currentIndex = 0
         stopPlaybackTimer()
         Logger.d("🎵 [MusicPlayer] Stopped and cleared")
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
     }
     
     /// Toggle play/pause
@@ -126,6 +132,7 @@ class MusicPlayer: NSObject, ObservableObject {
     func seek(to time: TimeInterval) {
         audioPlayer?.currentTime = time
         currentTime = time
+        updateNowPlayingInfo()
     }
     
     /// Play next song
@@ -149,6 +156,7 @@ class MusicPlayer: NSObject, ObservableObject {
             currentTime = 0
             audioPlayer?.currentTime = 0
             play()
+            updateNowPlayingInfo() // Ensure info is updated for replay
         }
     }
     
@@ -193,6 +201,7 @@ class MusicPlayer: NSObject, ObservableObject {
             // Set category with options to support background playback
             try audioSession.setCategory(.playback, mode: .default, options: [.allowBluetooth, .allowBluetoothA2DP])
             try audioSession.setActive(true, options: [])
+            UIApplication.shared.beginReceivingRemoteControlEvents()
             Logger.d("🎵 [MusicPlayer] Audio session configured for background playback")
         } catch {
             Logger.e("❌ [MusicPlayer] Error setting up audio session: \(error)")
@@ -357,6 +366,9 @@ class MusicPlayer: NSObject, ObservableObject {
                         // Auto-play
                         self.play()
                         
+                        // UPDATE INFO
+                        self.updateNowPlayingInfo()
+                        
                     } catch {
                         Logger.e("❌ [MusicPlayer] Error setting up audio player with remote file: \(error)")
                         Logger.e("❌ [MusicPlayer] Remote error domain: \(error._domain)")
@@ -376,6 +388,7 @@ class MusicPlayer: NSObject, ObservableObject {
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
             if let player = self?.audioPlayer {
                 self?.currentTime = player.currentTime
+                self?.updateNowPlayingInfo(onlyTime: true) // Optimization: update time efficiently
             }
         }
     }
@@ -395,6 +408,7 @@ class MusicPlayer: NSObject, ObservableObject {
             currentTime = 0
             audioPlayer?.currentTime = 0
             play()
+            updateNowPlayingInfo() // Manual update needed
         case .shuffle:
             nextSong()
         }
@@ -425,6 +439,101 @@ class MusicPlayer: NSObject, ObservableObject {
         // Default fallback
         let audioFileName = "\(song.id)_audio.mp3"
         return sunoDataPath.appendingPathComponent(audioFileName)
+    }
+
+    // MARK: - Lock Screen / Control Center Controls
+    
+    private func setupRemoteTransportControls() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+        
+        // Play Command
+        commandCenter.playCommand.addTarget { [weak self] event in
+            guard let self = self else { return .commandFailed }
+            if !self.isPlaying {
+                self.play()
+                return .success
+            }
+            return .commandFailed
+        }
+        
+        // Pause Command
+        commandCenter.pauseCommand.addTarget { [weak self] event in
+            guard let self = self else { return .commandFailed }
+            if self.isPlaying {
+                self.pause()
+                return .success
+            }
+            return .commandFailed
+        }
+        
+        // Toggle Play/Pause
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] event in
+            guard let self = self else { return .commandFailed }
+            self.togglePlayPause()
+            return .success
+        }
+        
+        // Next Track
+        commandCenter.nextTrackCommand.addTarget { [weak self] event in
+            guard let self = self else { return .commandFailed }
+            self.nextSong()
+            return .success
+        }
+        
+        // Previous Track
+        commandCenter.previousTrackCommand.addTarget { [weak self] event in
+            guard let self = self else { return .commandFailed }
+            self.previousSong()
+            return .success
+        }
+        
+        // Scrubbing / Seek
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self = self, let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            self.seek(to: event.positionTime)
+            return .success
+        }
+    }
+    
+    private func updateNowPlayingInfo(onlyTime: Bool = false) {
+        guard let song = currentSong, let player = audioPlayer else {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            return
+        }
+        
+        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
+        
+        // Always update time-sensitive data
+        nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player.currentTime
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = player.duration
+        
+        if !onlyTime {
+            // Update metadata (Title, Artist, Artwork)
+            nowPlayingInfo[MPMediaItemPropertyTitle] = song.title
+            nowPlayingInfo[MPMediaItemPropertyArtist] = song.modelName.isEmpty ? "Aivo AI" : song.modelName
+            
+            // Handle Artwork
+            // Priorities: 1. Local path from manager 2. Remote URL
+            if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id),
+               let image = UIImage(contentsOfFile: localCoverPath.path) {
+                
+                let artwork = MPMediaItemArtwork(boundsSize: image.size) { size in
+                    return image
+                }
+                nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+                
+            } else if let url = URL(string: song.imageUrl) {
+                 // Async download for remote image if needed, though usually we have local.
+                 // Ideally we should cache/download. For now, try fallback or just don't crash.
+                 // Fetching async here might be tricky without Kingfisher explicitly,
+                 // but we can try to rely on what we have.
+                 // A simple approach: leave artwork empty if not strictly local, or use a placeholder.
+                 // For now, let's stick to local check which covers most cases.
+            }
+        }
+        
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
 }
 

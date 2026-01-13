@@ -98,8 +98,8 @@ struct CreatePlaylistView: View {
             
             VStack(spacing: 0) {
                 CustomTextField(placeholder: "Name", text: $playlistName)
-                Divider().background(Color.white.opacity(0.1)).padding(.horizontal)
-                CustomTextField(placeholder: "Description (Optional)", text: $playlistDescription)
+                //Divider().background(Color.white.opacity(0.1)).padding(.horizontal)
+                //CustomTextField(placeholder: "Description (Optional)", text: $playlistDescription)
             }
             .background(Color.white.opacity(0.05))
             .cornerRadius(12)
@@ -194,6 +194,7 @@ struct CreatePlaylistView: View {
                 }
             }
             .padding(.horizontal, 4)
+            .padding(.vertical, 6)
         }
     }
     
