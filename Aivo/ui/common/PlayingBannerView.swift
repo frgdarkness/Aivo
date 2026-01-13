@@ -32,12 +32,27 @@ struct TopRoundedRectangle: Shape {
 // MARK: - Playing Banner View
 struct PlayingBannerView: View {
     @StateObject private var musicPlayer = MusicPlayer.shared
+    @StateObject private var onlinePlayer = OnlineStreamPlayer.shared
     @State private var showFullPlayer = false
 
     private let cornerRadius: CGFloat = 16
+    
+    // Determine which player is active
+    private var isOnlinePlaying: Bool {
+        // Prioritize online player if it's playing or has a song and offline player is stopped
+        return onlinePlayer.currentSong != nil && (onlinePlayer.isPlaying || musicPlayer.currentSong == nil || !musicPlayer.isPlaying)
+    }
+    
+    private var activeSong: SunoData? {
+        if isOnlinePlaying {
+            return onlinePlayer.currentSong
+        } else {
+            return musicPlayer.currentSong
+        }
+    }
 
     var body: some View {
-        if let currentSong = musicPlayer.currentSong {
+        if let currentSong = activeSong {
             let shape = TopRoundedRectangle(radius: cornerRadius)
 
             HStack(spacing: 12) {
@@ -71,8 +86,14 @@ struct PlayingBannerView: View {
                 // Control Buttons
                 HStack(spacing: 8) {
                     // Play/Pause Button
-                    Button(action: { musicPlayer.togglePlayPause() }) {
-                        Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    Button(action: {
+                        if isOnlinePlaying {
+                            onlinePlayer.togglePlayPause()
+                        } else {
+                            musicPlayer.togglePlayPause()
+                        }
+                    }) {
+                        Image(systemName: (isOnlinePlaying ? onlinePlayer.isPlaying : musicPlayer.isPlaying) ? "pause.fill" : "play.fill")
                             .font(.system(size: 20))
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
@@ -81,7 +102,13 @@ struct PlayingBannerView: View {
                     }
 
                     // Close Button
-                    Button(action: { musicPlayer.stop() }) {
+                    Button(action: {
+                        if isOnlinePlaying {
+                            onlinePlayer.stop()
+                        } else {
+                            musicPlayer.stop()
+                        }
+                    }) {
                         Image(systemName: "xmark")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white)
@@ -103,10 +130,17 @@ struct PlayingBannerView: View {
             )
             .onTapGesture { showFullPlayer = true }
             .fullScreenCover(isPresented: $showFullPlayer) {
-                PlayMySongScreen(
-                    songs: musicPlayer.songs,
-                    initialIndex: musicPlayer.currentIndex
-                )
+                if isOnlinePlaying {
+                    PlayOnlineSongScreen(
+                        songs: onlinePlayer.songs,
+                        initialIndex: onlinePlayer.currentIndex
+                    )
+                } else {
+                    PlayMySongScreen(
+                        songs: musicPlayer.songs,
+                        initialIndex: musicPlayer.currentIndex
+                    )
+                }
             }
         }
     }

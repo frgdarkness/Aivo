@@ -10,31 +10,29 @@ private struct HeaderHeightKey: PreferenceKey {
 }
 
 // MARK: - Play My Song Screen
-struct PlayMySongScreen: View {
+struct PlayOnlineSongScreen: View {
     let songs: [SunoData]
     let initialIndex: Int
     @Environment(\.dismiss) private var dismiss
 
-    @StateObject private var musicPlayer = MusicPlayer.shared
+    @StateObject private var streamPlayer = OnlineStreamPlayer.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var isScrubbing = false
     @State private var scrubTime: TimeInterval = 0
-    @State private var isFavorite = false
+    @State private var isDownloaded = false
+    @State private var isDownloading = false
+    @State private var downloadProgress: Double = 0
     @State private var showPlaylist = false
     @State private var localSongs: [SunoData] = []
     @State private var isLoading = true
-    @State private var showMenu = false
     @State private var showExportSheet = false
     @State private var currentFileURL: URL?
-    @State private var showDeleteAlert = false
     @State private var rotationAngle: Double = 0
-    @State private var headerHeight: CGFloat = 0   // <- chiều cao header
-    @State private var showAddToPlaylistSheet = false
-    @State private var showEditSheet = false
+    @State private var headerHeight: CGFloat = 0
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
     @State private var timestampedLyrics: TimestampedLyricsData?
-    @State private var lyricSentences: [LyricSentence] = []
+    @State private var lyricSentences: [PlayOnlineLyricSentence] = []
     @State private var currentSentenceIndex: Int = 0
     @State private var cachedCoverImageURL: URL?
 
@@ -43,8 +41,8 @@ struct PlayMySongScreen: View {
         self.initialIndex = initialIndex
     }
 
-    private var currentSong: SunoData? { musicPlayer.currentSong }
-    private var displaySongs: [SunoData] { musicPlayer.songs.isEmpty ? songs : musicPlayer.songs }
+    private var currentSong: SunoData? { streamPlayer.currentSong }
+    private var displaySongs: [SunoData] { streamPlayer.songs.isEmpty ? songs : streamPlayer.songs }
 
     var body: some View {
         ZStack {
@@ -62,44 +60,11 @@ struct PlayMySongScreen: View {
                 }
             }
         }
-        // ✅ MENU OVERLAY Ở TẦNG NGOÀI CÙNG
-        .overlay {
-            if showMenu {
-                ZStack(alignment: .topTrailing) {
-                    // blocker để bắt tap ngoài menu
-                    Color.black.opacity(0.001)
-                        .ignoresSafeArea()
-                        .onTapGesture { 
-                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                                showMenu = false
-                            }
-                        }
-
-                    menuView
-                        .padding(.top, headerHeight + 8 + 50) // đặt dưới header
-                        .padding(.trailing, 20)
-                }
-                .transition(.asymmetric(
-                    insertion: .move(edge: .trailing).combined(with: .opacity),
-                    removal: .move(edge: .trailing).combined(with: .opacity)
-                ))
-                .zIndex(2)
-            }
-        }
         .sheet(isPresented: $showPlaylist) { playlistView }
-        .sheet(isPresented: $showAddToPlaylistSheet) {
-            if let song = currentSong {
-                AddToPlaylistSheet(song: song)
-            }
-        }
         .sheet(isPresented: $showExportSheet) {
-            if let url = currentFileURL { DocumentExporter(fileURL: url) }
-        }
-        .alert("Delete Song", isPresented: $showDeleteAlert) {
-            Button("Cancel", role: .cancel) { }
-            Button("Delete", role: .destructive) { deleteCurrentSong() }
-        } message: {
-            Text("Are you sure you want to delete this song? This action cannot be undone.")
+            if let url = currentFileURL {
+                DocumentExporter(fileURL: url)
+            }
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionScreenIntro()
@@ -117,23 +82,21 @@ struct PlayMySongScreen: View {
         } message: {
             Text("You can only export 1 song per day as a free user. Upgrade to Premium for unlimited exports.")
         }
-        .overlay {
-            if showEditSheet, let song = currentSong {
-                EditSongInfoDialog(song: song) {
-                    showEditSheet = false
-                }
-            }
-        }
         .onAppear { onAppearTasks() }
         .onDisappear {
             // Reset animation state immediately when dismissing to prevent lag
             rotationAngle = 0
         }
-        .onChange(of: musicPlayer.currentSong?.id) { songId in
-            // Load timestamped lyrics and update favorite state when song changes
+        .onChange(of: streamPlayer.currentSong?.id) { songId in
+            // Stop any ongoing animation and reset rotation immediately when song changes
+            withAnimation(.linear(duration: 0)) {
+                rotationAngle = 0
+            }
+            
+            // Load timestamped lyrics and check download state when song changes
             if let songId = songId {
                 loadTimestampedLyrics(for: songId)
-                isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
+                checkIfDownloaded(songId: songId)
                 
                 // Cache cover image URL to prevent reload
                 if let coverURL = getImageURLForSong(currentSong) {
@@ -141,25 +104,21 @@ struct PlayMySongScreen: View {
                 }
             }
         }
-        .onChange(of: musicPlayer.isPlaying) { isPlaying in
-            // Use explicit animation control to prevent conflicts
-            if isPlaying {
-                // Start rotation animation smoothly
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
-                }
-            } else {
-                // Stop rotation smoothly
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    rotationAngle = 0
-                }
+        .onChange(of: streamPlayer.isPlaying) { isPlaying in
+            // Update rotation when playing state changes
+            updateRotationState()
+        }
+        .onChange(of: streamPlayer.duration) { duration in
+            // Update rotation when duration becomes available
+            if duration > 0 {
+                updateRotationState()
             }
         }
-        .onChange(of: musicPlayer.currentTime) { currentTime in
+        .onChange(of: streamPlayer.currentTime) { currentTime in
             // Update current sentence based on playback time
             updateCurrentSentence(for: currentTime)
         }
-        .onChange(of: musicPlayer.currentSong) { _ in
+        .onChange(of: streamPlayer.currentSong) { _ in
             // Force refresh UI when MusicPlayer changes song
             // This helps update cover image when playing next song
         }
@@ -237,21 +196,28 @@ struct PlayMySongScreen: View {
             Spacer()
 
             HStack(spacing: 12) {
-                Button(action: { toggleFavorite() }) {
-                    Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .font(.title2)
-                        .foregroundColor(isFavorite ? .red : .white)
-                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.2))
-                        .clipShape(Circle())
+                // Download Button
+                Button(action: { downloadCurrentSong() }) {
+                    ZStack {
+                        if isDownloading {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: isDownloaded ? "checkmark.circle.fill" : "arrow.down.circle")
+                                .font(.title2)
+                                .foregroundColor(isDownloaded ? .green : .white)
+                        }
+                    }
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.2))
+                    .clipShape(Circle())
                 }
+                .disabled(isDownloaded || isDownloading)
 
-                Button(action: { 
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) { 
-                        showMenu.toggle() 
-                    } 
-                }) {
-                    Image(systemName: "ellipsis")
+                // Export Button
+                Button(action: { exportCurrentSong() }) {
+                    Image(systemName: "square.and.arrow.up")
                         .font(.title2).foregroundColor(.white)
                         .frame(width: 44, height: 44)
                         .background(Color.white.opacity(0.2))
@@ -269,102 +235,6 @@ struct PlayMySongScreen: View {
             }
         )
         .onPreferenceChange(HeaderHeightKey.self) { headerHeight = $0 }
-    }
-
-    // MARK: - Menu (chiều ngang ôm theo item dài nhất)
-    private var menuView: some View {
-        VStack(alignment: .leading, spacing: 0) {         // <- căn trái toàn bộ
-            Button {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    showMenu = false
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showEditSheet = true
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "pencil").font(.system(size: 16))
-                    Text("Edit Song Info")
-                        .font(.system(size: 16, weight: .medium))
-                        .multilineTextAlignment(.leading)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-
-            Divider().background(Color.white.opacity(0.2))
-
-            Button {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    showMenu = false
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showAddToPlaylistSheet = true
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.square.on.square").font(.system(size: 16))
-                    Text("Add to Playlist")
-                        .font(.system(size: 16, weight: .medium))
-                        .multilineTextAlignment(.leading)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-            
-            Divider().background(Color.white.opacity(0.2))
-
-            Button {
-                exportCurrentSong()
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    showMenu = false
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.and.arrow.up").font(.system(size: 16))
-                    Text("Export to Device")
-                        .font(.system(size: 16, weight: .medium))
-                        .multilineTextAlignment(.leading)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-
-            Divider().background(Color.white.opacity(0.2))
-
-            Button {
-                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                    showMenu = false
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    showDeleteAlert = true
-                }
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "trash").font(.system(size: 16))
-                    Text("Delete Song")
-                        .font(.system(size: 16, weight: .medium))
-                        .multilineTextAlignment(.leading)
-                }
-                .foregroundColor(.red)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-            }
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                )
-        )
-        .fixedSize(horizontal: true, vertical: false)      // <- ôm theo item dài nhất
-        .shadow(color: .black.opacity(0.35), radius: 16, x: 0, y: 6)
-        .transition(.opacity)
     }
 
     // MARK: - Album Art
@@ -513,27 +383,57 @@ struct PlayMySongScreen: View {
 
     private var seekBarView: some View {
         VStack(spacing: 0) {
-            Slider(
-                value: Binding(
-                    get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
-                    set: { v in if isScrubbing { scrubTime = v } else { musicPlayer.currentTime = v } }
-                ),
-                in: 0...max(0.1, musicPlayer.duration),
-                onEditingChanged: { editing in
-                    if editing {
-                        isScrubbing = true; scrubTime = musicPlayer.currentTime
-                    } else {
-                        isScrubbing = false; musicPlayer.seek(to: scrubTime)
+            ZStack(alignment: .leading) {
+                // Buffer Track (behind slider)
+                GeometryReader { geo in
+                    let duration = max(0.1, streamPlayer.duration)
+                    
+                    // Calculate total buffered width from all loaded ranges
+                    let maxBufferedTime = streamPlayer.loadedTimeRanges.map { $0.end.seconds }.max() ?? 0
+                    let bufferWidth = geo.size.width * CGFloat(maxBufferedTime / duration)
+                    
+                    // Only show buffer bar when actually buffered
+                    if maxBufferedTime > 0 {
+                        Capsule()
+                            .fill(Color.white.opacity(0.3))
+                            .frame(width: min(bufferWidth, geo.size.width), height: 4)
+                            .position(x: min(bufferWidth, geo.size.width) / 2, y: geo.size.height / 2)
                     }
                 }
-            )
-            .accentColor(AivoTheme.Primary.orange)
+                .frame(height: 20) // Match slider interactive area
+                
+                // Native Slider
+                Slider(
+                    value: Binding(
+                        get: { isScrubbing ? scrubTime : streamPlayer.currentTime },
+                        set: { newValue in
+                            scrubTime = newValue
+                        }
+                    ),
+                    in: 0...max(0.1, streamPlayer.duration),
+                    onEditingChanged: { editing in
+                        if editing {
+                            isScrubbing = true
+                            scrubTime = streamPlayer.currentTime
+                        } else {
+                            // Perform the seek
+                            streamPlayer.seek(to: scrubTime)
+                            
+                            // Delay resetting isScrubbing to prevent "jump back" jitter
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                isScrubbing = false
+                            }
+                        }
+                    }
+                )
+                .accentColor(AivoTheme.Primary.orange)
+            }
 
             HStack {
-                Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))
+                Text(formatTime(isScrubbing ? scrubTime : streamPlayer.currentTime))
                     .font(.caption).foregroundColor(.white)
                 Spacer()
-                Text(formatTime(musicPlayer.duration))
+                Text(formatTime(streamPlayer.duration))
                     .font(.caption).foregroundColor(.white)
             }
         }
@@ -541,23 +441,23 @@ struct PlayMySongScreen: View {
 
     private var controlButtonsView: some View {
         HStack(spacing: 30) {
-            Button(action: { musicPlayer.changePlayMode() }) {
-                Image(systemName: musicPlayer.playMode.icon)
+            Button(action: { streamPlayer.changePlayMode() }) {
+                Image(systemName: streamPlayer.playMode.icon)
                     .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
             }
-            Button(action: { musicPlayer.previousSong() }) {
+            Button(action: { streamPlayer.previousSong() }) {
                 Image(systemName: "backward.end.fill")
                     .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
             }
-            Button(action: { musicPlayer.togglePlayPause() }) {
-                Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
+            Button(action: { streamPlayer.togglePlayPause() }) {
+                Image(systemName: streamPlayer.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 32)).foregroundColor(.black)
                     .frame(width: 70, height: 70)
                     .background(AivoTheme.Primary.orange)
                     .clipShape(Circle())
                     .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 5)
             }
-            Button(action: { musicPlayer.nextSong() }) {
+            Button(action: { streamPlayer.nextSong() }) {
                 Image(systemName: "forward.end.fill")
                     .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
             }
@@ -585,10 +485,10 @@ struct PlayMySongScreen: View {
                         ForEach(Array(displaySongs.enumerated()), id: \.element.id) { index, song in
                             PlaylistSongRowView(
                                 song: song,
-                                isCurrentSong: index == musicPlayer.currentIndex,
-                                isPlaying: index == musicPlayer.currentIndex && musicPlayer.isPlaying,
+                                isCurrentSong: index == streamPlayer.currentIndex,
+                                isPlaying: index == streamPlayer.currentIndex && streamPlayer.isPlaying,
                                 onTap: {
-                                    musicPlayer.loadSong(song, at: index, in: displaySongs)
+                                    streamPlayer.loadSong(song, at: index, in: displaySongs)
                                     showPlaylist = false
                                 }
                             )
@@ -603,11 +503,11 @@ struct PlayMySongScreen: View {
     // MARK: - Timestamped Lyrics
     private func loadTimestampedLyrics(for songId: String) {
         if let lyrics = TimestampedLyricsManager.shared.getTimestampedLyrics(for: songId) {
-            Logger.i("🎤 [PlayMySong] Loaded timestamped lyrics for song: \(songId)")
-            Logger.d("🎤 [PlayMySong] Total words: \(lyrics.alignedWords.count)")
-            Logger.d("🎤 [PlayMySong] Waveform data points: \(lyrics.waveformData.count)")
-            Logger.d("🎤 [PlayMySong] Hoot CER: \(lyrics.hootCer)")
-            Logger.d("🎤 [PlayMySong] Is streamed: \(lyrics.isStreamed)")
+            Logger.i("🎤 [PlayOnline] Loaded timestamped lyrics for song: \(songId)")
+            Logger.d("🎤 [PlayOnline] Total words: \(lyrics.alignedWords.count)")
+            Logger.d("🎤 [PlayOnline] Waveform data points: \(lyrics.waveformData.count)")
+            Logger.d("🎤 [PlayOnline] Hoot CER: \(lyrics.hootCer)")
+            Logger.d("🎤 [PlayOnline] Is streamed: \(lyrics.isStreamed)")
             
             // Store timestamped lyrics
             timestampedLyrics = lyrics
@@ -618,10 +518,10 @@ struct PlayMySongScreen: View {
             // Log first few words as example
             let firstWords = lyrics.alignedWords.prefix(5)
             for word in firstWords {
-                Logger.d("🎤 [PlayMySong] Word: '\(word.word)' | Start: \(word.startS)s | End: \(word.endS)s")
+                Logger.d("🎤 [PlayOnline] Word: '\(word.word)' | Start: \(word.startS)s | End: \(word.endS)s")
             }
         } else {
-            Logger.d("🎤 [PlayMySong] No timestamped lyrics found for song: \(songId)")
+            Logger.d("🎤 [PlayOnline] No timestamped lyrics found for song: \(songId)")
             timestampedLyrics = nil
             lyricSentences = []
             currentSentenceIndex = 0
@@ -630,7 +530,7 @@ struct PlayMySongScreen: View {
     
     // MARK: - Parse Lyric Sentences
     private func parseLyricSentences(from lyrics: TimestampedLyricsData) {
-        var sentences: [LyricSentence] = []
+        var sentences: [PlayOnlineLyricSentence] = []
         var currentSentenceWords: [AlignedWord] = []
         var currentSentenceText = ""
         var pendingNewSentenceText: String? = nil
@@ -676,7 +576,7 @@ struct PlayMySongScreen: View {
                 // End current sentence if it has content
                 if !currentSentenceWords.isEmpty {
                     let startTime = currentSentenceWords.first?.startS ?? word.startS
-                    sentences.append(LyricSentence(
+                    sentences.append(PlayOnlineLyricSentence(
                         text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
                         startTime: startTime,
                         words: currentSentenceWords
@@ -716,7 +616,7 @@ struct PlayMySongScreen: View {
                 // End current sentence if it has content
                 if !currentSentenceWords.isEmpty {
                     let startTime = currentSentenceWords.first?.startS ?? word.startS
-                    sentences.append(LyricSentence(
+                    sentences.append(PlayOnlineLyricSentence(
                         text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
                         startTime: startTime,
                         words: currentSentenceWords
@@ -757,7 +657,7 @@ struct PlayMySongScreen: View {
         // Add last sentence if exists
         if !currentSentenceWords.isEmpty {
             let startTime = currentSentenceWords.first?.startS ?? 0
-            sentences.append(LyricSentence(
+            sentences.append(PlayOnlineLyricSentence(
                 text: currentSentenceText.trimmingCharacters(in: .whitespacesAndNewlines),
                 startTime: startTime,
                 words: currentSentenceWords
@@ -767,9 +667,9 @@ struct PlayMySongScreen: View {
         lyricSentences = sentences
         currentSentenceIndex = 0
         
-        Logger.d("🎤 [PlayMySong] Parsed \(sentences.count) sentences from lyrics")
+        Logger.d("🎤 [PlayOnline] Parsed \(sentences.count) sentences from lyrics")
         for (index, sentence) in sentences.enumerated() {
-            Logger.d("🎤 [PlayMySong] Sentence \(index): '\(sentence.text.prefix(50))' | Start: \(sentence.startTime)s")
+            Logger.d("🎤 [PlayOnline] Sentence \(index): '\(sentence.text.prefix(50))' | Start: \(sentence.startTime)s")
         }
     }
     
@@ -807,11 +707,22 @@ struct PlayMySongScreen: View {
     private func onAppearTasks() {
         isLoading = true
         localSongs = songs
+        
+        // Load the initial song into the stream player
+        if !songs.isEmpty {
+            streamPlayer.loadSong(songs[initialIndex], at: initialIndex, in: songs)
+            
+            // Trigger rotation check after a short delay to ensure player state is updated
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                updateRotationState()
+            }
+        }
+        
         isLoading = false
         
-        // Load favorite state when opening song
+        // Check download state when opening song
         if let song = currentSong {
-            isFavorite = FavoriteManager.shared.isFavorite(songId: song.id)
+            checkIfDownloaded(songId: song.id)
             
             // Load timestamped lyrics when opening song
             loadTimestampedLyrics(for: song.id)
@@ -823,25 +734,66 @@ struct PlayMySongScreen: View {
         }
         
         // Initialize rotation state based on playing status
-        if musicPlayer.isPlaying {
-            // Reset angle to 0 first to ensure smooth start
-            rotationAngle = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
+        updateRotationState()
+    }
+    
+    private func updateRotationState() {
+        // Only rotate when playing AND duration is available
+        // Don't check isBuffering as it can be inconsistent
+        let shouldRotate = streamPlayer.isPlaying && streamPlayer.duration > 0
+        
+        if shouldRotate {
+            // Start rotation animation smoothly
+            if rotationAngle == 0 {
+                // First time starting - reset and animate
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
+                        rotationAngle = 360
+                    }
                 }
             }
+            // If already rotating (rotationAngle != 0), let it continue
         } else {
-            rotationAngle = 0
+            // Stop rotation immediately
+            withAnimation(.linear(duration: 0)) {
+                rotationAngle = 0
+            }
         }
     }
     
-    private func toggleFavorite() {
-        guard let song = currentSong else { return }
+    private func checkIfDownloaded(songId: String) {
+        // Check if song exists in local storage
+        let localPath = getLocalFilePath(for: currentSong!)
+        isDownloaded = FileManager.default.fileExists(atPath: localPath.path)
+    }
+    
+    private func downloadCurrentSong() {
+        guard let song = currentSong, !isDownloaded, !isDownloading else { return }
         
-        isFavorite = FavoriteManager.shared.toggleFavorite(songId: song.id)
+        isDownloading = true
+        downloadProgress = 0
         
-        print("❤️ [Favorite] \(isFavorite ? "Added" : "Removed") favorite: \(song.title)")
+        Task {
+            do {
+                Logger.d("📥 [PlayOnline] Starting download for: \(song.title)")
+                
+                // Download and save the song
+                let savedURL = try await SunoDataManager.shared.saveSunoData(song)
+                
+                await MainActor.run {
+                    isDownloading = false
+                    isDownloaded = true
+                    downloadProgress = 1.0
+                    Logger.i("✅ [PlayOnline] Downloaded successfully: \(song.title)")
+                }
+            } catch {
+                Logger.e("❌ [PlayOnline] Download failed: \(error)")
+                await MainActor.run {
+                    isDownloading = false
+                    downloadProgress = 0
+                }
+            }
+        }
     }
 
     private func exportCurrentSong() {
@@ -941,6 +893,9 @@ struct PlayMySongScreen: View {
                 case .failure(let error):
                     print("⚠️ Metadata injection failed: \(error). Falling back to simple copy.")
                     // Fallback: Copy original file to temp with correct name
+                    // If source is mp3, output will be mp3 named .m4a? No, keep original extension if fallback.
+                    // But simplified: just try to copy to the target path (might fail if ext mismatch, so let's make a fallback path)
+                    
                     let fallbackExtension = sourceURL.pathExtension
                     let fallbackURL = tempDir.appendingPathComponent("\(sanitizedTitle).\(fallbackExtension)")
                     try? FileManager.default.removeItem(at: fallbackURL)
@@ -970,33 +925,6 @@ struct PlayMySongScreen: View {
         return String(format: "%d:%02d", m, s)
     }
 
-    private func deleteCurrentSong() {
-        guard let song = currentSong else { return }
-        Task {
-            do {
-                try await SunoDataManager.shared.deleteSunoData(song)
-                let local = getLocalFilePath(for: song)
-                if FileManager.default.fileExists(atPath: local.path) {
-                    try FileManager.default.removeItem(at: local)
-                }
-                await MainActor.run {
-                    if let idx = musicPlayer.songs.firstIndex(where: { $0.id == song.id }) {
-                        var arr = musicPlayer.songs
-                        arr.remove(at: idx)
-                        musicPlayer.songs = arr
-                        if idx == musicPlayer.currentIndex {
-                            if !arr.isEmpty {
-                                let next = min(idx, arr.count - 1)
-                                musicPlayer.loadSong(arr[next], at: next, in: arr)
-                            } else { musicPlayer.stop() }
-                        } else if idx < musicPlayer.currentIndex {
-                            musicPlayer.currentIndex -= 1
-                        }
-                    }
-                }
-            } catch { print("❌ Delete error: \(error)") }
-        }
-    }
     
     // MARK: - Lyric Parsing
     private func parseLyric(from prompt: String?) -> String? {
@@ -1071,287 +999,16 @@ struct PlayMySongScreen: View {
     }
 }
 
-// MARK: - Playlist Row (giữ nguyên)
-struct PlaylistSongRowView: View {
-    let song: SunoData
-    let isCurrentSong: Bool
-    let isPlaying: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: URL(string: song.imageUrl)) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
-            }
-            .frame(width: 50, height: 50)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(song.title).font(.headline).fontWeight(.medium).foregroundColor(.white).lineLimit(1)
-                Text(song.modelName).font(.subheadline).foregroundColor(.white.opacity(0.7)).lineLimit(1)
-            }
-
-            Spacer()
-
-            if isCurrentSong {
-                (isPlaying ? Image(systemName: "speaker.wave.2.fill") : Image(systemName: "pause.circle.fill"))
-                    .font(.title3).foregroundColor(AivoTheme.Primary.orange)
-            }
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(isCurrentSong ? Color.white.opacity(0.1) : Color.white.opacity(0.05))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isCurrentSong ? AivoTheme.Primary.orange : Color.clear, lineWidth: 2)
-                )
-        )
-        .onTapGesture { onTap() }
-    }
-}
-
-// MARK: - Edit Song Info Dialog
-struct EditSongInfoDialog: View {
-    let song: SunoData
-    let onDismiss: () -> Void
-    
-    @State private var editedTitle: String
-    @State private var editedModelName: String
-    @State private var isSaving = false
-    
-    init(song: SunoData, onDismiss: @escaping () -> Void) {
-        self.song = song
-        self.onDismiss = onDismiss
-        self._editedTitle = State(initialValue: song.title)
-        self._editedModelName = State(initialValue: song.modelName)
-    }
-    
-    var body: some View {
-        ZStack {
-            // Background overlay
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    onDismiss()
-                }
-            
-            // Dialog Content
-            VStack(spacing: 0) {
-                // Header
-                HStack {
-                    Text("Edit Song Info")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    Button(action: onDismiss) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 28, height: 28)
-                            .background(Color.white.opacity(0.2))
-                            .clipShape(Circle())
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.white.opacity(0.1))
-                )
-                
-                VStack(spacing: 20) {
-                    // Song Title Field
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Song Title")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                        
-                        TextField("Enter title", text: $editedTitle)
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white.opacity(0.15))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                            )
-                    }
-                    
-                    // Artist Name Field
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Artist")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.white.opacity(0.8))
-                        
-                        TextField("Enter artist", text: $editedModelName)
-                            .font(.system(size: 16))
-                            .foregroundColor(.white)
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.white.opacity(0.15))
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                            )
-                    }
-                    
-                    // Action Buttons
-                    HStack(spacing: 12) {
-                        Button(action: onDismiss) {
-                            Text("Cancel")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundColor(.white.opacity(0.9))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(Color.white.opacity(0.15))
-                                .cornerRadius(10)
-                        }
-                        
-                        Button(action: saveChanges) {
-                            if isSaving {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Save")
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(.white)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(AivoTheme.Primary.orange)
-                        .cornerRadius(10)
-                        .disabled(isSaving || editedTitle.isEmpty || editedModelName.isEmpty)
-                        .opacity(isSaving || editedTitle.isEmpty || editedModelName.isEmpty ? 0.5 : 1.0)
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 24)
-            }
-            .background(
-                ZStack {
-                    // Base: Đen với gradient nhẹ
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 0.15, green: 0.12, blue: 0.16), // Dark purple-black
-                                    Color(red: 0.08, green: 0.06, blue: 0.1)  // Darker black
-                                ]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                    
-                    // Border accent cam vàng
-                    RoundedRectangle(cornerRadius: 20, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    AivoTheme.Primary.orange,
-                                    AivoTheme.Primary.orange.opacity(0.6)
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 2
-                        )
-                }
-                .shadow(color: AivoTheme.Shadow.orange.opacity(0.5), radius: 30, x: 0, y: 15)
-            )
-            .padding(.horizontal, 40)
-            .frame(maxWidth: 400)
-        }
-    }
-    
-    private func saveChanges() {
-        isSaving = true
-        
-        Task {
-            do {
-                // Update metadata file
-                try await SunoDataManager.shared.updateSunoData(song.id, title: editedTitle, modelName: editedModelName)
-                
-                await MainActor.run {
-                    // Update MusicPlayer's current song if it's the edited one
-                    if let currentSong = MusicPlayer.shared.currentSong, currentSong.id == song.id {
-                        // Create updated song data
-                        let updatedSong = SunoData(
-                            id: currentSong.id,
-                            audioUrl: currentSong.audioUrl,
-                            sourceAudioUrl: currentSong.sourceAudioUrl,
-                            streamAudioUrl: currentSong.streamAudioUrl,
-                            sourceStreamAudioUrl: currentSong.sourceStreamAudioUrl,
-                            imageUrl: currentSong.imageUrl,
-                            sourceImageUrl: currentSong.sourceImageUrl,
-                            prompt: currentSong.prompt,
-                            modelName: editedModelName,
-                            title: editedTitle,
-                            tags: currentSong.tags,
-                            createTime: currentSong.createTime,
-                            duration: currentSong.duration
-                        )
-                        
-                        // Update in MusicPlayer
-                        if let index = MusicPlayer.shared.songs.firstIndex(where: { $0.id == song.id }) {
-                            var songs = MusicPlayer.shared.songs
-                            songs[index] = updatedSong
-                            MusicPlayer.shared.songs = songs
-                        }
-                        
-                        MusicPlayer.shared.currentSong = updatedSong
-                    }
-                    
-                    isSaving = false
-                    onDismiss()
-                    
-                    Logger.d("✅ [EditSong] Successfully updated: \(editedTitle) by \(editedModelName)")
-                }
-            } catch {
-                await MainActor.run {
-                    isSaving = false
-                    Logger.e("❌ [EditSong] Error updating song info: \(error)")
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Lyric Sentence Model
-struct LyricSentence: Identifiable {
+// MARK: - PlayOnline-specific Lyric Sentence Model
+struct PlayOnlineLyricSentence: Identifiable {
     let id = UUID()
     let text: String
     let startTime: Double
     let words: [AlignedWord]
 }
 
-// MARK: - Helper Functions
-func getImageURLForSong(_ song: SunoData?) -> URL? {
-    guard let song = song else { return nil }
-    
-    // Check if local cover exists first
-    if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-        return localCoverPath
-    }
-    
-    // Fallback to source URL
-    return URL(string: song.sourceImageUrl)
-}
-
 // MARK: - Preview
-struct PlayMySongScreen_Previews: PreviewProvider {
+struct PlayOnlineSongScreen_Previews: PreviewProvider {
     static var previews: some View {
         // Create mock songs
         let mockSongs = [
@@ -1383,8 +1040,8 @@ struct PlayMySongScreen_Previews: PreviewProvider {
             )
         ]
         
-        // Setup MusicPlayer with first song for preview
-        let player = MusicPlayer.shared
+        // Setup OnlineStreamPlayer with first song for preview
+        let player = OnlineStreamPlayer.shared
         player.currentSong = mockSongs.first
         player.songs = mockSongs
         player.currentIndex = 0
@@ -1392,7 +1049,9 @@ struct PlayMySongScreen_Previews: PreviewProvider {
         player.duration = 180.0
         player.isPlaying = false
         
-        return PlayMySongScreen(songs: mockSongs, initialIndex: 0)
-            .previewDisplayName("Play My Song Screen")
+        return PlayOnlineSongScreen(songs: mockSongs, initialIndex: 0)
+            .previewDisplayName("Play Online Song Screen")
     }
 }
+
+

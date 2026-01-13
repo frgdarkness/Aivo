@@ -14,10 +14,12 @@ struct ExploreTabView: View {
     struct SongPlaybackItem: Identifiable {
         let id: String
         let songs: [SunoData]
+        let initialIndex: Int
         
-        init(song: SunoData) {
-            self.id = song.id
-            self.songs = [song]
+        init(songs: [SunoData], initialIndex: Int) {
+            self.id = songs[initialIndex].id
+            self.songs = songs
+            self.initialIndex = initialIndex
         }
     }
     
@@ -46,12 +48,7 @@ struct ExploreTabView: View {
             }
         }
         .fullScreenCover(item: $selectedSongForPlayback) { item in
-            GenerateSunoSongResultScreen(
-                sunoDataList: item.songs,
-                onClose: {
-                    selectedSongForPlayback = nil
-                }
-            )
+            PlayOnlineSongScreen(songs: item.songs, initialIndex: item.initialIndex)
         }
     }
     
@@ -97,21 +94,19 @@ struct ExploreTabView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 100)
                 } else {
-                    ForEach(songs, id: \.id) { song in
+                    ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
                         SongRowView(
                             song: song,
                             status: songStatusMap[song.id],
                             onTap: {
-                                Logger.d("🎵 [ExploreTab] User tapped song: \(song.title)")
-                                Logger.d("🎵 [ExploreTab] Song ID: \(song.id)")
+                                Logger.d("🎵 [ExploreTab] User tapped song: \(song.title) at index \(index)")
                                 
-                                // Create playback item and set it - this will trigger fullScreenCover(item:)
-                                let playbackItem = SongPlaybackItem(song: song)
-                                Logger.d("✅ [ExploreTab] Creating SongPlaybackItem with song: \(song.title)")
+                                // Create playback item with full song list and index
+                                let playbackItem = SongPlaybackItem(songs: songs, initialIndex: index)
+                                Logger.d("✅ [ExploreTab] Opening PlayOnlineSongScreen with \(songs.count) songs")
                                 
-                                // Set the item - fullScreenCover(item:) will automatically trigger when item changes from nil to non-nil
+                                // Set the item - fullScreenCover(item:) will automatically trigger
                                 selectedSongForPlayback = playbackItem
-                                Logger.d("✅ [ExploreTab] selectedSongForPlayback set, opening GenerateSunoSongResultScreen")
                             }
                         )
                     }

@@ -11,10 +11,12 @@ struct ExploreTabViewNew: View {
     struct SongPlaybackItem: Identifiable {
         let id: String
         let songs: [SunoData]
+        let initialIndex: Int
         
-        init(song: SunoData) {
-            self.id = song.id
-            self.songs = [song]
+        init(songs: [SunoData], initialIndex: Int) {
+            self.id = songs[initialIndex].id
+            self.songs = songs
+            self.initialIndex = initialIndex
         }
     }
     
@@ -43,12 +45,7 @@ struct ExploreTabViewNew: View {
             .padding(.bottom, 100) // Space for bottom nav
         }
         .fullScreenCover(item: $selectedSongForPlayback) { item in
-            GenerateSunoSongResultScreen(
-                sunoDataList: item.songs,
-                onClose: {
-                    selectedSongForPlayback = nil
-                }
-            )
+            PlayOnlineSongScreen(songs: item.songs, initialIndex: item.initialIndex)
         }
         .onAppear {
             loadSongStatus()
@@ -136,7 +133,8 @@ struct ExploreTabViewNew: View {
                 HStack(spacing: 16) {
                     ForEach(Array(remoteConfig.trendingList.prefix(10).enumerated()), id: \.element.id) { index, song in
                         TrendingCardView(song: song, rank: index + 1) {
-                            selectedSongForPlayback = SongPlaybackItem(song: song)
+                            let trendingSongs = Array(remoteConfig.trendingList.prefix(10))
+                            selectedSongForPlayback = SongPlaybackItem(songs: trendingSongs, initialIndex: index)
                         }
                     }
                 }
@@ -154,9 +152,10 @@ struct ExploreTabViewNew: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(Array(remoteConfig.hottestList.prefix(10)), id: \.id) { song in
+                    ForEach(Array(remoteConfig.hottestList.prefix(10).enumerated()), id: \.element.id) { index, song in
                         PopularCardView(song: song) {
-                            selectedSongForPlayback = SongPlaybackItem(song: song)
+                            let popularSongs = Array(remoteConfig.hottestList.prefix(10))
+                            selectedSongForPlayback = SongPlaybackItem(songs: popularSongs, initialIndex: index)
                         }
                     }
                 }
@@ -201,7 +200,7 @@ struct ExploreTabViewNew: View {
                                     song: song,
                                     status: songStatusMap[song.id]
                                 ) {
-                                    selectedSongForPlayback = SongPlaybackItem(song: song)
+                                    selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
                                 }
                             }
                         }
@@ -220,8 +219,8 @@ struct ExploreTabViewNew: View {
                     genre: genre,
                     songs: filterSongsByGenre(genre),
                     songStatusMap: songStatusMap,
-                    onSongTap: { song in
-                        selectedSongForPlayback = SongPlaybackItem(song: song)
+                    onSongTap: { songs, index in
+                        selectedSongForPlayback = SongPlaybackItem(songs: songs, initialIndex: index)
                     }
                 )
             }
@@ -249,7 +248,7 @@ struct GenreSectionView: View {
     let genre: SongGenre
     let songs: [SunoData]
     let songStatusMap: [String: SongStatus]
-    let onSongTap: (SunoData) -> Void
+    let onSongTap: ([SunoData], Int) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -277,12 +276,12 @@ struct GenreSectionView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(songs, id: \.id) { song in
+                        ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
                             GenreSongCardView(
                                 song: song,
                                 status: songStatusMap[song.id],
                                 onTap: {
-                                    onSongTap(song)
+                                    onSongTap(songs, index)
                                 }
                             )
                         }
