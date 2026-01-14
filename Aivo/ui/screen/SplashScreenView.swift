@@ -13,6 +13,7 @@ struct RootView: View {
     @State private var showSplash = true
     @State private var currentScreen: AppScreen = .splash
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
+    @ObservedObject private var ratingManager = AppRatingManager.shared
     
     enum AppScreen {
         case splash
@@ -78,6 +79,22 @@ struct RootView: View {
                     .transition(.pushFromRight)
             }
         }
+        .overlay(
+            Group {
+                if ratingManager.showRatingDialog {
+                    RateAppDialog(
+                        isPresented: $ratingManager.showRatingDialog,
+                        onRate: { stars in
+                            ratingManager.handleRateAction(stars: stars)
+                        },
+                        onDismiss: {
+                            ratingManager.dismissDialog()
+                        }
+                    )
+                    .zIndex(9999) // Topmost
+                }
+            }
+        )
     }
 }
 

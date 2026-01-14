@@ -28,7 +28,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         MobileAds.shared.start(completionHandler: nil)
         
         // Load app open ad after SDK initialization
-        AppOpenAdManager.shared.loadAd()
+        //AppOpenAdManager.shared.loadAd()
         
         // 🎯 Log first start event (only once after install)
         AnalyticsLogger.shared.logFirstStart()

@@ -173,6 +173,9 @@ class BackgroundGenerationManager: ObservableObject {
                     Task {
                         try? await FirebaseRealtimeService.shared.logGeneratedSong(jsonString: jsonString)
                     }
+                    
+                    // Try to show rating dialog
+                    AppRatingManager.shared.tryShowRateApp()
                 }
                 
             } catch is CancellationError {
@@ -319,6 +322,9 @@ class BackgroundGenerationManager: ObservableObject {
                          self.sendGenerationCompleteNotification()
                          self.showSuccessDialog = true
                     }
+                    
+                    // Try to show rating dialog
+                    AppRatingManager.shared.tryShowRateApp()
                 }
                 
             } catch is CancellationError {

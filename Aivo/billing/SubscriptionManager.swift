@@ -174,9 +174,15 @@ final class SubscriptionManager: ObservableObject {
                         "timestamp": Date().timeIntervalSince1970
                     ])
                     
+                    
                     // ✅ Also log to AppsFlyer as revenue event (for attribution)
                     // Pass Product directly for accurate price and currency
                     AppsFlyerLogger.shared.logSubscribe(product: product)
+                    
+                    // Log daily revenue (User initiated)
+                    Task {
+                        try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: product.id)
+                    }
                     
                     await handleVerified(tx)
                     await checkBonusCreditForSubscription()
@@ -572,10 +578,7 @@ final class SubscriptionManager: ObservableObject {
         }
 
 
-        // Log daily revenue
-        Task {
-            try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: transaction.productID)
-        }
+
 
         NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
     }

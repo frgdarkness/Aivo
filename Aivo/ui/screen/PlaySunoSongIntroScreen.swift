@@ -2,6 +2,8 @@ import SwiftUI
 import AVFoundation
 import Foundation
 
+import StoreKit
+
 // MARK: - Play Suno Song Intro Screen
 struct PlaySunoSongIntroScreen: View {
     let sunoData: SunoData
@@ -15,6 +17,7 @@ struct PlaySunoSongIntroScreen: View {
     @State private var rotationAngle: Double = 0
     @State private var coverImageId = UUID() // Force refresh cover image when downloaded
     @State private var coverImageURL: URL? = nil // Cached cover URL to avoid recalculation
+    @State private var showRatingDialog = false // State for rating dialog
     
     // Download states (like GenerateSunoSongResultScreen)
     @State private var downloadedFileURLs: [String: URL] = [:]
@@ -80,9 +83,38 @@ struct PlaySunoSongIntroScreen: View {
                     .padding(.top, 12)
                     .padding(.bottom, 20)
             }
+            
+            // Rating Dialog Overlay
+            if showRatingDialog {
+                RateAppDialog(
+                    isPresented: $showRatingDialog,
+                    onRate: { stars in
+                        Logger.d("⭐️ [PlaySunoSongIntro] User rated: \(stars) stars")
+                        if stars >= 4 {
+                            AppRatingManager.shared.markAsRated()
+                            requestSystemReview()
+                        }
+                        // Just close dialog, let user continue listening
+                        showRatingDialog = false
+                    },
+                    onDismiss: {
+                        Logger.d("⭐️ [PlaySunoSongIntro] User dismissed rating")
+                        showRatingDialog = false
+                    }
+                )
+                .zIndex(999) // Ensure it's on top
+            }
         }
         .onAppear {
             Logger.d("🎵 [PlaySunoSongIntro] Screen appeared with song: \(sunoData.title)")
+            
+            // Auto-show rating dialog after 1 second
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                print("⭐️ [PlaySunoSongIntro] Auto-showing rating dialog")
+                withAnimation {
+                    self.showRatingDialog = true
+                }
+            }
             
             // Cache cover image URL once (only from imageUrl)
             if coverImageURL == nil {
@@ -530,11 +562,21 @@ struct PlaySunoSongIntroScreen: View {
     }
     
     private func continueAction() {
+        finishIntro()
+    }
+    
+    private func finishIntro() {
         // Mark intro as completed in UserDefaults
         userDefaultsManager.markIntroAsShowed()
         
         // Call callback to SplashScreenView to navigate to HomeView
         onIntroCompleted()
+    }
+    
+    private func requestSystemReview() {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            SKStoreReviewController.requestReview(in: windowScene)
+        }
     }
 }
 

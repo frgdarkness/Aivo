@@ -448,6 +448,11 @@ struct GenerateLyricsScreen: View {
                         Logger.i("📝 [GenerateLyrics] Deducted \(creditsRequired) credits for successful lyrics generation")
                         // Save to history
                         CreditHistoryManager.shared.addRequest(.generateLyric)
+                        
+                        // Try to show rating dialog
+                        await MainActor.run {
+                            AppRatingManager.shared.tryShowRateApp()
+                        }
                     }
                 }
             } catch let sunoError as SunoError {

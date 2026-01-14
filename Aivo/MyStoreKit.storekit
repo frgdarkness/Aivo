@@ -25,7 +25,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "APP_500_CREDITS_LOCAL",
+      "productID" : "AIVO_500_CREDITS",
       "referenceName" : "500 Credits",
       "type" : "Consumable"
     },
@@ -40,7 +40,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "APP_1000_CREDITS_LOCAL",
+      "productID" : "APP_1000_CREDITS",
       "referenceName" : "1000 Credits",
       "type" : "Consumable"
     },
@@ -55,7 +55,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "APP_5000_CREDITS_LOCAL",
+      "productID" : "APP_5000_CREDITS",
       "referenceName" : "5000 Credits",
       "type" : "Consumable"
     }
@@ -142,7 +142,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "aivo.premium.weekly",
+          "productID" : "AIVO_PREMIUM_WEEKLY",
           "recurringSubscriptionPeriod" : "P1W",
           "referenceName" : "AIVO Premium Weekly",
           "subscriptionGroupID" : "BD6FC9E2",
@@ -170,7 +170,7 @@
               "locale" : "en_US"
             }
           ],
-          "productID" : "aivo.premium.yearly",
+          "productID" : "AIVO_PREMIUM_YEARLY",
           "recurringSubscriptionPeriod" : "P1Y",
           "referenceName" : "AIVO Premium Yearly",
           "subscriptionGroupID" : "BD6FC9E2",
