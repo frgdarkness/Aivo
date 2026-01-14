@@ -123,7 +123,7 @@ class SunoAiMusicService: ObservableObject {
     }
     
     // MARK: - Get Music Generation Details
-    func getMusicGenerationDetails(taskId: String) async throws -> SunoTaskDetails {
+    func getMusicGenerationDetails(taskId: String) async throws -> (SunoTaskDetails, String) {
         print("🔍 [SunoAI] Getting music generation details for task: \(taskId)")
         
         let url = URL(string: "\(baseURL)/generate/record-info?taskId=\(taskId)")!
@@ -136,8 +136,9 @@ class SunoAiMusicService: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
+            let jsonString = String(data: data, encoding: .utf8) ?? ""
             print("🔍 [SunoAI] Response received")
-            print("🔍 [SunoAI] Response data: \(String(data: data, encoding: .utf8) ?? "Unable to convert to string")")
+            print("🔍 [SunoAI] Response data: \(jsonString)")
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("❌ [SunoAI] Invalid response type")
@@ -179,13 +180,13 @@ class SunoAiMusicService: ObservableObject {
                     throw SunoError.apiError(detailsResponse.msg)
                 }
                 
-                guard let data = detailsResponse.data else {
+                guard let detailsData = detailsResponse.data else {
                     print("❌ [SunoAI] No data in response")
                     throw SunoError.invalidResponse
                 }
                 
-                print("🔍 [SunoAI] Task status: \(data.status.rawValue)")
-                return data
+                print("🔍 [SunoAI] Task status: \(detailsData.status.rawValue)")
+                return (detailsData, jsonString)
                 
             } catch let decodingError as DecodingError {
                 print("❌ [SunoAI] Decoding Error: \(decodingError)")
@@ -247,7 +248,7 @@ class SunoAiMusicService: ObservableObject {
         weirdnessConstraint: Double? = nil,
         audioWeight: Double? = nil,
         callBackUrl: String? = nil
-    ) async throws -> [SunoData] {
+    ) async throws -> ([SunoData], String) {
         
         print("🚀 [SunoAI] Starting complete music generation flow...")
         
@@ -297,7 +298,7 @@ class SunoAiMusicService: ObservableObject {
             print("🚀 [SunoAI] Step 3: Polling attempt \(attempt)/\(maxRetries)...")
             
             do {
-                let taskDetails = try await getMusicGenerationDetails(taskId: taskId)
+                let (taskDetails, jsonString) = try await getMusicGenerationDetails(taskId: taskId)
                 
                 // Check cancellation after API call
                 try Task.checkCancellation()
@@ -339,7 +340,7 @@ class SunoAiMusicService: ObservableObject {
                         await fetchTimestampedLyricsForSongs(taskId: taskId, songs: updatedSunoData)
                     }
                     
-                    return updatedSunoData
+                    return (updatedSunoData, jsonString)
                     
                 case .PENDING, .TEXT_SUCCESS, .FIRST_SUCCESS:
                     print("⏳ [SunoAI] Still processing... Status: \(taskDetails.status.rawValue)")
@@ -430,7 +431,7 @@ extension SunoAiMusicService {
             customMode: false,
             instrumental: instrumental,
             model: .V5
-        )
+        ).0
     }
     
     /// Custom music generation with full control
@@ -448,7 +449,7 @@ extension SunoAiMusicService {
             customMode: false,
             instrumental: instrumental,
             model: model
-        )
+        ).0
     }
     
     // MARK: - Generate Lyrics

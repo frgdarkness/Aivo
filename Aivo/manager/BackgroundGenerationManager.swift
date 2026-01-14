@@ -106,7 +106,7 @@ class BackgroundGenerationManager: ObservableObject {
                 }
                 
                 // Call API (this will take ~1-2 mins typically)
-                 let generatedSongs = try await SunoAiMusicService.shared.generateMusicWithRetry(
+                 let (generatedSongs, jsonString) = try await SunoAiMusicService.shared.generateMusicWithRetry(
                     prompt: prompt,
                     style: styleToUse,
                     title: title.isEmpty ? nil : title,
@@ -168,7 +168,11 @@ class BackgroundGenerationManager: ObservableObject {
                          self.showSuccessDialog = true // Also show dialog so it's there when they open app
                     }
                      
-                    // Log output (Raw JSON logging removed as not readily available here)
+
+                    // Log output to Firebase
+                    Task {
+                        try? await FirebaseRealtimeService.shared.logGeneratedSong(jsonString: jsonString)
+                    }
                 }
                 
             } catch is CancellationError {

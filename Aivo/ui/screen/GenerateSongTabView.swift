@@ -152,6 +152,17 @@ struct GenerateSongTabView: View {
         } message: {
             Text("Please wait for the current generation task to finish before starting a new one.")
         }
+        .onChange(of: backgroundManager.isGenerating) { isGenerating in
+            if !isGenerating {
+                if let error = backgroundManager.error {
+                    if let sunoError = error as? SunoError, case .artistNameNotAllowed = sunoError {
+                        showArtistNameAlert = true
+                    } else {
+                        showToastMessage(error.localizedDescription)
+                    }
+                }
+            }
+        }
         .onChange(of: generatedLyrics) { newValue in
             if !newValue.isEmpty {
                 // Parse format: [Title]\n\nLyrics

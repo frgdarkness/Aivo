@@ -414,4 +414,39 @@ final class FirebaseRealtimeService: ObservableObject {
             }
         }
     }
+    // MARK: - Song Generation Logging
+    
+    private func songLogsRoot(_ date: String) -> String {
+        "\(basePath)/songs/\(date)"
+    }
+    
+    private func songLogPath(_ date: String, _ uuid: String) -> String {
+        "\(songLogsRoot(date))/\(uuid)"
+    }
+    
+    /// Log generated song data to Firebase (raw JSON string)
+    func logGeneratedSong(jsonString: String) async throws {
+        ensureFirebaseConfigured()
+        
+        // Date format: yyyy-MM-dd for folder structure
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateKey = dateFormatter.string(from: Date())
+        
+        // Use a random UUID for the log entry
+        let uuid = UUID().uuidString
+        let path = songLogPath(dateKey, uuid)
+        
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            dbRef.child(path).setValue(jsonString) { error, _ in
+                if let error = error {
+                    Logger.e("❌ [Firebase] Log song error: \(error.localizedDescription)")
+                    cont.resume(throwing: error)
+                } else {
+                    Logger.d("✅ [Firebase] Logged generated song to \(path)")
+                    cont.resume(returning: ())
+                }
+            }
+        }
+    }
 }
