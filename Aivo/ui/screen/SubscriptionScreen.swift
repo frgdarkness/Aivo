@@ -394,9 +394,12 @@ struct SubscriptionScreen: View {
                     title: "Yearly",
                     subtitle: "1200 credits per month", // New policy for fresh purchase
                     price: yearlyProduct.displayPrice,
+                    originalPrice: nil,
+                    introPrice: nil,
+                    regularPrice: nil,
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
-                    showTag: true
+                    tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
             } else {
                 // Fallback loading state
@@ -404,32 +407,59 @@ struct SubscriptionScreen: View {
                     title: "Yearly",
                     subtitle: "1200 credits per month",
                     price: "Loading...",
+                    originalPrice: nil,
+                    introPrice: nil,
+                    regularPrice: nil,
                     per: "/Year",
                     isSelected: selectedPlan == .yearly,
-                    showTag: true
+                    tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
                     .opacity(0.6)
             }
 
             // Weekly plan
             if let weeklyProduct = subscriptionManager.getProduct(for: .weekly) {
-                planCard(
-                    title: "Weekly",
-                    subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
-                    price: weeklyProduct.displayPrice,
-                    per: "/Week",
-                    isSelected: selectedPlan == .weekly,
-                    showTag: false
-                ) { selectedPlan = .weekly }
+                if let introOffer = weeklyProduct.subscription?.introductoryOffer {
+                    // Has Intro Offer
+                    // If not selected: Show Regular Price.
+                    // If selected: Logic inside planCard will use introPrice/regularPrice.
+                    planCard(
+                        title: "Weekly",
+                        subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
+                        price: weeklyProduct.displayPrice, // Default to regular
+                        originalPrice: nil, 
+                        introPrice: introOffer.displayPrice,
+                        regularPrice: weeklyProduct.displayPrice,
+                        per: "/Week",
+                        isSelected: selectedPlan == .weekly,
+                        tagText: nil
+                    ) { selectedPlan = .weekly }
+                } else {
+                    // Regular
+                    planCard(
+                        title: "Weekly",
+                        subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: weeklyProduct)) credits per week",
+                        price: weeklyProduct.displayPrice,
+                        originalPrice: nil,
+                        introPrice: nil,
+                        regularPrice: nil,
+                        per: "/Week",
+                        isSelected: selectedPlan == .weekly,
+                        tagText: nil
+                    ) { selectedPlan = .weekly }
+                }
             } else {
                 // Fallback loading state
                 planCard(
                     title: "Weekly",
                     subtitle: "1000 credits per week",
                     price: "Loading...",
+                    originalPrice: nil,
+                    introPrice: nil,
+                    regularPrice: nil,
                     per: "/Week",
                     isSelected: selectedPlan == .weekly,
-                    showTag: false
+                    tagText: nil
                 ) { selectedPlan = .weekly }
                     .opacity(0.6)
             }
@@ -437,39 +467,66 @@ struct SubscriptionScreen: View {
         .padding(.top, 28)
     }
 
-    private func planCard(title: String, subtitle: String, price: String, per: String, isSelected: Bool, showTag: Bool, onTap: @escaping () -> Void) -> some View {
+    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
         ZStack(alignment: .topTrailing) {
             Button(action: onTap) {
                 HStack {
-                // Radio
-                ZStack {
-                    Circle().stroke(AivoTheme.Primary.orange, lineWidth: 2)
-                        .frame(width: 26, height: 26)
-                    if isSelected {
-                        Circle().fill(AivoTheme.Primary.orange)
-                            .frame(width: 14, height: 14)
+                    // Radio
+                    ZStack {
+                        Circle().stroke(AivoTheme.Primary.orange, lineWidth: 2)
+                            .frame(width: 26, height: 26)
+                        if isSelected {
+                            Circle().fill(AivoTheme.Primary.orange)
+                                .frame(width: 14, height: 14)
+                        }
                     }
-                }
                     .padding(.leading, 18)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(title)
-                        .foregroundColor(.white)
-                        .font(.system(size: 18, weight: .semibold))
-//                    Text(subtitle)
-//                        .foregroundColor(.white.opacity(0.7))
-//                        .font(.system(size: 13, weight: .regular))
-                }
-                    Spacer()
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                    Text(price)
-                        .foregroundColor(.white)
-                        .font(.system(size: 18, weight: .bold))
-                    Text(per)
-                        .foregroundColor(.white.opacity(0.7))
-                        .font(.system(size: 14, weight: .regular))
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(title)
+                            .foregroundColor(.white)
+                            .font(.system(size: 18, weight: .semibold))
                     }
-                    .padding(.trailing, 16)
+                    Spacer()
+                    
+                    // Price Section
+                    if isSelected, let intro = introPrice, let regular = regularPrice {
+                        // Selected with Intro Offer -> 2 lines
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("First week \(intro)")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [AivoTheme.Secondary.goldenSun, AivoTheme.Primary.orange],
+                                        startPoint: .leading, endPoint: .trailing
+                                    )
+                                )
+                            
+                            Text("Then \(regular) / week")
+                                .foregroundColor(.white.opacity(0.7))
+                                .font(.system(size: 14, weight: .regular))
+                        }
+                        .padding(.trailing, 16)
+                    } else {
+                        // Standard Layout (Unselected or No Intro)
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            if let original = originalPrice {
+                                Text(original)
+                                    .foregroundColor(.white.opacity(0.5))
+                                    .font(.system(size: 15, weight: .regular))
+                                    .strikethrough()
+                            }
+                            
+                            Text(price)
+                                .foregroundColor(.white)
+                                .font(.system(size: originalPrice != nil ? 20 : 18, weight: .bold))
+                            
+                            Text(per)
+                                .foregroundColor(.white.opacity(0.7))
+                                .font(.system(size: 14, weight: .regular))
+                        }
+                        .padding(.trailing, 16)
+                    }
                 }
                 .frame(height: 64)
                 .background(
@@ -483,8 +540,8 @@ struct SubscriptionScreen: View {
             }
             .buttonStyle(.plain)
 
-            if showTag {
-                tagView("Save 75%")
+            if let tag = tagText {
+                tagView(tag)
                     .padding(.trailing, 12)
                     .padding(.top, -8)
             }
@@ -501,7 +558,7 @@ struct SubscriptionScreen: View {
                 endPoint: .trailing
             )
         return Text(text)
-            .font(.system(size: 12, weight: .heavy))
+            .font(.system(size: 13, weight: .heavy))
             .foregroundColor(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 4)
