@@ -89,6 +89,10 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
         
         player.play()
         isPlaying = true
+        
+        // Stop offline player if running
+        MusicPlayer.shared.pause()
+        
         Logger.d("🎵 [OnlineStreamPlayer] Playing")
         updateNowPlayingInfo()
     }
@@ -210,12 +214,6 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
         timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self else { return }
             self.currentTime = time.seconds
-            
-            // Update duration if available
-            let durationSeconds = playerItem.asset.duration.seconds
-            if durationSeconds.isFinite {
-                self.duration = durationSeconds
-            }
         }
         
         // Status observer
@@ -225,9 +223,19 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
             switch item.status {
             case .readyToPlay:
                 Logger.d("🎵 [OnlineStreamPlayer] Ready to play")
-                let durationSeconds = item.asset.duration.seconds
-                if durationSeconds.isFinite {
-                    self.duration = durationSeconds
+                // Load duration asynchronously to avoid main thread block
+                Task {
+                    do {
+                        let duration = try await item.asset.load(.duration)
+                        await MainActor.run {
+                            if duration.seconds.isFinite {
+                                self.duration = duration.seconds
+                                self.updateNowPlayingInfo() // Update info with duration
+                            }
+                        }
+                    } catch {
+                        Logger.e("❌ [OnlineStreamPlayer] Failed to load duration: \(error)")
+                    }
                 }
             case .failed:
                 Logger.e("❌ [OnlineStreamPlayer] Failed to load: \(item.error?.localizedDescription ?? "Unknown error")")

@@ -102,7 +102,8 @@ struct GenerateLyricsScreen: View {
     @ObservedObject private var creditManager = CreditManager.shared
     @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject private var remoteConfig = RemoteConfigManager.shared
-    @Binding var lyricsText: String
+    @Binding var lyrics: String
+    @Binding var songName: String
     
     private var creditsRequired: Int {
         remoteConfig.creditsPerLyric
@@ -356,20 +357,40 @@ struct GenerateLyricsScreen: View {
                 .foregroundColor(.white.opacity(0.9))
                 .lineSpacing(6)
 
-            // Copy Button
-            Button(action: { copyLyrics(result.text, title: result.title) }) {
-                HStack(spacing: 6) {
-                    Image(systemName: "doc.on.doc")
-                    Text("Copy")
+            HStack(spacing: 12) {
+                // Determine common button height or padding if needed, but standard padding is fine.
+                
+                // Copy Button
+                Button(action: { copyLyrics(result.text, title: result.title) }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.on.doc")
+                        Text("Copy")
+                    }
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8) // Taller hit area
+                    .background(
+                        RoundedRectangle(cornerRadius: 8) // Slightly larger radius
+                            .fill(Color.white.opacity(0.15))
+                    )
                 }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.15))
-                )
+
+                // Select Button
+                Button(action: { selectLyrics(result.text, title: result.title) }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Select")
+                    }
+                    .font(.system(size: 14, weight: .bold)) // Bold for emphasis
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(AivoTheme.Primary.orange) // Highlight color
+                    )
+                }
             }
         }
         .padding(16)
@@ -449,8 +470,8 @@ struct GenerateLyricsScreen: View {
                         // Save to history
                         CreditHistoryManager.shared.addRequest(.generateLyric)
                         
-                        // Try to show rating dialog
-                        await MainActor.run {
+                        // Try to show rating dialog with delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                             AppRatingManager.shared.tryShowRateApp()
                         }
                     }
@@ -486,16 +507,37 @@ struct GenerateLyricsScreen: View {
     }
 
     private func copyLyrics(_ text: String, title: String) {
-        UIPasteboard.general.string = text
-        lyricsText = "[\(title)]\n\n\(text)"
+        // Copy formatted content to clipboard
+        let formattedText = "[\(title)]\n\n\(text)"
+        UIPasteboard.general.string = formattedText
+        
+        // Populate bindings cleanly
+        lyrics = text
+        songName = title
+        
         showToastMessage("Lyrics copied to clipboard!")
+    }
+
+    private func selectLyrics(_ text: String, title: String) {
+        // Populate bindings cleanly
+        lyrics = text
+        songName = title
+        dismiss()
     }
 
     private func copyAllLyrics() {
         let allText = lyricsResults.map { "[\($0.title)]\n\n\($0.text)" }
             .joined(separator: "\n\n---\n\n")
         UIPasteboard.general.string = allText
-        lyricsText = allText
+        
+        // For "Copy All", we probably just want to copy to clipboard, 
+        // but if we *had* to populate, it's ambiguous which one to pick.
+        // So we'll validly just leave the bindings alone or set the first one?
+        // Current behavior was: lyricsText = allText. 
+        // With split bindings, setting 'lyrics = allText' is closest equivalent 
+        // if user wanted to paste all of it into the lyrics box.
+        lyrics = allText
+        
         showToastMessage("All lyrics copied!")
     }
 
@@ -512,6 +554,6 @@ struct GenerateLyricsScreen: View {
 // MARK: - Preview
 struct GenerateLyricsScreen_Previews: PreviewProvider {
     static var previews: some View {
-        GenerateLyricsScreen(lyricsText: .constant(""))
+        GenerateLyricsScreen(lyrics: .constant(""), songName: .constant(""))
     }
 }

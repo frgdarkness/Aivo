@@ -6,6 +6,8 @@ struct ExploreTabView: View {
     @State private var selectedCategory: ExploreCategory = .popular
     @State private var popularSongs: [SunoData] = []
     @State private var newSongs: [SunoData] = []
+    @State private var allSongs: [SunoData] = []
+    @State private var displayedSongs: [SunoData] = []
     @State private var songStatusMap: [String: SongStatus] = [:]
     @State private var isLoading = true
     @State private var selectedSongForPlayback: SongPlaybackItem? = nil
@@ -45,41 +47,89 @@ struct ExploreTabView: View {
         .onAppear {
             if popularSongs.isEmpty && newSongs.isEmpty {
                 loadData()
+            } else {
+                // Shuffle again when re-entering if not popular
+                if selectedCategory != .popular {
+                    updateDisplayedSongs()
+                }
             }
+        }
+        .onChange(of: selectedCategory) { _ in
+            updateDisplayedSongs()
         }
         .fullScreenCover(item: $selectedSongForPlayback) { item in
             PlayOnlineSongScreen(songs: item.songs, initialIndex: item.initialIndex)
         }
     }
     
+    // MARK: - Logic
+    
+    private func updateDisplayedSongs() {
+        switch selectedCategory {
+        case .popular:
+            // Keep popular sorting (by play/like)
+            displayedSongs = popularSongs
+            
+        case .new:
+            // Randomize New songs, take 20
+            displayedSongs = Array(newSongs.shuffled().prefix(20))
+            
+        case .pop, .edm, .rock, .jazz, .hipHop, .classical, .country, .rnb, .kpop:
+            // Filter by genre tag
+            let genreKeyword = getGenreKeyword(for: selectedCategory)
+            let filtered = allSongs.filter { song in
+                song.tags.localizedCaseInsensitiveContains(genreKeyword)
+            }
+            // Randomize filtered list, take 20
+            displayedSongs = Array(filtered.shuffled().prefix(20))
+        }
+    }
+    
+    private func getGenreKeyword(for category: ExploreCategory) -> String {
+        switch category {
+        case .pop: return "pop"
+        case .edm: return "edm"
+        case .rock: return "rock"
+        case .jazz: return "jazz"
+        case .hipHop: return "hip hop"
+        case .classical: return "classical"
+        case .country: return "country"
+        case .rnb: return "r&b"
+        case .kpop: return "k-pop"
+        default: return ""
+        }
+    }
+    
     // MARK: - Category Tabs
     private var categoryTabs: some View {
-        HStack(spacing: 0) {
-            ForEach(ExploreCategory.allCases, id: \.self) { category in
-                Button(action: { selectedCategory = category }) {
-                    Text(category.rawValue)
-                        .font(.headline)
-                        .fontWeight(.medium)
-                        .foregroundColor(selectedCategory == category ? .black : .white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedCategory == category ? AivoTheme.Primary.orange : Color.clear)
-                        )
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(ExploreCategory.allCases, id: \.self) { category in
+                    Button(action: { selectedCategory = category }) {
+                        Text(category.rawValue)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(selectedCategory == category ? .white : .gray)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule()
+                                    .fill(selectedCategory == category ? AivoTheme.Primary.orange : Color.gray.opacity(0.1))
+                            )
+                    }
                 }
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 20)
     }
     
     // MARK: - Song List View
     private var songListView: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                let songs = selectedCategory == .popular ? popularSongs : newSongs
+                // Use displayedSongs state
+                let songs = displayedSongs
                 
                 if songs.isEmpty {
                     VStack(spacing: 16) {
@@ -140,13 +190,22 @@ struct ExploreTabView: View {
                 let new = try loadSongs(from: "new_songs")
                 Logger.d("🆕 [ExploreTab] Loaded \(new.count) new songs")
                 
+                // Load ALL songs for genre filtering
+                let all = try loadSongs(from: "all_songs")
+                Logger.d("📚 [ExploreTab] Loaded \(all.count) total songs")
+                
                 await MainActor.run {
                     self.popularSongs = popular
                     self.newSongs = new
+                    self.allSongs = all
+                    
+                    // Initialize displayed songs
+                    self.updateDisplayedSongs()
+                    
                     self.isLoading = false
                 }
                 
-                Logger.i("✅ [ExploreTab] Loaded \(popular.count) popular songs and \(new.count) new songs")
+                Logger.i("✅ [ExploreTab] Data load complete")
             } catch {
                 Logger.e("❌ [ExploreTab] Error loading data: \(error)")
                 Logger.e("❌ [ExploreTab] Error details: \(error.localizedDescription)")
@@ -300,6 +359,15 @@ struct SongRowView: View {
 enum ExploreCategory: String, CaseIterable {
     case popular = "Popular"
     case new = "New"
+    case pop = "Pop"
+    case edm = "EDM"
+    case rock = "Rock"
+    case jazz = "Jazz"
+    case hipHop = "Hip Hop"
+    case classical = "Classical"
+    case country = "Country"
+    case rnb = "R&B"
+    case kpop = "K-Pop"
 }
 
 // MARK: - Song Status Model

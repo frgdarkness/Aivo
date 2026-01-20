@@ -218,7 +218,7 @@ final class SubscriptionManager: ObservableObject {
         Logger.i("restorePurchases: start")
         do {
             try await AppStore.sync()
-            await refreshStatus(forceSync: false)
+            await refreshStatus(forceSync: true, retries: true)
             Logger.i("restorePurchases: success")
             
             // ✅ Log restore subscription to Firebase and AppsFlyer
@@ -241,7 +241,7 @@ final class SubscriptionManager: ObservableObject {
     }
 
     // MARK: - Refresh Status (with sandbox-friendly fallback)
-    func refreshStatus(forceSync: Bool = false) async {
+    func refreshStatus(forceSync: Bool = false, retries: Bool = false) async {
         Logger.i("SubscriptionManager: refreshStatus - starting")
 
         // 1) Chỉ sync nếu thực sự cần (tránh sandbox bắt login liên tục)
@@ -287,8 +287,8 @@ final class SubscriptionManager: ObservableObject {
             }
         }
 
-        // 4) Sandbox đôi khi trễ → retry nhẹ 1 lần nếu vẫn nil và entitlements chưa có gì
-        if best == nil && !entitlementsHadAny {
+        // 4) Sandbox đôi khi trễ → retry nhẹ 1 lần nếu vẫn nil và entitlements chưa có gì AND retries requested
+        if retries && best == nil && !entitlementsHadAny {
             try? await Task.sleep(nanoseconds: 600_000_000) // 0.6s
             Logger.d("refreshStatus: retry after short delay")
             for id in productIDs {
@@ -558,7 +558,8 @@ final class SubscriptionManager: ObservableObject {
             Logger.d("handleVerified: Set initial subscription startDate from transaction: \(transaction.purchaseDate)")
         }
         
-        await refreshStatus()
+        
+        await refreshStatus(forceSync: false, retries: true)
         await transaction.finish()
 
         // Sync profile to RemoteFirebase khi user subscribe (tương tự CreditStoreManager)

@@ -390,6 +390,10 @@ struct SubscriptionScreen: View {
         VStack(spacing: 14) {
             // Yearly plan
             if let yearlyProduct = subscriptionManager.getProduct(for: .yearly) {
+                // Calculate equivalent weekly price
+                let weeklyPrice = yearlyProduct.price / 52
+                let equivalentWeeklyPrice = weeklyPrice.formatted(yearlyProduct.priceFormatStyle)
+                
                 planCard(
                     title: "Yearly",
                     subtitle: "1200 credits per month", // New policy for fresh purchase
@@ -398,6 +402,7 @@ struct SubscriptionScreen: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Year",
+                    equivalentWeeklyPrice: equivalentWeeklyPrice,
                     isSelected: selectedPlan == .yearly,
                     tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
@@ -411,6 +416,7 @@ struct SubscriptionScreen: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Year",
+                    equivalentWeeklyPrice: nil,
                     isSelected: selectedPlan == .yearly,
                     tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
@@ -431,6 +437,7 @@ struct SubscriptionScreen: View {
                         introPrice: introOffer.displayPrice,
                         regularPrice: weeklyProduct.displayPrice,
                         per: "/Week",
+                        equivalentWeeklyPrice: nil,
                         isSelected: selectedPlan == .weekly,
                         tagText: nil
                     ) { selectedPlan = .weekly }
@@ -444,6 +451,7 @@ struct SubscriptionScreen: View {
                         introPrice: nil,
                         regularPrice: nil,
                         per: "/Week",
+                        equivalentWeeklyPrice: nil,
                         isSelected: selectedPlan == .weekly,
                         tagText: nil
                     ) { selectedPlan = .weekly }
@@ -458,6 +466,7 @@ struct SubscriptionScreen: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Week",
+                    equivalentWeeklyPrice: nil,
                     isSelected: selectedPlan == .weekly,
                     tagText: nil
                 ) { selectedPlan = .weekly }
@@ -467,7 +476,7 @@ struct SubscriptionScreen: View {
         .padding(.top, 28)
     }
 
-    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
+    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, equivalentWeeklyPrice: String?, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
         ZStack(alignment: .topTrailing) {
             Button(action: onTap) {
                 HStack {
@@ -509,26 +518,34 @@ struct SubscriptionScreen: View {
                         .padding(.trailing, 16)
                     } else {
                         // Standard Layout (Unselected or No Intro)
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            if let original = originalPrice {
-                                Text(original)
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .font(.system(size: 15, weight: .regular))
-                                    .strikethrough()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                                if let original = originalPrice {
+                                    Text(original)
+                                        .foregroundColor(.white.opacity(0.5))
+                                        .font(.system(size: 15, weight: .regular))
+                                        .strikethrough()
+                                }
+                                
+                                Text(price)
+                                    .foregroundColor(.white)
+                                    .font(.system(size: originalPrice != nil ? 20 : 18, weight: .bold))
+                                
+                                Text(per)
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .font(.system(size: 14, weight: .regular))
                             }
                             
-                            Text(price)
-                                .foregroundColor(.white)
-                                .font(.system(size: originalPrice != nil ? 20 : 18, weight: .bold))
-                            
-                            Text(per)
-                                .foregroundColor(.white.opacity(0.7))
-                                .font(.system(size: 14, weight: .regular))
+                            if let equivalent = equivalentWeeklyPrice {
+                                Text("\(equivalent) / week")
+                                    .foregroundColor(AivoTheme.Secondary.goldenSun)
+                                    .font(.system(size: 13, weight: .semibold))
+                            }
                         }
                         .padding(.trailing, 16)
                     }
                 }
-                .frame(height: 64)
+                .frame(height: equivalentWeeklyPrice != nil ? 76 : 64)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white.opacity(0.06))

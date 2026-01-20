@@ -18,6 +18,7 @@ struct PlaySunoSongIntroScreen: View {
     @State private var coverImageId = UUID() // Force refresh cover image when downloaded
     @State private var coverImageURL: URL? = nil // Cached cover URL to avoid recalculation
     @State private var showRatingDialog = false // State for rating dialog
+    @State private var hasTriggeredRating = false // Track if rating has been triggered
     
     // Download states (like GenerateSunoSongResultScreen)
     @State private var downloadedFileURLs: [String: URL] = [:]
@@ -108,13 +109,7 @@ struct PlaySunoSongIntroScreen: View {
         .onAppear {
             Logger.d("🎵 [PlaySunoSongIntro] Screen appeared with song: \(sunoData.title)")
             
-            // Auto-show rating dialog after 1 second
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                print("⭐️ [PlaySunoSongIntro] Auto-showing rating dialog")
-                withAnimation {
-                    self.showRatingDialog = true
-                }
-            }
+            // Auto-show rating dialog logic moved to observing playback time
             
             // Cache cover image URL once (only from imageUrl)
             if coverImageURL == nil {
@@ -158,6 +153,16 @@ struct PlaySunoSongIntroScreen: View {
             if musicPlayer.isPlaying {
                 withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
                     rotationAngle = 360
+                }
+            }
+        }
+        .onChange(of: musicPlayer.currentTime) { currentTime in
+            // Show rating dialog after 10 seconds of listening
+            if currentTime > 10 && !hasTriggeredRating && !showRatingDialog {
+                Logger.d("⭐️ [PlaySunoSongIntro] User listened > 10s, showing rating dialog")
+                hasTriggeredRating = true
+                withAnimation {
+                    showRatingDialog = true
                 }
             }
         }

@@ -44,8 +44,16 @@ class AppRatingManager: ObservableObject {
             showRatingDialog = true
         }
         
-        // Update last shown date immediately when we attempt to show
+    // Update last shown date immediately when we attempt to show
         lastRatingShownDate = Date()
+    }
+    
+    /// Forces the rating dialog to show (e.g. from Profile screen)
+    @MainActor
+    func forceShowRateApp() {
+        withAnimation {
+            showRatingDialog = true
+        }
     }
     
     /// Call this from the View when user provides a rating

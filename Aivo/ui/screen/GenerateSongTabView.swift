@@ -28,7 +28,7 @@ struct GenerateSongTabView: View {
     @State private var showToast = false
     @State private var toastMessage = ""
     @State private var showGenerateLyricsScreen = false
-    @State private var generatedLyrics: String = ""
+    // @State private var generatedLyrics: String = "" // Removed, using direct binding instead
     @State private var isBPMEnabled: Bool = false
     @State private var bpmValue: Double = 100
     @State private var generationTask: Task<Void, Never>?
@@ -132,7 +132,7 @@ struct GenerateSongTabView: View {
             )
         }
         .fullScreenCover(isPresented: $showGenerateLyricsScreen) {
-            GenerateLyricsScreen(lyricsText: $generatedLyrics)
+            GenerateLyricsScreen(lyrics: $songLyrics, songName: $songName)
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionScreenIntro()
@@ -163,29 +163,7 @@ struct GenerateSongTabView: View {
                 }
             }
         }
-        .onChange(of: generatedLyrics) { newValue in
-            if !newValue.isEmpty {
-                // Parse format: [Title]\n\nLyrics
-                if newValue.hasPrefix("[") && newValue.contains("]\n\n") {
-                    let components = newValue.components(separatedBy: "]\n\n")
-                    if components.count == 2 {
-                        let title = String(components[0].dropFirst()) // Remove "["
-                        let lyrics = components[1]
-                        
-                        songName = title
-                        songLyrics = lyrics
-                        
-                        Logger.i("📝 [GenerateSong] Parsed title: \(title)")
-                        Logger.i("📝 [GenerateSong] Parsed lyrics length: \(lyrics.count)")
-                    } else {
-                        songLyrics = newValue
-                    }
-                } else {
-                    songLyrics = newValue
-                }
-                Logger.i("📝 [GenerateSong] Filled lyrics from generated result")
-            }
-        }
+        // Parsing logic removed. Bindings are updated directly in GenerateLyricsScreen.
         .overlay(
             // Toast Message
             VStack {

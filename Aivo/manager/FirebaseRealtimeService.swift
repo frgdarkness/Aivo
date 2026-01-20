@@ -449,4 +449,34 @@ final class FirebaseRealtimeService: ObservableObject {
             }
         }
     }
+    
+    // MARK: - User Report Logging
+    
+    /// Log user feedback/report to Firebase
+    /// Path: decoraIOS/userReport/{userID}
+    /// Value: "reason1, reason2, Other: details"
+    func logUserReport(userId: String, reason: String) async throws {
+        ensureFirebaseConfigured()
+        
+        let path = "\(basePath)/userReport/\(userId)"
+        
+        // Use push() or child(UUID) if we want multiple reports per user. 
+        // User requested: "id-user":"lý do". This implies a direct mapping.
+        // However, if a user reports multiple times, direct mapping overwrites. 
+        // I will use append/push semantic or just set value as requested.
+        // User said: "khi user report thì sẽ hiện mỗi dòng là "id-user":"lý do"". 
+        // This likely means key=userId, value=reason.
+        
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            dbRef.child(path).setValue(reason) { error, _ in
+                if let error = error {
+                    Logger.e("❌ [Firebase] Log report error: \(error.localizedDescription)")
+                    cont.resume(throwing: error)
+                } else {
+                    Logger.d("✅ [Firebase] Logged user report to \(path)")
+                    cont.resume(returning: ())
+                }
+            }
+        }
+    }
 }

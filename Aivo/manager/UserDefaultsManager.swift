@@ -32,7 +32,7 @@ class UserDefaultsManager: ObservableObject {
         static let dailyFreeGenerateUsed = "dailyFreeGenerateUsed"
         // Daily export limit
         static let lastExportDate = "lastExportDate"
-        static let dailyExportUsed = "dailyExportUsed"
+        static let dailyExportCount = "dailyExportCount"
     }
     
     // MARK: - Language Selection
@@ -304,9 +304,9 @@ class UserDefaultsManager: ObservableObject {
         set { UserDefaults.standard.set(newValue, forKey: Keys.lastExportDate) }
     }
     
-    var dailyExportUsed: Bool {
-        get { UserDefaults.standard.bool(forKey: Keys.dailyExportUsed) }
-        set { UserDefaults.standard.set(newValue, forKey: Keys.dailyExportUsed); objectWillChange.send() }
+    var dailyExportCount: Int {
+        get { UserDefaults.standard.integer(forKey: Keys.dailyExportCount) }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.dailyExportCount); objectWillChange.send() }
     }
     
     func resetDailyExportStateIfNeeded() {
@@ -314,18 +314,20 @@ class UserDefaultsManager: ObservableObject {
         // Reset daily export marker if not today
         if let lastExport = lastExportDate, !calendar.isDateInToday(lastExport) {
             Logger.d("UserDefaultsManager: Resetting daily export state (new day)")
-            dailyExportUsed = false
+            dailyExportCount = 0
             lastExportDate = nil
         }
     }
     
     func canExportSong() -> Bool {
         resetDailyExportStateIfNeeded()
-        return !dailyExportUsed
+        // Limit is 3 per day
+        return dailyExportCount < 3
     }
     
     func markExportUsed() {
-        dailyExportUsed = true
+        dailyExportCount += 1
         lastExportDate = Date()
+        Logger.d("UserDefaultsManager: Export used. Count: \(dailyExportCount)/3")
     }
 }

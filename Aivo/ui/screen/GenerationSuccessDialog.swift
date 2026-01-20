@@ -76,6 +76,11 @@ struct GenerationSuccessDialog: View {
                             // User requested View Result to ONLY open Library, not auto-play
                             // NotificationCenter.default.post(name: NSNotification.Name("PlayLatestGeneratedSongs"), object: songIds)
                         }
+                        
+                        // Show rating after 3s delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            AppRatingManager.shared.tryShowRateApp()
+                        }
                     }) {
                         Text("View Result")
                             .font(.system(size: 16, weight: .semibold))
@@ -90,7 +95,13 @@ struct GenerationSuccessDialog: View {
                     .padding(.horizontal, 20)
                     
                     // Play Now Button
-                    Button(action: onPlayNow) {
+                    Button(action: {
+                        onPlayNow()
+                        // Show rating after 3s delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            AppRatingManager.shared.tryShowRateApp()
+                        }
+                    }) {
                         HStack(spacing: 8) {
                             Image(systemName: "play.fill")
                                 .font(.system(size: 16, weight: .bold))

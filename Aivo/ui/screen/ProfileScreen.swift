@@ -507,19 +507,19 @@ struct ProfileScreen: View {
 //            )
             
             // FAQ
-            menuRow(
-                icon: "questionmark.square",
-                title: "FAQ",
-                showArrow: true,
-                action: { openFAQUrl() }
-            )
+//            menuRow(
+//                icon: "questionmark.square",
+//                title: "FAQ",
+//                showArrow: true,
+//                action: { openFAQUrl() }
+//            )
             
             // Rate Us
             menuRow(
                 icon: "star.fill",
                 title: "Rate Us",
                 showArrow: true,
-                action: { requestReview() }
+                action: { AppRatingManager.shared.forceShowRateApp() }
             )
             
             #if DEBUG

@@ -525,10 +525,41 @@ struct SubscriptionScreenIntro: View {
     }
 
     private var features: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            // Dynamic credits based on selected plan
-            let creditsAmount = selectedPlan == .yearly ? 1200 : 1000
-            featureRowWithHighlightedCredits(creditsAmount: creditsAmount)
+        // Dynamic credits based on selected plan or current subscription
+        let creditsAmount: Int
+        let perString: String
+        
+        if subscriptionManager.isPremium, let sub = subscriptionManager.currentSubscription {
+            // Active sub: show actual terms
+            if sub.period == .yearly {
+                // Check cohort for active user
+                let startDate = LocalStorageManager.shared.getLocalProfile().subscriptionStartDate ?? Date()
+                let components = DateComponents(year: 2026, month: 1, day: 15)
+                let cutoff = Calendar.current.date(from: components) ?? Date()
+                if startDate < cutoff {
+                    creditsAmount = 1200
+                    perString = "week"
+                } else {
+                    creditsAmount = 1200
+                    perString = "month"
+                }
+            } else {
+                creditsAmount = 1000
+                perString = "week"
+            }
+        } else {
+            // Not premium: Show what they WILL get if they select a plan
+            if selectedPlan == .yearly {
+                creditsAmount = 1200
+                perString = "month" // New users get monthly
+            } else {
+                creditsAmount = 1000
+                perString = "week"
+            }
+        }
+        
+        return VStack(alignment: .leading, spacing: 4) {
+            featureRowWithHighlightedCredits(creditsAmount: creditsAmount, period: perString)
             featureRow("Access to All Features")
             featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
@@ -537,7 +568,7 @@ struct SubscriptionScreenIntro: View {
         .padding(.top, 14)
     }
 
-    private func featureRowWithHighlightedCredits(creditsAmount: Int) -> some View {
+    private func featureRowWithHighlightedCredits(creditsAmount: Int, period: String) -> some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
@@ -563,7 +594,7 @@ struct SubscriptionScreenIntro: View {
                     .font(.system(size: 28, weight: .bold))
                     .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 4, x: 0, y: 2)
                 VStack {
-                    Text("credits per week")
+                    Text("credits per \(period)")
                         .foregroundColor(.white.opacity(0.85))
                         .font(.system(size: 17, weight: .medium))
                         .padding(.top, 6)
@@ -598,6 +629,12 @@ struct SubscriptionScreenIntro: View {
                let weeklyProduct = subscriptionManager.getProduct(for: .weekly) {
                 // Tính giá gốc từ weekly × 53 và format giống yearly price
                 let originalPrice = calculateOriginalYearlyPrice(from: weeklyProduct, formatLike: yearlyProduct)
+                
+                // Calculate equivalent weekly price for Yearly plan
+                let yearlyPriceVal = yearlyProduct.price
+                let weeklyPriceVal = yearlyPriceVal / 52
+                let equivalentWeeklyPrice = weeklyPriceVal.formatted(yearlyProduct.priceFormatStyle)
+                
                 planCard(
                     title: "Yearly",
                     subtitle: "\(subscriptionManager.getCreditsPerPeriod(for: yearlyProduct)) credits per week",
@@ -606,6 +643,7 @@ struct SubscriptionScreenIntro: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Year",
+                    equivalentWeeklyPrice: equivalentWeeklyPrice,
                     isSelected: selectedPlan == .yearly,
                     tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
@@ -619,6 +657,7 @@ struct SubscriptionScreenIntro: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Year",
+                    equivalentWeeklyPrice: nil,
                     isSelected: selectedPlan == .yearly,
                     tagText: "Save 75%"
                 ) { selectedPlan = .yearly }
@@ -639,6 +678,7 @@ struct SubscriptionScreenIntro: View {
                         introPrice: introOffer.displayPrice,
                         regularPrice: weeklyProduct.displayPrice,
                         per: "/Week",
+                        equivalentWeeklyPrice: nil,
                         isSelected: selectedPlan == .weekly,
                         tagText: nil
                     ) { selectedPlan = .weekly }
@@ -652,6 +692,7 @@ struct SubscriptionScreenIntro: View {
                         introPrice: nil,
                         regularPrice: nil,
                         per: "/Week",
+                        equivalentWeeklyPrice: nil,
                         isSelected: selectedPlan == .weekly,
                         tagText: nil
                     ) { selectedPlan = .weekly }
@@ -667,6 +708,7 @@ struct SubscriptionScreenIntro: View {
                     introPrice: nil,
                     regularPrice: nil,
                     per: "/Week",
+                    equivalentWeeklyPrice: nil,
                     isSelected: selectedPlan == .weekly,
                     tagText: nil
                 ) { selectedPlan = .weekly }
@@ -676,7 +718,7 @@ struct SubscriptionScreenIntro: View {
         .padding(.top, 20)
     }
 
-    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
+    private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, equivalentWeeklyPrice: String?, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
         ZStack(alignment: .topTrailing) {
             Button(action: onTap) {
                 HStack {
@@ -718,38 +760,46 @@ struct SubscriptionScreenIntro: View {
                         .padding(.trailing, 16)
                     } else {
                         // Standard Layout (Unselected or No Intro)
-                        HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            if let original = originalPrice {
-                                // Giá gốc có strikethrough
-                                Text(original)
-                                    .foregroundColor(.white.opacity(0.5))
-                                    .font(.system(size: 16, weight: .regular))
-                                    .strikethrough()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                if let original = originalPrice {
+                                    // Giá gốc có strikethrough
+                                    Text(original)
+                                        .foregroundColor(.white.opacity(0.5))
+                                        .font(.system(size: 16, weight: .regular))
+                                        .strikethrough()
+                                }
+                                
+                                // Giá real nổi bật
+                                Text(price)
+                                    .foregroundStyle(
+                                        LinearGradient(
+                                            colors: [
+                                                AivoTheme.Secondary.goldenSun,
+                                                AivoTheme.Primary.orange
+                                            ],
+                                            startPoint: .leading,
+                                            endPoint: .trailing
+                                        )
+                                    )
+                                    .font(.system(size: originalPrice != nil ? 22 : 18, weight: .bold))
+                                    .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 2, x: 0, y: 1)
+                                
+                                Text(per)
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .font(.system(size: 14, weight: .regular))
                             }
                             
-                            // Giá real nổi bật
-                            Text(price)
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [
-                                            AivoTheme.Secondary.goldenSun,
-                                            AivoTheme.Primary.orange
-                                        ],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .font(.system(size: originalPrice != nil ? 22 : 18, weight: .bold))
-                                .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 2, x: 0, y: 1)
-                            
-                            Text(per)
-                                .foregroundColor(.white.opacity(0.7))
-                                .font(.system(size: 14, weight: .regular))
+                            if let equivalent = equivalentWeeklyPrice {
+                                Text("\(equivalent) / week")
+                                    .foregroundColor(AivoTheme.Secondary.goldenSun)
+                                    .font(.system(size: 13, weight: .semibold))
+                            }
                         }
                         .padding(.trailing, 16)
                     }
                 }
-                .frame(height: 64)
+                .frame(height: equivalentWeeklyPrice != nil ? 76 : 64)
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white.opacity(0.06))

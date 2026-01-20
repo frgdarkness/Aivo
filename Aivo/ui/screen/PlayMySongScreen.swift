@@ -115,7 +115,7 @@ struct PlayMySongScreen: View {
             }
             Button("OK", role: .cancel) { }
         } message: {
-            Text("You can only export 1 song per day as a free user. Upgrade to Premium for unlimited exports.")
+            Text("You have used all 3 free downloads for today. Upgrade to Premium for unlimited downloads and VIP features.")
         }
         .overlay {
             if showEditSheet, let song = currentSong {

@@ -1,5 +1,6 @@
 import SwiftUI
 import Kingfisher
+import UniformTypeIdentifiers
 
 // MARK: - Song Selection Dialog Modifier
 struct SongSelectionDialogModifier: ViewModifier {
@@ -206,21 +207,45 @@ private struct SongSelectionDialogCard: View {
     private func handleSelectedFile(_ url: URL) {
         Logger.i("📁 [SongSelection] Selected file: \(url.lastPathComponent)")
         
-        let fileName = url.lastPathComponent
+        // Security scoped resource access for picked file
+        guard url.startAccessingSecurityScopedResource() else {
+             Logger.e("❌ [SongSelection] Failed to access security scoped resource")
+             return
+        }
         
-        // Create a SelectedSong from the file
-        let selectedSong = SelectedSong(
-            id: UUID().uuidString,
-            title: fileName.replacingOccurrences(of: ".mp3", with: "").replacingOccurrences(of: ".m4a", with: ""),
-            coverImageUrl: "",
-            audioUrl: nil,
-            sunoData: nil
-        )
+        defer {
+            url.stopAccessingSecurityScopedResource()
+        }
         
-        // Store the file URL and data for later use
-        selectedAudioFileURL = url
-        onSelectSong(selectedSong, url)
-        onClose()
+        do {
+            // Copy file to temp directory to persist access
+            let tempDir = FileManager.default.temporaryDirectory
+            let fileName = url.lastPathComponent
+            let destUrl = tempDir.appendingPathComponent(fileName)
+            
+            if FileManager.default.fileExists(atPath: destUrl.path) {
+                try FileManager.default.removeItem(at: destUrl)
+            }
+            
+            try FileManager.default.copyItem(at: url, to: destUrl)
+            
+            // Use the copy
+            let selectedSong = SelectedSong(
+                id: UUID().uuidString,
+                title: fileName.replacingOccurrences(of: ".mp3", with: "").replacingOccurrences(of: ".m4a", with: ""),
+                coverImageUrl: "",
+                audioUrl: nil,
+                sunoData: nil
+            )
+            
+            // Store the file URL (use the destination URL which is safe to access)
+            selectedAudioFileURL = destUrl
+            onSelectSong(selectedSong, destUrl)
+            onClose()
+            
+        } catch {
+            Logger.e("❌ [SongSelection] Failed to copy file: \(error)")
+        }
     }
     
     // MARK: - Tabs

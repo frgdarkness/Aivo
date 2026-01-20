@@ -89,6 +89,9 @@ class MusicPlayer: NSObject, ObservableObject {
         Logger.d("🎵 [MusicPlayer] Play result: \(success)")
         
         if success {
+            // Stop online player if running
+            OnlineStreamPlayer.shared.pause()
+            
             startPlaybackTimer()
             updateNowPlayingInfo()
         }
