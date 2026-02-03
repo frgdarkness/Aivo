@@ -49,7 +49,10 @@ struct LyricConfiguration: Codable, Equatable {
             }
         }
         
-        desc += " Ensure the song has at least 2 verses."
+        desc += " Ensure the song ALWAYS has exactly 2 verses."
+        desc += " ALL section headers (like [Verse 1], [Chorus], [Bridge]) MUST be enclosed in square brackets []."
+        desc += " You MUST include a [Chorus] after [Verse 2] if a chorus is part of the structure."
+        desc += " Follow this exact structure if unsure: [Verse 1], [Chorus], [Verse 2], [Chorus], [Outro]."
         
         return desc
     }

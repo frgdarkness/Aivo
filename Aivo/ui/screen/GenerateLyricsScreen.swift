@@ -124,6 +124,7 @@ struct GenerateLyricsScreen: View {
     @State private var showSubscriptionScreen = false
     @State private var showBuyCreditDialog = false
     @State private var showServerErrorAlert = false
+    @State private var showResultScreen = false
 
     var body: some View {
         ZStack {
@@ -170,6 +171,16 @@ struct GenerateLyricsScreen: View {
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionScreenIntro()
+        }
+        .fullScreenCover(isPresented: $showResultScreen) {
+            GenerateLyricResultScreen(
+                results: lyricsResults,
+                selectedLyrics: $lyrics,
+                selectedSongName: $songName,
+                onSelect: { _, _ in
+                    dismiss()
+                }
+            )
         }
         .alert("Server Error", isPresented: $showServerErrorAlert) {
             Button("OK", role: .cancel) { }
@@ -229,11 +240,6 @@ struct GenerateLyricsScreen: View {
              
              // Lyric Variation
              lyricVariationSection
-             
-             // Results Section (shown after generation)
-             if !isGenerating && !lyricsResults.isEmpty {
-                 resultsSection
-             }
          }
     }
     
@@ -714,98 +720,6 @@ struct GenerateLyricsScreen: View {
         }
     }
 
-    // MARK: - Results Section
-    private var resultsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Generated Lyrics")
-                    .font(.headline)
-                    .foregroundColor(.white)
-
-                Spacer()
-
-                Button(action: { copyAllLyrics() }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "doc.on.doc")
-                        Text("Copy All")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white.opacity(0.15))
-                    )
-                }
-            }
-
-            ForEach(lyricsResults) { result in
-                lyricsCard(for: result)
-            }
-        }
-    }
-
-    // MARK: - Lyrics Card
-    private func lyricsCard(for result: LyricsResult) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Title
-            Text(result.title)
-                .font(.headline)
-                .foregroundColor(AivoTheme.Primary.orange)
-
-            // Lyrics Text
-            Text(result.text)
-                .font(.system(size: 15))
-                .foregroundColor(.white.opacity(0.9))
-                .lineSpacing(6)
-
-            HStack(spacing: 12) {
-                // Copy Button
-                Button(action: { copyLyrics(result.text, title: result.title) }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "doc.on.doc")
-                        Text("Copy")
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8) // Taller hit area
-                    .background(
-                        RoundedRectangle(cornerRadius: 8) // Slightly larger radius
-                            .fill(Color.white.opacity(0.15))
-                    )
-                }
-
-                // Select Button
-                Button(action: { selectLyrics(result.text, title: result.title) }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                        Text("Select")
-                    }
-                    .font(.system(size: 14, weight: .bold)) // Bold for emphasis
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(AivoTheme.Primary.orange) // Highlight color
-                    )
-                }
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.black.opacity(0.3))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
-                )
-        )
-    }
-
     // MARK: - Actions
     private func hideKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -889,6 +803,9 @@ struct GenerateLyricsScreen: View {
                         "results_count": results.count,
                         "timestamp": Date().timeIntervalSince1970
                     ])
+                    
+                    // Show result screen
+                    showResultScreen = true
                 }
             } catch {
                 Logger.e("❌ [GenerateLyrics] Error: \(error)")
@@ -908,27 +825,7 @@ struct GenerateLyricsScreen: View {
         }
     }
 
-    private func copyLyrics(_ text: String, title: String) {
-        let formattedText = "[\(title)]\n\n\(text)"
-        UIPasteboard.general.string = formattedText
-        lyrics = text
-        songName = title
-        showToastMessage("Lyrics copied to clipboard!")
-    }
 
-    private func selectLyrics(_ text: String, title: String) {
-        lyrics = text
-        songName = title
-        dismiss()
-    }
-
-    private func copyAllLyrics() {
-        let allText = lyricsResults.map { "[\($0.title)]\n\n\($0.text)" }
-            .joined(separator: "\n\n---\n\n")
-        UIPasteboard.general.string = allText
-        lyrics = allText
-        showToastMessage("All lyrics copied!")
-    }
 
     private func showToastMessage(_ message: String) {
         toastMessage = message
