@@ -82,7 +82,7 @@ enum CoverLanguage: String, CaseIterable {
 
 // MARK: - Song Creation Enums
 
-enum SongMood: String, CaseIterable {
+enum SongMood: String, CaseIterable, Codable {
     case chill = "Chill"
     case happy = "Happy"
     case motivational = "Motivational"
@@ -204,7 +204,7 @@ enum SongMood: String, CaseIterable {
     }
 }
 
-enum SongGenre: String, CaseIterable {
+enum SongGenre: String, CaseIterable, Codable {
     case pop = "Pop"
     case pop_ballad = "Pop Ballad"
     case pop_rock = "Pop Rock"

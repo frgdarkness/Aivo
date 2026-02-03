@@ -12,6 +12,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var creditsPerSong = 30
     @Published var creditsPerCover = 20
     @Published var creditsPerLyric = 5
+    @Published var enableOneTimeFreeTry = true // Added support for free try
     
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
