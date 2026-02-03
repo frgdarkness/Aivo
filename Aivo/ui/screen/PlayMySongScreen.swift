@@ -31,6 +31,8 @@ struct PlayMySongScreen: View {
     @State private var headerHeight: CGFloat = 0   // <- chiều cao header
     @State private var showAddToPlaylistSheet = false
     @State private var showEditSheet = false
+    @State private var showSleepTimer = false
+    @State private var showEqualizer = false
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
     @State private var timestampedLyrics: TimestampedLyricsData?
@@ -108,6 +110,13 @@ struct PlayMySongScreen: View {
 //            } else {
 //                SubscriptionScreenIntro()
 //            }
+        }
+        .sheet(isPresented: $showSleepTimer) {
+             SleepTimerView()
+                 .mediumPresentationDetents()
+        }
+        .fullScreenCover(isPresented: $showEqualizer) {
+             EqualizerView()
         }
         .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
             Button("Upgrade to Premium", role: .none) {
@@ -299,6 +308,48 @@ struct PlayMySongScreen: View {
                 HStack(spacing: 8) {
                     Image(systemName: "pencil").font(.system(size: 16))
                     Text("Edit Song Info")
+                        .font(.system(size: 16, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+
+            Divider().background(Color.white.opacity(0.2))
+
+            Button {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showSleepTimer = true
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "moon.zzz").font(.system(size: 16))
+                    Text("Sleep Timer")
+                        .font(.system(size: 16, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+
+            Divider().background(Color.white.opacity(0.2))
+
+            Button {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    showEqualizer = true
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "slider.vertical.3").font(.system(size: 16))
+                    Text("Equalizer")
                         .font(.system(size: 16, weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
@@ -1408,5 +1459,18 @@ struct PlayMySongScreen_Previews: PreviewProvider {
         
         return PlayMySongScreen(songs: mockSongs, initialIndex: 0)
             .previewDisplayName("Play My Song Screen")
+    }
+}
+
+// MARK: - View Helper
+private extension View {
+    @ViewBuilder
+    func mediumPresentationDetents() -> some View {
+        if #available(iOS 16.0, *) {
+            self.presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        } else {
+            self
+        }
     }
 }

@@ -318,3 +318,14 @@ enum SunoError: LocalizedError {
 }
 
 
+
+// MARK: - Mocks
+extension SunoData {
+    static let mock = SunoData(
+        id: "mock_id",
+        audioUrl: "https://example.com/audio.mp3",
+        imageUrl: "https://example.com/image.jpg",
+        modelName: "Aivo V3", title: "Mock Song",
+        duration: 180
+    )
+}
