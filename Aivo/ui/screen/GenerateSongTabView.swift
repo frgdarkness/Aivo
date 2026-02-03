@@ -7,7 +7,7 @@ struct GenerateSongTabView: View {
     @ObservedObject private var remoteConfig = RemoteConfigManager.shared
     
     private var creditsRequired: Int {
-        remoteConfig.creditsPerSong
+        generationMode.cost
     }
     @State private var selectedInputType: InputType = .description
     @State private var songDescription = ""
@@ -39,6 +39,20 @@ struct GenerateSongTabView: View {
     @State private var showArtistNameAlert = false
     @State private var selectedLanguage: String = "English"
     @State private var showBackgroundBusyAlert = false
+
+    // MARK: - New Generation State
+    @State private var generationMode: GenerationMode = .simple
+    @State private var selectedStructure: Set<SongStructurePart> = [.verse, .chorus]
+    
+    // Vocal Options
+    @State private var isVocalExpanded = false
+    @State private var selectedVocalIntensity: VocalIntensity? = nil
+    @State private var selectedVocalTexture: VocalTexture? = nil
+    
+    // Advanced Options
+    @State private var selectedTempo: SongTempo? = nil
+    @State private var selectedProductionStyle: ProductionStyle? = nil
+    @State private var selectedMixPriority: MixPriority? = nil
     
     enum InputType: String, CaseIterable {
         case description = "Song Description"
@@ -57,14 +71,31 @@ struct GenerateSongTabView: View {
                 // Song Input Section
                 songInputSection
                 
+                // Mode Selection
+                modeSelectionSection
+                
                 // Mood Selection
                 moodSelectionSection
                 
                 // Genre Selection
                 genreSelectionSection
                 
-                // Advanced Options
-                advancedOptionsSection
+                // Song Name
+                songNameSection
+                
+                // Structure & Vocal (Custom / Advance)
+                if generationMode == .custom || generationMode == .advanced {
+                    structureSelectionSection
+                    vocalOptionsSection
+                }
+                
+                // Advanced Options (Advance Only)
+                if generationMode == .advanced {
+                    advancedOptionsSection
+                }
+                
+                // Model Selection
+                modelSelectionSection
                 
                 // Create Button
                 createButton
@@ -508,6 +539,312 @@ struct GenerateSongTabView: View {
     }
 
     
+    // MARK: - Mode Selection Section
+    private var modeSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Mode")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                Spacer()
+                HStack(spacing: 4) {
+                    Text("\(generationMode.cost)")
+                        .font(.system(size: 14, weight: .bold))
+                    Image(systemName: "dollarsign.circle.fill")
+                        .font(.system(size: 14))
+                }
+                .foregroundColor(.yellow)
+            }
+            
+            HStack(spacing: 0) {
+                let modes = GenerationMode.allCases
+                ForEach(Array(modes.enumerated()), id: \.element) { index, mode in
+                    Button(action: {
+                        withAnimation { generationMode = mode }
+                    }) {
+                        Text(mode.rawValue)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(generationMode == mode ? .black : .white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(generationMode == mode ? Color.white : Color.clear)
+                            )
+                    }
+                    
+                    if index < modes.count - 1 {
+                        Rectangle()
+                            .fill(Color.white.opacity(0.2))
+                            .frame(width: 1, height: 20)
+                    }
+                }
+            }
+            .padding(4)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.black.opacity(0.3))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                    )
+            )
+        }
+    }
+
+    // MARK: - Structure Selection Section
+    private var structureSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Structure")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+            
+            if #available(iOS 16.0, *) {
+                FlowLayout(spacing: 8) {
+                    structureButtons
+                }
+            } else {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 8) {
+                    structureButtons
+                }
+            }
+        }
+    }
+    
+    private var structureButtons: some View {
+        ForEach(SongStructurePart.allCases.sorted { $0.order < $1.order }) { part in
+            let isMandatory = (part == .verse || part == .chorus)
+            let isSelected = selectedStructure.contains(part) || isMandatory
+            
+            Button(action: {
+                if isMandatory { return }
+                if selectedStructure.contains(part) {
+                    if selectedStructure.count > 1 {
+                        selectedStructure.remove(part)
+                    }
+                } else {
+                    selectedStructure.insert(part)
+                }
+            }) {
+                Text(part.rawValue)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(isSelected ? .black : .white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(isSelected ? Color.white : AivoTheme.Primary.orange, lineWidth: isSelected ? 0 : 1)
+                            .opacity(isSelected ? 0 : 0.3)
+                    )
+                    .opacity(isMandatory ? 0.8 : 1.0)
+            }
+            .disabled(isMandatory)
+        }
+    }
+
+    // MARK: - Vocal Options Section
+    private var vocalOptionsSection: some View {
+        VStack(spacing: 0) {
+            // Header
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                   isVocalExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Text("Vocal Settings")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                    
+                    Text("🎤")
+                        .font(.system(size: 16))
+                    
+                    Spacer()
+                    
+                    Image(systemName: isVocalExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            
+            if isVocalExpanded {
+                VStack(spacing: 0) {
+                    Divider().background(AivoTheme.Primary.orange.opacity(0.3)).padding(.bottom, 16)
+                    
+                    // Vocal Gender
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Gender")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                        
+                        HStack(spacing: 6) {
+                            ForEach(LocalVocalGender.allCases, id: \.self) { gender in
+                                Button(action: {
+                                    selectedVocalGender = gender
+                                }) {
+                                    Text(gender.rawValue)
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(selectedVocalGender == gender ? .black : .white)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(selectedVocalGender == gender ? Color.white : Color.white.opacity(0.1))
+                                        )
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 16)
+                    .disabled(isInstrumental)
+                    .opacity(isInstrumental ? 0.5 : 1.0)
+                    
+                    // Vocal Intensity
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Intensity")
+                             .font(.system(size: 14, weight: .medium))
+                             .foregroundColor(.white.opacity(0.8))
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(VocalIntensity.allCases, id: \.self) { intensity in
+                                    let isSelected = selectedVocalIntensity == intensity
+                                    Button(action: {
+                                        selectedVocalIntensity = isSelected ? nil : intensity
+                                    }) {
+                                        Text(intensity.rawValue)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(isSelected ? .black : .white)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                Capsule()
+                                                    .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                                            )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 16)
+                    .disabled(isInstrumental)
+                    .opacity(isInstrumental ? 0.5 : 1.0)
+                    
+                    // Vocal Texture
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Texture")
+                             .font(.system(size: 14, weight: .medium))
+                             .foregroundColor(.white.opacity(0.8))
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(VocalTexture.allCases, id: \.self) { texture in
+                                    let isSelected = selectedVocalTexture == texture
+                                    Button(action: {
+                                        selectedVocalTexture = isSelected ? nil : texture
+                                    }) {
+                                        Text(texture.rawValue)
+                                            .font(.system(size: 13))
+                                            .foregroundColor(isSelected ? .black : .white)
+                                            .padding(.horizontal, 12)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                Capsule()
+                                                    .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                                            )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    .padding(.bottom, 16)
+                    .disabled(isInstrumental)
+                    .opacity(isInstrumental ? 0.5 : 1.0)
+                    
+                     
+                     // Instrumental Toggle
+                     Toggle(isOn: $isInstrumental) {
+                         Text("Instrumental (No Vocals)")
+                             .font(.system(size: 16, weight: .medium))
+                             .foregroundColor(.white)
+                     }
+                     .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
+                     .padding(.bottom, 16)
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.black.opacity(0.2))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(AivoTheme.Primary.orange, lineWidth: 1))
+        )
+    }
+    // MARK: - Song Name Section
+    private var songNameSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+             HStack {
+                 Text("Song Name (Optional)")
+                     .font(.system(size: 16, weight: .medium))
+                     .foregroundColor(.white)
+                 Spacer()
+                 Text("\(songName.count) / 80")
+                     .font(.system(size: 11))
+                     .foregroundColor(.white.opacity(0.5))
+             }
+             
+             TextField("Name", text: $songName)
+                 .font(.system(size: 14))
+                 .foregroundColor(.white)
+                 .padding(12)
+                 .background(
+                     RoundedRectangle(cornerRadius: 8)
+                         .fill(Color.white.opacity(0.1))
+                 )
+                 .onChange(of: songName) { newValue in
+                     if newValue.count > 80 { songName = String(newValue.prefix(80)) }
+                 }
+        }
+    }
+    
+    // MARK: - Model Selection Section
+    private var modelSelectionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("AI Model")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.white)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(SunoModel.allCases, id: \.self) { model in
+                        Button(action: {
+                            selectedModel = model
+                        }) {
+                            Text(model.rawValue)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(selectedModel == model ? .black : .white)
+                                .frame(minWidth: 50)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // MARK: - Advanced Options Section
     private var advancedOptionsSection: some View {
             VStack(spacing: 0) {
@@ -545,34 +882,34 @@ struct GenerateSongTabView: View {
                             Divider()
                                 .background(AivoTheme.Primary.orange.opacity(0.3))
                             
-                            // Song Name
+                            // Tempo Picker
                             VStack(alignment: .leading, spacing: 8) {
-                                HStack {
-                                    Text("Song Name (Optional)")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.white)
-                                    
-                                    Spacer()
-                                    
-                                    Text("\(songName.count) / 80")
-                                        .font(.system(size: 11))
-                                        .foregroundColor(.white.opacity(0.5))
-                                }
-                                
-                                TextField("Name", text: $songName)
-                                    .font(.system(size: 14))
+                                Text("Tempo")
+                                    .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
-                                    .padding(12)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(Color.white.opacity(0.1))
-                                    )
-                                    .onChange(of: songName) { newValue in
-                                        // Limit to 80 characters
-                                        if newValue.count > 80 {
-                                            songName = String(newValue.prefix(80))
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(SongTempo.allCases, id: \.self) { tempo in
+                                            let isSelected = selectedTempo == tempo
+                                            Button(action: {
+                                                selectedTempo = isSelected ? nil : tempo
+                                            }) {
+                                                Text(tempo.rawValue)
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(isSelected ? .black : .white)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 8)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                                                    )
+                                            }
                                         }
                                     }
+                                }
+                                .disabled(isBPMEnabled)
+                                .opacity(isBPMEnabled ? 0.5 : 1.0)
                             }
                             
                             // BPM Toggle + Slider
@@ -583,9 +920,6 @@ struct GenerateSongTabView: View {
                                         .foregroundColor(.white)
 
                                     
-                                    
-                                    
-
                                     Toggle("", isOn: $isBPMEnabled)
                                         .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
                                 }
@@ -612,82 +946,62 @@ struct GenerateSongTabView: View {
                                         .foregroundColor(isBPMEnabled ? AivoTheme.Secondary.goldenSun : .white.opacity(0.3))
                                 }
                             }
-
-                            // Instrumental Toggle
-                            HStack {
-                                Text("Instrumental")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                
-                                Spacer()
-                                
-                                Toggle("", isOn: $isInstrumental)
-                                    .toggleStyle(SwitchToggleStyle(tint: AivoTheme.Primary.orange))
-                                    .onChange(of: isInstrumental) { newValue in
-                                        if newValue {
-                                            selectedVocalGender = .random
-                                        }
-                                    }
-                            }
-                                
-                            // Vocal Gender - Disabled when instrumental
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Vocal Gender")
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundColor(.white)
-                                
-                                HStack(spacing: 6) {
-                                    ForEach(LocalVocalGender.allCases, id: \.self) { gender in
-                                        Button(action: {
-                                            if !isInstrumental {
-                                                selectedVocalGender = gender
-                                            }
-                                        }) {
-                                            Text(gender.rawValue)
-                                                .font(.system(size: 14, weight: .medium))
-                                                .foregroundColor(selectedVocalGender == gender ? .black : .white)
-                                                .frame(maxWidth: .infinity)
-                                                .padding(.vertical, 12)
-                                                .background(
-                                                    RoundedRectangle(cornerRadius: 8)
-                                                        .fill(selectedVocalGender == gender ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
-                                                )
-                                        }
-                                        .disabled(isInstrumental)
-                                        .opacity(isInstrumental ? 0.5 : 1.0)
-                                    }
-                                }
-                            }
                             
-                            // Model Selection
+                            // Production Style
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Model")
+                                Text("Production Style")
                                     .font(.system(size: 14, weight: .medium))
                                     .foregroundColor(.white)
                                 
                                 ScrollView(.horizontal, showsIndicators: false) {
                                     HStack(spacing: 8) {
-                                        ForEach(SunoModel.allCases, id: \.self) { model in
+                                        ForEach(ProductionStyle.allCases, id: \.self) { style in
+                                            let isSelected = selectedProductionStyle == style
                                             Button(action: {
-                                                selectedModel = model
+                                                selectedProductionStyle = isSelected ? nil : style
                                             }) {
-                                                Text(model.rawValue)
-                                                    .font(.system(size: 14, weight: .medium))
-                                                    .foregroundColor(selectedModel == model ? .black : .white)
-                                                    .frame(minWidth: 50) // Min width để các item có cùng kích thước
-                                                    .padding(.horizontal, 16)
-                                                    .padding(.vertical, 12)
+                                                Text(style.rawValue)
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(isSelected ? .black : .white)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 8)
                                                     .background(
-                                                        RoundedRectangle(cornerRadius: 8)
-                                                            .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
+                                                        Capsule()
+                                                            .fill(isSelected ? Color.white : Color.white.opacity(0.1))
                                                     )
                                             }
                                         }
                                     }
-                                    .padding(.horizontal, 4)
                                 }
                             }
                             
+                            // Mix Priority
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Mix Priority")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.white)
+                                
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(MixPriority.allCases, id: \.self) { mix in
+                                            let isSelected = selectedMixPriority == mix
+                                            Button(action: {
+                                                selectedMixPriority = isSelected ? nil : mix
+                                            }) {
+                                                Text(mix.rawValue)
+                                                    .font(.system(size: 13))
+                                                    .foregroundColor(isSelected ? .black : .white)
+                                                    .padding(.horizontal, 12)
+                                                    .padding(.vertical, 8)
+                                                    .background(
+                                                        Capsule()
+                                                            .fill(isSelected ? Color.white : Color.white.opacity(0.1))
+                                                    )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 16)
@@ -827,67 +1141,85 @@ struct GenerateSongTabView: View {
     private func buildPrompt() -> String {
         var prompt = ""
         
-        // If lyrics tab is selected and has lyrics, use only lyrics
-        if selectedInputType == .lyrics && !songLyrics.isEmpty {
-            // Check if lyrics doesn't start with [
-            
-            // Add genres
-            
-            let genreData = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-            let genreText = selectedGenres.isEmpty ? "" : " (\(genreData))"
-            prompt += "Create a\(genreText) song"
-            
-            
+        // 1. Core Request & Genre
+        let genreData = selectedGenres.map { $0.displayName }.joined(separator: ", ")
+        let genreText = selectedGenres.isEmpty ? "" : " \(genreData)"
+        
+        prompt += "Create a\(genreText) song"
+        
+        // 2. Mood
+        if !selectedMoods.isEmpty {
             let moodData = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-            let moodText = selectedMoods.isEmpty ? "" : "(\(moodData))"
-            prompt += self.selectedMoods.isEmpty ? "" : " with \(moodText) mood"
-            
-            if isBPMEnabled {
-                prompt += ", tempo: \(Int(bpmValue)) BPM"
-            }
-            
-            if (!prompt.isEmpty) {
-                prompt += ". "
-            }
-            
-            if !songDescription.isEmpty {
-                prompt += songDescription
-            }
-            prompt += "\nLyric of song:\n"
-                        
-            if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
-                prompt += "[Verse]\n" + songLyrics
-            } else {
-                prompt += songLyrics
-            }
-            
+            prompt += " with \(moodData) mood"
+        }
+        
+        // 3. Vocals (New)
+        if isInstrumental {
+            prompt += ", instrumental"
         } else {
-            // Add genres
-            let genreData = selectedGenres.map { $0.displayName }.joined(separator: ", ")
-            let genreText = selectedGenres.isEmpty ? "" : " (\(genreData))"
-            prompt += "Create a\(genreText) song"
+            var vocalTerms: [String] = []
             
-            
-            let moodData = selectedMoods.map { $0.displayName }.joined(separator: ", ")
-            let moodText = selectedMoods.isEmpty ? "" : "(\(moodData))"
-            prompt += self.selectedMoods.isEmpty ? "" : " with \(moodText) mood"
-            
-            if isBPMEnabled {
-                prompt += ", tempo: \(Int(bpmValue)) BPM"
+            // Gender
+            if selectedVocalGender != .random {
+                vocalTerms.append(selectedVocalGender.rawValue)
             }
             
-            if (!prompt.isEmpty) {
-                prompt += ". "
+            // Intensity
+            if let intensity = selectedVocalIntensity, intensity != .random {
+                vocalTerms.append(intensity.rawValue.lowercased())
             }
             
-            if !songDescription.isEmpty {
-                prompt += songDescription
+            // Texture
+            if let texture = selectedVocalTexture, texture != .random {
+                vocalTerms.append(texture.rawValue.lowercased())
             }
             
-            // Add language specification for description mode
-            if !selectedLanguage.isEmpty {
-                prompt += "\nNote: Generate the song in \(selectedLanguage) language."
+            if !vocalTerms.isEmpty {
+                prompt += ", featuring " + vocalTerms.joined(separator: " ") + " vocals"
             }
+        }
+        
+        // 4. Production & Mix (New)
+        if let style = selectedProductionStyle {
+            prompt += ", \(style.rawValue) production"
+        }
+        
+        if let priority = selectedMixPriority {
+            prompt += ", \(priority.rawValue) mix"
+        }
+        
+        // 5. Structure
+        if (generationMode == .custom || generationMode == .advanced) && !selectedStructure.isEmpty {
+             let parts = selectedStructure.sorted { $0.order < $1.order }.map { $0.rawValue }
+             prompt += ", structure: (" + parts.joined(separator: ", ") + ")"
+        }
+        
+        // 6. Tempo (Updated)
+        if isBPMEnabled {
+            prompt += ", tempo: \(Int(bpmValue)) BPM"
+        } else if let tempo = selectedTempo {
+            prompt += ", \(tempo.rawValue) tempo"
+        }
+        
+        prompt += ". "
+        
+        // 7. User Description
+        if !songDescription.isEmpty {
+            prompt += songDescription + ". "
+        }
+        
+        // 8. Lyrics Handling
+        if selectedInputType == .description {
+             if !selectedLanguage.isEmpty {
+                 prompt += "\nNote: Generate the song in \(selectedLanguage) language."
+             }
+        } else if selectedInputType == .lyrics && !songLyrics.isEmpty {
+             prompt += "\nLyric of song:\n"
+             if !songLyrics.trimmingCharacters(in: .whitespaces).hasPrefix("[") {
+                 prompt += "[Verse]\n" + songLyrics
+             } else {
+                 prompt += songLyrics
+             }
         }
         
         return prompt
