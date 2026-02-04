@@ -20,11 +20,42 @@ struct ExploreTabViewNew: View {
         }
     }
     
+    struct ThemeList: Identifiable {
+        let id = UUID()
+        let title: String
+        let songs: [SunoData]
+    }
+    
+    @State private var selectedThemeList: ThemeList?
+    @State private var showSubscription = false
+    @State private var songsForYou: [SunoData] = []
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
                 // Header
                 //headerView
+                
+                // Songs For You Section
+                if !songsForYou.isEmpty {
+                    SongsForYouSection(
+                        songs: Array(songsForYou.prefix(4)),
+                        onPlay: { song in
+                            if let index = songsForYou.firstIndex(where: { $0.id == song.id }) {
+                                selectedSongForPlayback = SongPlaybackItem(songs: songsForYou, initialIndex: index)
+                            }
+                        },
+                        onSeeAll: {
+                            selectedThemeList = ThemeList(title: "Songs For You", songs: songsForYou)
+                        }
+                    )
+                }
+                
+                // Limited Offer (Discount Ad)
+                if !SubscriptionManager.shared.isPremium {
+                    DiscountAdView()
+                        .padding(.horizontal, 4) // Adjust padding to match Sona style if needed, Sona used 20 on container
+                }
                 
                 // Search Bar
                 //searchBarView
@@ -44,8 +75,15 @@ struct ExploreTabViewNew: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 100) // Space for bottom nav
         }
+
         .fullScreenCover(item: $selectedSongForPlayback) { item in
             PlayOnlineSongScreen(songs: item.songs, initialIndex: item.initialIndex)
+        }
+        .fullScreenCover(item: $selectedThemeList) { themeList in
+            OnlineSongListView(title: themeList.title, songs: themeList.songs)
+        }
+        .fullScreenCover(isPresented: $showSubscription) {
+            SubscriptionScreen()
         }
         .onAppear {
             loadSongStatus()
@@ -59,6 +97,11 @@ struct ExploreTabViewNew: View {
             statusMap[status.id] = status
         }
         songStatusMap = statusMap
+        
+        // Populate Songs For You if empty or strictly if needed
+        if songsForYou.isEmpty && !remoteConfig.hottestList.isEmpty {
+            songsForYou = remoteConfig.hottestList.shuffled()
+        }
     }
     
     // MARK: - Header View
@@ -146,9 +189,21 @@ struct ExploreTabViewNew: View {
     // MARK: - Popular Section
     private var popularSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Popular")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.white)
+            HStack {
+                Text("Popular")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: {
+                    selectedThemeList = ThemeList(title: "Popular", songs: remoteConfig.hottestList)
+                }) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+            }
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
@@ -174,13 +229,13 @@ struct ExploreTabViewNew: View {
                 
                 Spacer()
                 
-//                Button(action: {
-//                    // Handle "Xem tất cả" tap
-//                }) {
-//                    Text("Xem tất cả")
-//                        .font(.system(size: 14, weight: .medium))
-//                        .foregroundColor(.white.opacity(0.7))
-//                }
+                Button(action: {
+                    selectedThemeList = ThemeList(title: "News", songs: remoteConfig.newList)
+                }) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
             }
             
             // Horizontal scroll with 3 rows, 5 columns per view
@@ -215,12 +270,30 @@ struct ExploreTabViewNew: View {
     private var genreSections: some View {
         VStack(alignment: .leading, spacing: 24) {
             ForEach(SongGenre.getExplore(), id: \.self) { genre in
+                // Filter songs once to maintain consistency
+                let filteredSongs = filterSongsByGenre(genre)
+                
                 GenreSectionView(
                     genre: genre,
-                    songs: filterSongsByGenre(genre),
+                    songs: filteredSongs, // Pass full list
                     songStatusMap: songStatusMap,
-                    onSongTap: { songs, index in
-                        selectedSongForPlayback = SongPlaybackItem(songs: songs, initialIndex: index)
+                    onSongTap: { _, index in // We ignore the passed array and use filteredSongs logic inside or just pass it through
+                         // Play full list starting at index. Even if UI shows 10, playing should probably queue the filtered list?
+                         // User said: "show max 10... see all >> full list".
+                         // Usually playing from a preview list just plays that context.
+                         // But if I want to "get more songs", maybe I should just play the top 10?
+                         // User said: "filter không giới hạn số bài... sau khi filter xong thì xáo trộn bài... ở explore thì show max 10... user bấm see all mới xem đc full list".
+                         // This implies the Explore view is a "preview" of the filtered list.
+                         // If I tap 3rd song, I probably expect to hear that + maybe subsequent ones in that preview?
+                         // Let's pass the full filteredSongs list but start at `index`. 
+                         // Note: `index` comes from the UI loop which is `prefix(10)`. So index is 0..9.
+                         // Only `filteredSongs` are passed to `SongPlaybackItem`.
+                         // If `filteredSongs` has 100 items, and I tap index 2, I play from index 2 of 100.
+                         // This is great behavior - user finds a song, keeps listening to genre radio.
+                         selectedSongForPlayback = SongPlaybackItem(songs: filteredSongs, initialIndex: index)
+                    },
+                    onSeeAll: { _ in
+                        selectedThemeList = ThemeList(title: genre.displayName, songs: filteredSongs)
                     }
                 )
             }
@@ -229,17 +302,20 @@ struct ExploreTabViewNew: View {
     
     // MARK: - Filter Songs by Genre
     private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
-        let genreName = genre.rawValue.lowercased()
+        let keywords = genre.searchKeywords
         var filteredSongs = remoteConfig.allSongsList.filter { song in
-            // Check if song tags contain genre name
-            song.tags.lowercased().contains(genreName)
+            let songTags = song.tags.lowercased()
+            // Check if ANY keyword is contained in song tags
+            return keywords.contains { keyword in
+                songTags.contains(keyword)
+            }
         }
         
-        // Shuffle the filtered list
+        // Shuffle the filtered list to randomize
         filteredSongs.shuffle()
         
-        // Take first 10 items
-        return Array(filteredSongs.prefix(10))
+        // Return FULL list (unlimited)
+        return filteredSongs
     }
 }
 
@@ -249,6 +325,7 @@ struct GenreSectionView: View {
     let songs: [SunoData]
     let songStatusMap: [String: SongStatus]
     let onSongTap: ([SunoData], Int) -> Void
+    let onSeeAll: ([SunoData]) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -259,13 +336,13 @@ struct GenreSectionView: View {
                 
                 Spacer()
                 
-//                Button(action: {
-//                    // Handle "Xem tất cả" tap
-//                }) {
-//                    Text("Xem tất cả")
-//                        .font(.system(size: 14, weight: .medium))
-//                        .foregroundColor(.white.opacity(0.7))
-//                }
+                Button(action: {
+                    onSeeAll(songs)
+                }) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
+                }
             }
             
             if songs.isEmpty {
@@ -276,11 +353,14 @@ struct GenreSectionView: View {
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
-                        ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                        // Display only top 10 items
+                        ForEach(Array(songs.prefix(10).enumerated()), id: \.element.id) { index, song in
                             GenreSongCardView(
                                 song: song,
                                 status: songStatusMap[song.id],
                                 onTap: {
+                                    // Pass full 'songs' list to handler (via closure capture or arg)
+                                    // Index matches the full list because we just took prefix.
                                     onSongTap(songs, index)
                                 }
                             )
@@ -669,6 +749,155 @@ struct ExploreTabViewNew_Previews: PreviewProvider {
     static var previews: some View {
         ExploreTabViewNew()
             .background(AivoSunsetBackground())
+    }
+}
+
+// MARK: - Supporting Views
+
+struct DiscountAdView: View {
+    @State private var showSubscription = false
+    
+    var body: some View {
+        HStack {
+            Image(systemName: "tag.fill") // Placeholder
+                .resizable()
+                .frame(width: 40, height: 40)
+                .foregroundColor(AivoTheme.Primary.orange)
+                .padding(8)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(8)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text("Limited Offer")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                Text("Unleash your creativity and build your music world with AI")
+                    .font(.system(size: 12))
+                    .foregroundColor(.gray)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                showSubscription = true
+            }) {
+                Text("80% OFF")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(Color.yellow) // Specific ad color
+                    .cornerRadius(16)
+            }
+        }
+        .padding(12)
+        .background(Color(hex: "#1C1C1E"))
+        .cornerRadius(12)
+        .onTapGesture {
+            showSubscription = true
+        }
+        .fullScreenCover(isPresented: $showSubscription) {
+            SubscriptionScreen()
+        }
+    }
+}
+
+struct SongsForYouSection: View {
+    let songs: [SunoData]
+    let onPlay: (SunoData) -> Void
+    let onSeeAll: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "person.circle.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                Text("Songs For You")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                Spacer()
+                Button(action: onSeeAll) {
+                    Text("See All")
+                        .font(.system(size: 13))
+                        .foregroundColor(.gray)
+                }
+            }
+            .padding(.top, 16)
+            
+            VStack(spacing: 12) {
+                ForEach(songs) { song in
+                    SongForYouRow(song: song, onPlay: onPlay)
+                }
+            }
+            .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.05))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct SongForYouRow: View {
+    let song: SunoData
+    let onPlay: (SunoData) -> Void
+    @State private var showMenu = false
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            KFImage(URL(string: song.imageUrl.isEmpty ? song.sourceImageUrl : song.imageUrl))
+                .placeholder {
+                    Color.gray.opacity(0.3)
+                }
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 48, height: 48)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(song.title)
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                Text(song.modelName)
+                    .font(.system(size: 13))
+                    .foregroundColor(.gray)
+                    .lineLimit(1)
+            }
+            
+            Spacer()
+            
+            Button(action: {
+                showMenu = true
+            }) {
+                Image(systemName: "ellipsis")
+                    .rotationEffect(.degrees(90))
+                    .foregroundColor(.gray)
+            }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onPlay(song)
+        }
+        .confirmationDialog("", isPresented: $showMenu, titleVisibility: .hidden) {
+            Button("Play Now") {
+                onPlay(song)
+            }
+            Button("Add to queue") {
+                MusicPlayer.shared.addToQueue(song)
+            }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 }
 

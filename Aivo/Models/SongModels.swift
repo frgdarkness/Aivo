@@ -428,6 +428,39 @@ enum SongGenre: String, CaseIterable, Codable {
     static func getIntroList() -> [SongGenre] {
         return [.edm, .pop, .rap, .rock]
     }
+    
+    var searchKeywords: [String] {
+        var keywords: [String] = [self.rawValue.lowercased()]
+        
+        switch self {
+        case .pop:
+            keywords.append(contentsOf: ["pop", "popular", "top hits", "chart", "ballad", "mainstream"])
+        case .rock:
+            keywords.append(contentsOf: ["rock", "metal", "punk", "alternative", "band", "guitar", "grunge", "indie"])
+        case .edm:
+            keywords.append(contentsOf: ["edm", "electronic", "dance", "house", "techno", "dubstep", "trance", "beat", "club", "mix", "dj"])
+        case .rap, .hiphop:
+             keywords.append(contentsOf: ["rap", "hip hop", "hip-hop", "trap", "drill", "flow", "beat", "mc", "rhyme", "urban"])
+        case .rnb:
+            keywords.append(contentsOf: ["r&b", "rnb", "soul", "funk", "blues", "groove", "vocal", "smooth"])
+        case .jazz:
+             keywords.append(contentsOf: ["jazz", "blues", "saxophone", "improvisation", "swing", "smooth"])
+        case .classical:
+             keywords.append(contentsOf: ["classical", "orchestra", "piano", "symphony", "instrumental", "violin", "cinematic"])
+        case .kpop:
+            keywords.append(contentsOf: ["k-pop", "kpop", "korea", "idol"])
+        case .jpop:
+            keywords.append(contentsOf: ["j-pop", "jpop", "japan", "anime"])
+        default:
+            // For specific sub-genres, try to include their parent genre keywords if possible, 
+            // or just rely on the name.
+            if self.rawValue.lowercased().contains("rock") { keywords.append("rock") }
+            if self.rawValue.lowercased().contains("pop") { keywords.append("pop") }
+            if self.rawValue.lowercased().contains("house") { keywords.append("house") }
+        }
+        
+        return keywords
+    }
 }
 
 enum SongTheme: String, CaseIterable {

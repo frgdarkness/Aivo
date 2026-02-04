@@ -40,7 +40,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "APP_1000_CREDITS",
+      "productID" : "AIVO_1000_CREDITS",
       "referenceName" : "1000 Credits",
       "type" : "Consumable"
     },
@@ -55,7 +55,7 @@
           "locale" : "en_US"
         }
       ],
-      "productID" : "APP_5000_CREDITS",
+      "productID" : "AIVO_5000_CREDITS",
       "referenceName" : "5000 Credits",
       "type" : "Consumable"
     }

@@ -148,8 +148,8 @@ struct LocalSongsView: View {
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
                                         
-                                        // "Local" Label
-                                        Text("Local")
+                                        // Model Label
+                                        Text(song.modelName)
                                             .font(.caption)
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
@@ -228,15 +228,43 @@ struct LocalSongsView: View {
     @State private var songToAddToPlaylist: SunoData? = nil // Sheet state
 
     private func deleteLocalSong(_ song: SunoData) {
-        LocalSongManager.shared.deleteLocalSong(song)
-        refreshSongs()
+        Task {
+            if song.modelName == "Local" {
+                LocalSongManager.shared.deleteLocalSong(song)
+            } else {
+                try? await SunoDataManager.shared.deleteSunoData(song)
+            }
+            refreshSongs()
+        }
     }
     private func refreshSongs() {
         isLoading = true
-        // Simulate async load if needed, or just run on Main
-        DispatchQueue.main.async {
-            self.localSongs = LocalSongManager.shared.fetchLocalSongs()
-            self.isLoading = false
+        Task {
+            // 1. Fetch Local Imported Songs
+            let importedSongs = LocalSongManager.shared.fetchLocalSongs()
+            
+            // 2. Fetch AI Downloaded Songs (Async)
+            var aiSongs: [SunoData] = []
+            do {
+                aiSongs = try await SunoDataManager.shared.loadAllSavedSunoData()
+            } catch {
+                print("❌ [LocalSongsView] Error loading AI songs: \(error)")
+            }
+            
+            // 3. Merge and Sort
+            await MainActor.run {
+                // Combine lists
+                let allSongs = importedSongs + aiSongs
+                
+                // Remove duplicates if any (based on ID)
+                let uniqueSongs = Array(Dictionary(grouping: allSongs, by: { $0.id })
+                                            .compactMap { $0.value.first })
+                
+                // Sort by createTime descending (newest first)
+                self.localSongs = uniqueSongs.sorted(by: { $0.createTime > $1.createTime })
+                
+                self.isLoading = false
+            }
         }
     }
     
