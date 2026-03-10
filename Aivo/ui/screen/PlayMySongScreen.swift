@@ -633,35 +633,144 @@ struct PlayMySongScreen: View {
         }
     }
 
-    // MARK: - Playlist View (giữ nguyên như trước)
+    // MARK: - Playlist View
     private var playlistView: some View {
         ZStack {
             AivoSunsetBackground()
+            
+            // Dark overlay to make background darker
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
+                // Header
                 HStack {
-                    Text("Playlist").font(.title2).fontWeight(.bold).foregroundColor(.white)
+                    Text("Playlist")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
                     Spacer()
-                    Button("Done") { showPlaylist = false }.foregroundColor(.white)
+                    
+                    Button("Done") {
+                        showPlaylist = false
+                    }
+                    .foregroundColor(.white)
                 }
-                .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 20)
-
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(Array(displaySongs.enumerated()), id: \.element.id) { index, song in
-                            PlaylistSongRowView(
-                                song: song,
-                                isCurrentSong: index == musicPlayer.currentIndex,
-                                isPlaying: index == musicPlayer.currentIndex && musicPlayer.isPlaying,
-                                onTap: {
-                                    musicPlayer.loadSong(song, at: index, in: displaySongs)
-                                    showPlaylist = false
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                
+                // Subtitle with queue info
+                HStack {
+                    if !displaySongs.isEmpty {
+                        Text("Next • \(displaySongs.count) songs")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                
+                // Song list
+                if displaySongs.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white.opacity(0.3))
+                        
+                        Text("No songs in queue")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollViewReader { proxy in
+                        List {
+                            ForEach(Array(displaySongs.enumerated()), id: \.offset) { index, song in
+                                LocalPlaylistRowView(
+                                    song: song,
+                                    index: index,
+                                    musicPlayer: musicPlayer,
+                                    onTap: {
+                                        musicPlayer.loadSong(song, at: index, in: displaySongs)
+                                    },
+                                    onDelete: {
+                                        deletePlaylistSong(at: IndexSet(integer: index))
+                                    }
+                                )
+                                .id(index)
+                            }
+                            .onMove { fromOffsets, toOffset in
+                                movePlaylistSong(from: fromOffsets, to: toOffset)
+                            }
+                        }
+                        .listStyle(.plain)
+                        .environment(\.editMode, .constant(.active))
+                        .onAppear {
+                            // Scroll to currently playing song when playlist opens
+                            if musicPlayer.currentIndex < displaySongs.count {
+                                let currentSong = displaySongs[musicPlayer.currentIndex]
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation {
+                                        proxy.scrollTo(musicPlayer.currentIndex, anchor: .center)
+                                    }
                                 }
-                            )
+                            }
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .onAppear {
+                        // Set brighter color for move handles
+                        UITableView.appearance().tintColor = UIColor.white
+                    }
                 }
             }
+        }
+    }
+    
+    // MARK: - Playlist Actions
+    private func movePlaylistSong(from fromOffsets: IndexSet, to toOffset: Int) {
+        var mutableSongs = displaySongs
+        mutableSongs.move(fromOffsets: fromOffsets, toOffset: toOffset)
+        
+        // Update musicPlayer's song list and adjust current index
+        let oldIndex = musicPlayer.currentIndex
+        musicPlayer.songs = mutableSongs
+        
+        // Recalculate current index after move
+        if let movedIndex = fromOffsets.first {
+            if movedIndex == oldIndex {
+                // Current song was moved
+                musicPlayer.currentIndex = toOffset > movedIndex ? toOffset - 1 : toOffset
+            } else if movedIndex < oldIndex && toOffset > oldIndex {
+                musicPlayer.currentIndex = oldIndex - 1
+            } else if movedIndex > oldIndex && toOffset <= oldIndex {
+                musicPlayer.currentIndex = oldIndex + 1
+            }
+        }
+    }
+    
+    private func deletePlaylistSong(at indexSet: IndexSet) {
+        var mutableSongs = displaySongs
+        let oldIndex = musicPlayer.currentIndex
+        
+        // Check if we're deleting the currently playing song
+        let deletingCurrentSong = indexSet.contains(oldIndex)
+        
+        mutableSongs.remove(atOffsets: indexSet)
+        musicPlayer.songs = mutableSongs
+        
+        if deletingCurrentSong {
+            // If current song deleted, play the song at the same index (or stop if empty)
+            if !mutableSongs.isEmpty {
+                let newIndex = min(oldIndex, mutableSongs.count - 1)
+                musicPlayer.loadSong(mutableSongs[newIndex], at: newIndex, in: mutableSongs)
+            }
+        } else {
+            // Adjust current index if needed
+            let deletedBeforeCurrent = indexSet.filter { $0 < oldIndex }.count
+            musicPlayer.currentIndex = oldIndex - deletedBeforeCurrent
         }
     }
 
@@ -1142,6 +1251,7 @@ struct PlaylistSongRowView: View {
     let isCurrentSong: Bool
     let isPlaying: Bool
     let onTap: () -> Void
+    let onTogglePlayPause: (() -> Void)?
 
     var body: some View {
         HStack(spacing: 12) {
@@ -1161,8 +1271,16 @@ struct PlaylistSongRowView: View {
             Spacer()
 
             if isCurrentSong {
-                (isPlaying ? Image(systemName: "speaker.wave.2.fill") : Image(systemName: "pause.circle.fill"))
-                    .font(.title3).foregroundColor(AivoTheme.Primary.orange)
+                // Show pause/play button for currently playing song
+                Button(action: {
+                    onTogglePlayPause?()
+                }) {
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title3)
+                        .foregroundColor(AivoTheme.Primary.orange)
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(PlainButtonStyle())
             }
         }
         .padding(.vertical, 8)
@@ -1472,5 +1590,66 @@ private extension View {
         } else {
             self
         }
+    }
+}
+
+// MARK: - Local Playlist Row View (Direct Observation)
+struct LocalPlaylistRowView: View {
+    let song: SunoData
+    let index: Int
+    @ObservedObject var musicPlayer: MusicPlayer
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        let isCurrent = (index == musicPlayer.currentIndex)
+        
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                // Song info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(song.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
+                        .lineLimit(1)
+                    
+                    Text(song.modelName)
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                // Play/Pause indicator ONLY for current song
+                if isCurrent {
+                    Button(action: {
+                        musicPlayer.togglePlayPause()
+                    }) {
+                        Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(AivoTheme.Primary.orange)
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Delete button (X icon)
+                Button(action: onDelete) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(.white.opacity(0.6))
+                        .frame(width: 32, height: 32)
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
+        .listRowSeparator(.hidden)
+        .deleteDisabled(true)
     }
 }

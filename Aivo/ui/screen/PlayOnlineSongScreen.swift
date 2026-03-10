@@ -468,35 +468,149 @@ struct PlayOnlineSongScreen: View {
         }
     }
 
-    // MARK: - Playlist View (giữ nguyên như trước)
+    // MARK: - Playlist View
     private var playlistView: some View {
         ZStack {
             AivoSunsetBackground()
+            
+            // Dark overlay to make background darker
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+            
             VStack(spacing: 0) {
+                // Header
                 HStack {
-                    Text("Playlist").font(.title2).fontWeight(.bold).foregroundColor(.white)
+                    Text("Playlist")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
                     Spacer()
-                    Button("Done") { showPlaylist = false }.foregroundColor(.white)
+                    
+                    Button("Done") {
+                        showPlaylist = false
+                    }
+                    .foregroundColor(.white)
                 }
-                .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 20)
-
-                ScrollView {
-                    LazyVStack(spacing: 8) {
-                        ForEach(Array(displaySongs.enumerated()), id: \.element.id) { index, song in
-                            PlaylistSongRowView(
-                                song: song,
-                                isCurrentSong: index == streamPlayer.currentIndex,
-                                isPlaying: index == streamPlayer.currentIndex && streamPlayer.isPlaying,
-                                onTap: {
-                                    streamPlayer.loadSong(song, at: index, in: displaySongs)
-                                    showPlaylist = false
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+                
+                // Subtitle with queue info
+                HStack {
+                    if !displaySongs.isEmpty {
+                        Text("Next • \(displaySongs.count) songs")
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.6))
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                
+                // Song list
+                if displaySongs.isEmpty {
+                    VStack(spacing: 16) {
+                        Image(systemName: "music.note.list")
+                            .font(.system(size: 60))
+                            .foregroundColor(.white.opacity(0.3))
+                        
+                        Text("No songs in queue")
+                            .font(.headline)
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollViewReader { proxy in
+                        List {
+                            ForEach(Array(displaySongs.enumerated()), id: \.offset) { index, song in
+                                PlaylistRowView(
+                                    song: song,
+                                    index: index,
+                                    isCurrent: index == streamPlayer.currentIndex,
+                                    isPlaying: streamPlayer.isPlaying,
+                                    onTap: {
+                                        streamPlayer.loadSong(song, at: index, in: displaySongs)
+                                    },
+                                    onTogglePlayPause: {
+                                        streamPlayer.togglePlayPause()
+                                    },
+                                    onDelete: {
+                                        deleteSong(at: IndexSet(integer: index))
+                                    }
+                                )
+                                .id(index)
+                            }
+                            .onMove { fromOffsets, toOffset in
+                                moveSong(from: fromOffsets, to: toOffset)
+                            }
+                        }
+                        .listStyle(.plain)
+                        .environment(\.editMode, .constant(.active))
+                        .onAppear {
+                            // Scroll to currently playing song when playlist opens
+                            if streamPlayer.currentIndex < displaySongs.count {
+                                let currentSong = displaySongs[streamPlayer.currentIndex]
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    withAnimation {
+                                        proxy.scrollTo(streamPlayer.currentIndex, anchor: .center)
+                                    }
                                 }
-                            )
+                            }
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .onAppear {
+                        // Set brighter color for move handles
+                        UITableView.appearance().tintColor = UIColor.white
+                    }
                 }
             }
+        }
+    }
+    
+    
+    // MARK: - Playlist Actions
+    private func moveSong(from fromOffsets: IndexSet, to toOffset: Int) {
+        var mutableSongs = displaySongs
+        mutableSongs.move(fromOffsets: fromOffsets, toOffset: toOffset)
+        
+        // Update streamPlayer's song list and adjust current index
+        let oldIndex = streamPlayer.currentIndex
+        streamPlayer.songs = mutableSongs
+        
+        // Recalculate current index after move
+        if let movedIndex = fromOffsets.first {
+            if movedIndex == oldIndex {
+                // Current song was moved
+                streamPlayer.currentIndex = toOffset > movedIndex ? toOffset - 1 : toOffset
+            } else if movedIndex < oldIndex && toOffset > oldIndex {
+                streamPlayer.currentIndex = oldIndex - 1
+            } else if movedIndex > oldIndex && toOffset <= oldIndex {
+                streamPlayer.currentIndex = oldIndex + 1
+            }
+        }
+    }
+    
+    private func deleteSong(at indexSet: IndexSet) {
+        var mutableSongs = displaySongs
+        let oldIndex = streamPlayer.currentIndex
+        
+        // Check if we're deleting the currently playing song
+        let deletingCurrentSong = indexSet.contains(oldIndex)
+        
+        mutableSongs.remove(atOffsets: indexSet)
+        streamPlayer.songs = mutableSongs
+        
+        if deletingCurrentSong {
+            // If current song deleted, play the song at the same index (or stop if empty)
+            if !mutableSongs.isEmpty {
+                let newIndex = min(oldIndex, mutableSongs.count - 1)
+                streamPlayer.loadSong(mutableSongs[newIndex], at: newIndex, in: mutableSongs)
+            }
+        } else {
+            // Adjust current index if needed
+            let deletedBeforeCurrent = indexSet.filter { $0 < oldIndex }.count
+            streamPlayer.currentIndex = oldIndex - deletedBeforeCurrent
         }
     }
 

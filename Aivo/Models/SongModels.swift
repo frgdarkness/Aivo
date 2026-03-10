@@ -334,31 +334,31 @@ enum SongGenre: String, CaseIterable, Codable {
         switch self {
         // POP
         case .pop, .pop_rock, .synthpop, .electropop, .indie_pop, .jpop, .vpop, .dance_pop, .dream_pop, .city_pop:
-            return "icon_genre_pop"
+            return "genre_pop"
             
         // EDM / ELECTRONIC
         case .edm, .chill_edm, .future_bass, .chillstep, .lo_fi_edm:
-            return "icon_genre_edm"
+            return "genre_edm"
         case .electronic, .house, .deep_house, .tropical_house, .progressive_house, .future_house, .trance, .techno, .dubstep, .melodic_dubstep, .drum_and_bass, .synthwave, .retrowave:
-            return "icon_genre_electronic"
+            return "genre_electronic"
             
         // ROCK
         case .rock, .soft_rock, .hard_rock, .alternative_rock, .indie_rock, .punk_rock, .pop_punk, .classic_rock, .folk_rock, .country_rock, .emo_rock, .grunge, .blues_rock:
-            return "icon_genre_rock"
+            return "genre_rock"
             
         // RAP / HIP-HOP
         case .rap, .trap, .boom_bap, .drill, .melodic_rap, .old_school_rap, .alternative_hiphop, .lo_fi_hiphop:
-            return "icon_genre_rap"
+            return "genre_rap"
         case .hiphop:
-            return "icon_genre_hiphop" // Use rap icon for hiphop
+            return "genre_hiphop" // Use rap icon for hiphop
             
         // R&B / SOUL
         case .rnb, .soul, .neo_soul, .funk, .motown, .gospel, .soul_blues:
-            return "icon_genre_r&b"
+            return "genre_r&b"
             
         // BALLAD / ACOUSTIC
         case .ballad, .pop_ballad, .acoustic, .acoustic_pop, .acoustic_folk, .indie_folk, .singer_songwriter, .country_ballad:
-            return "icon_genre_ballad"
+            return "genre_ballad"
             
         // COUNTRY
         case .country, .country_pop:
@@ -366,13 +366,13 @@ enum SongGenre: String, CaseIterable, Codable {
             
         // JAZZ / BLUES
         case .jazz, .smooth_jazz:
-            return "icon_genre_jazz"
+            return "genre_jazz"
         case .blues:
             return "demo_cover" // No blues icon available, fallback to demo_cover
             
         // CLASSICAL
         case .classical, .orchestral, .cinematic, .piano, .modern_classical, .epic_trailer, .ambient_soundtrack:
-            return "icon_genre_classical"
+            return "genre_classic"
             
         // K-POP
         case .kpop:
@@ -380,15 +380,15 @@ enum SongGenre: String, CaseIterable, Codable {
             
         // WORLD / LATIN - fallback to pop
         case .latin_pop, .reggaeton, .afrobeat, .afrobeats, .amapiano, .dancehall, .bollywood_pop, .arabic_pop, .chinese_pop:
-            return "icon_genre_pop"
+            return "genre_pop"
             
         // LO-FI / CHILL / AMBIENT - fallback to electronic
         case .lo_fi, .chillhop, .vaporwave, .ambient, .chillout, .lounge, .chill_vibes:
-            return "icon_genre_electronic"
+            return "genre_electronic"
             
         // EXPERIMENTAL / OTHER - fallback to electronic
         case .hyperpop, .electro_swing, .industrial, .world_music, .new_age:
-            return "icon_genre_electronic"
+            return "genre_electronic"
             
         // Default fallback
         default:
