@@ -6,6 +6,7 @@ final class ProfileSyncManager: ObservableObject {
     static let shared = ProfileSyncManager()
     
     private let firebaseService = FirebaseRealtimeService.shared
+    private let firestoreService = FirestoreService.shared
     private let localStorage = LocalStorageManager.shared
     
     @Published var isSyncing = false
@@ -15,7 +16,7 @@ final class ProfileSyncManager: ObservableObject {
     
     // MARK: - Profile Sync Logic
     
-    /// Sync profile to Firebase if remote profile exists
+    /// Sync profile to Firestore if remote profile exists
     func syncProfileIfNeeded() async {
         guard localStorage.hasRemoteProfile else {
             Logger.d("🌐 No remote profile - skipping sync")
@@ -25,16 +26,15 @@ final class ProfileSyncManager: ObservableObject {
         await MainActor.run { self.isSyncing = true }
         
         do {
-            // Use FirebaseRealtimeService helper method
             let profile = localStorage.getLocalProfile()
-            await firebaseService.syncProfileIfNeeded(profile)
+            try await firestoreService.saveProfile(profile)
             
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = nil
             }
         } catch {
-            Logger.e("❌ Failed to sync profile: \(error)")
+            Logger.e("❌ Failed to sync profile to Firestore: \(error)")
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = error.localizedDescription
@@ -42,8 +42,7 @@ final class ProfileSyncManager: ObservableObject {
         }
     }
     
-    /// Create remote profile and sync local data
-    /// Only creates remote profile if it doesn't exist, otherwise syncs existing profile
+    /// Create remote profile and sync local data to Firestore
     func createRemoteProfileAndSync() async throws {
         let localProfile = localStorage.getLocalProfile()
         let profileID = localProfile.profileID
@@ -51,29 +50,25 @@ final class ProfileSyncManager: ObservableObject {
         await MainActor.run { self.isSyncing = true }
         
         do {
-            // Check if profile already exists on remote
-            let exists = try await firebaseService.checkProfileExistsOnServer(profileID: profileID)
+            // Check if profile already exists on Firestore
+            let exists = try await firestoreService.fetchProfile(profileID: profileID) != nil
             
             if exists {
-                // Profile already exists - sync instead of creating
-                Logger.d("🌐 Remote profile already exists for ID: \(profileID) - syncing...")
-                try await firebaseService.updateProfile(localProfile)
-                localStorage.setHasRemoteProfile(true)
-                Logger.d("✅ Remote profile synced successfully")
+                Logger.d("🌐 Firestore profile already exists for ID: \(profileID) - updating...")
             } else {
-                // Profile doesn't exist - create new one
-                Logger.d("🌐 Creating new remote profile for ID: \(profileID)")
-                try await firebaseService.createProfile(localProfile)
-                localStorage.setHasRemoteProfile(true)
-                Logger.d("✅ Remote profile created and synced")
+                Logger.d("🌐 Creating new Firestore profile for ID: \(profileID)")
             }
+            
+            try await firestoreService.saveProfile(localProfile)
+            localStorage.setHasRemoteProfile(true)
+            Logger.d("✅ Firestore profile synced successfully")
             
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = nil
             }
         } catch {
-            Logger.e("❌ Failed to create/sync remote profile: \(error)")
+            Logger.e("❌ Failed to create/sync Firestore profile: \(error)")
             await MainActor.run { 
                 self.isSyncing = false
                 self.syncError = error.localizedDescription
@@ -82,26 +77,54 @@ final class ProfileSyncManager: ObservableObject {
         }
     }
     
-    /// Load profile on app startup với logic chính xác
+    /// Load profile on app startup with logic for Firestore and migration
     func loadProfileOnStartup() async -> UserProfile {
         do {
             // Get profile ID
             let profileID = try await localStorage.getOrCreateProfileID()
-            Logger.d("loading profile: \(profileID)")
-            // Check if profile exists on server
-            let hasRemoteProfile = try await firebaseService.hasProfileOnServer(profileID: profileID)
+            Logger.d("🌐 Loading profile via Firestore: \(profileID)")
             
-            if hasRemoteProfile {
-                // Load from server
-                let profile = try await firebaseService.getProfileFromServer(profileID: profileID)
-                localStorage.saveLocalProfile(profile)
+            // 1. Try Firestore first
+            if let firestoreProfile = try await firestoreService.fetchProfile(profileID: profileID) {
+                localStorage.saveLocalProfile(firestoreProfile)
                 localStorage.setHasRemoteProfile(true)
-                Logger.d("✅ Profile loaded from Firebase on startup")
-                return profile
+                Logger.d("✅ Profile loaded from Firestore on startup")
+                return firestoreProfile
+            }
+            
+            // 2. If not in Firestore, check Realtime Database (Migration Case)
+            Logger.d("🔄 Profile not in Firestore, checking RTDB for migration...")
+            let hasRTDBProfile = try await firebaseService.hasProfileOnServer(profileID: profileID)
+            
+            if hasRTDBProfile {
+                let rtdbProfile = try await firebaseService.getProfileFromServer(profileID: profileID)
+                
+                // Lazy Migration: Save profile to Firestore
+                Logger.d("🚀 Migrating profile from RTDB to Firestore...")
+                try await firestoreService.saveProfile(rtdbProfile)
+                
+                // Migrate Purchase History
+                Task {
+                    do {
+                        let purchases = try await firebaseService.getAllPurchases(profileID: profileID)
+                        Logger.d("📦 Found \(purchases.count) purchases to migrate")
+                        for purchase in purchases {
+                            try? await firestoreService.logPurchase(profileID: profileID, purchase: purchase)
+                        }
+                        Logger.d("✅ Purchase history migration completed")
+                    } catch {
+                        Logger.e("❌ Failed to migrate purchase history: \(error)")
+                    }
+                }
+                
+                localStorage.saveLocalProfile(rtdbProfile)
+                localStorage.setHasRemoteProfile(true)
+                Logger.d("✅ Profile migrated and loaded from RTDB -> Firestore")
+                return rtdbProfile
             } else {
-                // No remote profile - use existing local profile
+                // 3. No remote profile found - use existing local profile
                 let localProfile = localStorage.getLocalProfile()
-                Logger.d("📱 Using existing local profile on startup")
+                Logger.d("📱 Using existing local profile on startup (no remote found)")
                 return localProfile
             }
         } catch {
@@ -118,13 +141,16 @@ final class ProfileSyncManager: ObservableObject {
     func syncProfileToRemote() async throws {
         Logger.d("Syncing profile to remote")
         if !localStorage.hasRemoteProfile {
-            // Create remote profile on first purchase
-            Logger.d("Creating remote profile on first purchase")
-            try await createRemoteProfileAndSync()
+            // Create remote profile
+            Logger.d("🚀 Creating new profile on Firestore")
+            let localProfile = localStorage.getLocalProfile()
+            try await firestoreService.saveProfile(localProfile)
+            localStorage.setHasRemoteProfile(true)
         } else {
-            // Just sync existing profile
-            Logger.d("Syncing existing remote profile")
-            await syncProfileIfNeeded()
+            // Just sync existing profile to Firestore
+            Logger.d("🔄 Syncing existing profile to Firestore")
+            let localProfile = localStorage.getLocalProfile()
+            try await firestoreService.saveProfile(localProfile)
         }
     }
 }

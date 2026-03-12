@@ -235,14 +235,10 @@ final class CreditStoreManager: ObservableObject {
                 Logger.e("CreditManager: Failed to handle purchase sync: \(error.localizedDescription)")
             }
             
-            // Sync with Firebase Realtime Database
-            await syncPurchaseWithFirebase(transaction: transaction, credits: credits)
             
-            // Log daily revenue
-            Task {
-                try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: productID)
-            }
-
+            // Sync with Firestore
+            await syncPurchaseWithFirestore(transaction: transaction, credits: credits)
+            
             Logger.i("purchaseSuccess: product_id=\(productID) total_credits=\(CreditManager.shared.credits)")
 
             // Thông báo UI
@@ -255,38 +251,37 @@ final class CreditStoreManager: ObservableObject {
         await transaction.finish()
     }
     
-    /// Sync purchase with Firebase Realtime Database
-    private func syncPurchaseWithFirebase(transaction: Transaction, credits: Int) async {
+    
+    /// Sync purchase with Cloud Firestore
+    private func syncPurchaseWithFirestore(transaction: Transaction, credits: Int) async {
         do {
-            // Get or create user profile
             let profile = LocalStorageManager.shared.getLocalProfile()
+            let product = products.first(where: { $0.id == transaction.productID })
             
-            // Find the product to get price information
-            guard let product = products.first(where: { $0.id == transaction.productID }) else {
-                Logger.w("syncPurchase: product not found id=\(transaction.productID)")
-                return
-            }
+            // If product info is missing, use fallbacks but still log the transaction
+            let price = product?.displayPrice ?? "Credit Pack"
+            let currency = product?.priceFormatStyle.currencyCode ?? "USD"
             
-            Logger.i("syncPurchase: start profileID=\(profile.profileID) product_id=\(product.id) price=\(product.displayPrice) credits=\(credits)")
-
-            // Create purchase record
-            let purchase = PurchaseConsumable.fromStoreKitTransaction(
-                transaction,
+            let purchase = PurchaseConsumable(
+                purchaseID: UUID().uuidString,
                 profileID: profile.profileID,
-                product: product,
-                creditsAmount: credits
+                productID: transaction.productID,
+                transactionID: String(transaction.id),
+                creditsAmount: credits,
+                price: price,
+                currency: currency,
+                status: .completed
             )
             
-            // Save purchase to Firebase
-            try await FirebaseRealtimeService.shared.savePurchase(purchase)
+            // Save to Firestore sub-collection
+            try await FirestoreService.shared.logPurchase(profileID: profile.profileID, purchase: purchase)
             
-            // Update profile credits
-            //try await FirebaseRealtimeService.shared.updateCreditsAfterPurchase(creditsAmount: credits)
+            // Also update the top-level profile in Firestore to ensure credits are synced
+            try await FirestoreService.shared.saveProfile(profile)
             
-            Logger.i("syncPurchase: success profileID=\(profile.profileID) purchaseID=\(purchase.purchaseID) credits=\(credits)")
-            
+            Logger.i("syncPurchaseFirestore: success profileID=\(profile.profileID)")
         } catch {
-            Logger.e("syncPurchase: error=\(error.localizedDescription)")
+            Logger.e("syncPurchaseFirestore: error=\(error.localizedDescription)")
         }
     }
 }

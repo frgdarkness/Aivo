@@ -48,8 +48,8 @@ struct ProfileScreen: View {
         profile.userName
     }
     
-    private var avatarImageName: String {
-        profile.avatarImageName
+    private var avatarUrl: String {
+        profile.avatarUrl
     }
     
     private var appVersion: String {
@@ -287,9 +287,9 @@ struct ProfileScreen: View {
             ZStack(alignment: .bottomTrailing) {
                 // Avatar image
                 Group {
-                    if avatarImageName.hasPrefix("avatar_") {
+                    if avatarUrl.hasPrefix("avatar_") {
                         // Load from Documents directory
-                        if let image = loadAvatarFromDocuments(imageName: avatarImageName) {
+                        if let image = loadAvatarFromDocuments(imageName: avatarUrl) {
                             Image(uiImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
@@ -298,9 +298,20 @@ struct ProfileScreen: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                         }
+                    } else if let url = URL(string: avatarUrl), avatarUrl.hasPrefix("http") {
+                        // Load from Web
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().aspectRatio(contentMode: .fill)
+                            default:
+                                Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+                            }
+                        }
                     } else {
-                        // Load from Assets
-                        Image(avatarImageName)
+                        // Load from Assets (legacy or default)
+                        let imageName = avatarUrl.isEmpty ? "demo_cover" : avatarUrl
+                        Image(imageName)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     }
@@ -693,7 +704,7 @@ struct ProfileScreen: View {
             
             // Update profile with new avatar image name
             var profile = localStorage.getLocalProfile()
-            profile.updateAvatarImageName(fileName)
+            profile.updateAvatarUrl(fileName)
             localStorage.updateLocalProfile(profile)
         } catch {
             Logger.e("Failed to save avatar image: \(error)")

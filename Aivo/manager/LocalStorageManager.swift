@@ -98,7 +98,6 @@ final class LocalStorageManager: ObservableObject {
         profile.subscriptionPlan = plan
         profile.subscriptionStartDate = startDate
         profile.subscriptionExpiredDate = expiredDate
-        profile.lastUpdated = Date()
         saveLocalProfile(profile)
         Logger.d("💾 Updated subscription fields: plan=\(plan?.rawValue ?? "nil"), startDate=\(startDate?.description ?? "nil"), expiredDate=\(expiredDate?.description ?? "nil")")
     }
@@ -107,7 +106,6 @@ final class LocalStorageManager: ObservableObject {
     func updateLastBonusTime(_ date: Date) {
         var profile = getLocalProfile()
         profile.lastBonusTime = date
-        profile.lastUpdated = Date()
         saveLocalProfile(profile)
         Logger.d("💾 Updated lastBonusTime: \(date)")
     }

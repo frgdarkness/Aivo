@@ -179,13 +179,7 @@ final class SubscriptionManager: ObservableObject {
                     // Pass Product directly for accurate price and currency
                     AppsFlyerLogger.shared.logSubscribe(product: product)
                     
-                    // Log daily revenue (User initiated)
-                    Task {
-                        try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: product.id)
-                    }
-                    
-                    await handleVerified(tx)
-                    await checkBonusCreditForSubscription()
+                    // await checkBonusCreditForSubscription() // already called in refreshStatus
                 case .unverified(_, let err):
                     errorMessage = "Purchase unverified: \(err.localizedDescription)"
                     Logger.w("purchase: unverified \(err.localizedDescription)")
@@ -560,26 +554,11 @@ final class SubscriptionManager: ObservableObject {
         
         
         await refreshStatus(forceSync: false, retries: true)
+        
+        // Log to Firestore
+        await syncSubscriptionWithFirestore(transaction: transaction)
+        
         await transaction.finish()
-
-        // Sync profile to RemoteFirebase khi user subscribe (tương tự CreditStoreManager)
-        // Chỉ sync khi user subscribe, không sync mặc định
-        do {
-            try await ProfileSyncManager.shared.createRemoteProfileAndSync()
-            Logger.i("handleVerified: Profile synced to RemoteFirebase after subscription")
-        } catch {
-            Logger.e("handleVerified: Failed to sync profile to RemoteFirebase: \(error.localizedDescription)")
-            // Nếu đã có remote profile, thử sync lại
-            do {
-                await ProfileSyncManager.shared.syncProfileIfNeeded()
-                Logger.d("handleVerified: Profile sync attempted via syncProfileIfNeeded")
-            } catch {
-                Logger.e("handleVerified: Failed to sync profile: \(error.localizedDescription)")
-            }
-        }
-
-
-
 
         NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
     }
@@ -640,4 +619,40 @@ final class SubscriptionManager: ObservableObject {
         ProductID(rawValue: product.id)?.period
     }
     func getCurrentSubscription() -> ActiveSubscription? { currentSubscription }
+
+    /// Sync subscription purchase with Cloud Firestore
+    private func syncSubscriptionWithFirestore(transaction: Transaction) async {
+        do {
+            let profile = LocalStorageManager.shared.getLocalProfile()
+            
+            // Try to find product info
+            let product = products.first(where: { $0.id == transaction.productID })
+            
+            // Use dummy product if not found to avoid missing log
+            let currency = product?.priceFormatStyle.currencyCode ?? "USD"
+            let price = product?.displayPrice ?? "Subscription"
+            
+            // Create a record
+            let purchase = PurchaseConsumable(
+                purchaseID: UUID().uuidString,
+                profileID: profile.profileID,
+                productID: transaction.productID,
+                transactionID: String(transaction.id),
+                creditsAmount: ProductID(rawValue: transaction.productID)?.creditsPerPeriod ?? 0,
+                price: price,
+                currency: currency,
+                status: .completed
+            )
+            
+            // Save to Firestore sub-collection
+            try await FirestoreService.shared.logPurchase(profileID: profile.profileID, purchase: purchase)
+            
+            // Also update the top-level profile in Firestore
+            try await FirestoreService.shared.saveProfile(profile)
+            
+            Logger.i("syncSubscriptionFirestore: success profileID=\(profile.profileID)")
+        } catch {
+            Logger.e("syncSubscriptionFirestore: error=\(error.localizedDescription)")
+        }
+    }
 }

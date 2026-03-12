@@ -2,12 +2,10 @@ import Foundation
 
 struct UserProfile: Codable {
     let profileID: String
-    let createdAt: Date
     var currentCredits: Int
     var totalCredits: Int
-    var lastUpdated: Date
     var userName: String
-    var avatarImageName: String
+    var avatarUrl: String
     var subscriptionPlan: SubscriptionInfo.SubscriptionPeriod?
     var subscriptionStartDate: Date?
     var subscriptionExpiredDate: Date?
@@ -18,19 +16,17 @@ struct UserProfile: Codable {
         currentCredits: Int = 0,
         totalCredits: Int = 0,
         userName: String = "Your name",
-        avatarImageName: String = "demo_cover",
+        avatarUrl: String = "",
         subscriptionPlan: SubscriptionInfo.SubscriptionPeriod? = nil,
         subscriptionStartDate: Date? = nil,
         subscriptionExpiredDate: Date? = nil,
         lastBonusTime: Date? = nil
     ) {
         self.profileID = profileID
-        self.createdAt = Date()
         self.currentCredits = currentCredits
         self.totalCredits = totalCredits
-        self.lastUpdated = Date()
         self.userName = userName
-        self.avatarImageName = avatarImageName
+        self.avatarUrl = avatarUrl
         self.subscriptionPlan = subscriptionPlan
         self.subscriptionStartDate = subscriptionStartDate
         self.subscriptionExpiredDate = subscriptionExpiredDate
@@ -39,16 +35,17 @@ struct UserProfile: Codable {
     
     enum CodingKeys: String, CodingKey {
         case profileID
-        case createdAt
         case currentCredits
         case totalCredits
-        case lastUpdated
         case userName
-        case avatarImageName
+        case avatarUrl
         case subscriptionPlan
         case subscriptionStartDate
         case subscriptionExpiredDate
         case lastBonusTime
+        case avatarImageName // For backward compatibility with RTDB/Old Local Storage
+        case lastUpdated // For backward compatibility
+        case createdAt // For backward compatibility
     }
     
     init(from decoder: Decoder) throws {
@@ -56,12 +53,16 @@ struct UserProfile: Codable {
         profileID = try c.decode(String.self, forKey: .profileID)
         currentCredits = try c.decode(Int.self, forKey: .currentCredits)
         totalCredits = try c.decode(Int.self, forKey: .totalCredits)
-        let createdTS = try c.decode(Double.self, forKey: .createdAt)
-        createdAt = Date(timeIntervalSince1970: createdTS)
-        let updatedTS = try c.decode(Double.self, forKey: .lastUpdated)
-        lastUpdated = Date(timeIntervalSince1970: updatedTS)
         userName = try c.decodeIfPresent(String.self, forKey: .userName) ?? "Your name"
-        avatarImageName = try c.decodeIfPresent(String.self, forKey: .avatarImageName) ?? "demo_cover"
+        
+        // Handle avatar naming change
+        if let url = try? c.decodeIfPresent(String.self, forKey: .avatarUrl) {
+            avatarUrl = url
+        } else if let oldName = try? c.decodeIfPresent(String.self, forKey: .avatarImageName) {
+            avatarUrl = oldName
+        } else {
+            avatarUrl = ""
+        }
         
         // Decode subscription fields (optional for backward compatibility)
         if let planString = try? c.decodeIfPresent(String.self, forKey: .subscriptionPlan),
@@ -95,10 +96,8 @@ struct UserProfile: Codable {
         try c.encode(profileID, forKey: .profileID)
         try c.encode(currentCredits, forKey: .currentCredits)
         try c.encode(totalCredits, forKey: .totalCredits)
-        try c.encode(createdAt.timeIntervalSince1970, forKey: .createdAt)
-        try c.encode(lastUpdated.timeIntervalSince1970, forKey: .lastUpdated)
         try c.encode(userName, forKey: .userName)
-        try c.encode(avatarImageName, forKey: .avatarImageName)
+        try c.encode(avatarUrl, forKey: .avatarUrl)
         try c.encodeIfPresent(subscriptionPlan?.rawValue, forKey: .subscriptionPlan)
         try c.encodeIfPresent(subscriptionStartDate?.timeIntervalSince1970, forKey: .subscriptionStartDate)
         try c.encodeIfPresent(subscriptionExpiredDate?.timeIntervalSince1970, forKey: .subscriptionExpiredDate)
@@ -108,28 +107,23 @@ struct UserProfile: Codable {
     mutating func addCredits(_ amount: Int) {
         currentCredits += amount
         totalCredits += amount
-        lastUpdated = Date()
     }
     
     mutating func setCredits(_ newBalance: Int) {
         let delta = max(0, newBalance - currentCredits)
         currentCredits = newBalance
         totalCredits += delta
-        lastUpdated = Date()
     }
     
     mutating func consumeCredits(amount: Int) {
         currentCredits = max(0, currentCredits - amount)
-        lastUpdated = Date()
     }
     
     mutating func updateUserName(_ newName: String) {
         self.userName = newName
-        self.lastUpdated = Date()
     }
     
-    mutating func updateAvatarImageName(_ newAvatarName: String) {
-        self.avatarImageName = newAvatarName
-        self.lastUpdated = Date()
+    mutating func updateAvatarUrl(_ newAvatarUrl: String) {
+        self.avatarUrl = newAvatarUrl
     }
 }
