@@ -173,48 +173,41 @@ struct HomeView: View {
             //SubscriptionManager.shared.isPremium
             // VIP Button
             Button(action: { showSubscription = true }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "crown.fill")
-                        .font(.caption)
-                        .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
-                    Text("VIP")
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 8)
-                // NỀN: chỉ có khi VIP
-                .background(
-                    Group {
-                        if SubscriptionManager.shared.isPremium {
-                            LinearGradient(
-                                gradient: Gradient(colors: [
-                                    Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
-                                    Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
-                                    Color(red: 1.0, green: 0.45, blue: 0.1) 
-                                ]),
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                            .clipShape(Capsule())
-                        } else {
-                            Color.clear.clipShape(Capsule())
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
+                    .frame(width: 32, height: 32)
+                    // NỀN: chỉ có khi VIP
+                    .background(
+                        Group {
+                            if SubscriptionManager.shared.isPremium {
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
+                                        Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
+                                        Color(red: 1.0, green: 0.45, blue: 0.1) 
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            } else {
+                                Color.clear
+                            }
                         }
-                    }
-                )
-                // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
-                .overlay(
-                    Capsule().stroke(
-                        SubscriptionManager.shared.isPremium
-                        ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
-                        : Color.white.opacity(0.5),
-                        lineWidth: 1
                     )
-                )
-                // Bóng nhẹ chỉ khi VIP để nổi bật
-                .shadow(color: SubscriptionManager.shared.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
-                        radius: 8, x: 0, y: 3)
+                    .clipShape(Circle())
+                    // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
+                    .overlay(
+                        Circle().stroke(
+                            SubscriptionManager.shared.isPremium
+                            ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                            : Color.white.opacity(0.5),
+                            lineWidth: 1
+                        )
+                    )
+                    // Bóng nhẹ chỉ khi VIP để nổi bật
+                    .shadow(color: SubscriptionManager.shared.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                            radius: 8, x: 0, y: 3)
             }
             
             // Credit Badge View - Tap to open buy credit dialog or subscription

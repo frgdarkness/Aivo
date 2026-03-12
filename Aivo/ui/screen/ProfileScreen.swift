@@ -23,7 +23,7 @@ struct ProfileScreen: View {
     @State private var notificationsEnabled = false
     @State private var showMailComposer = false
     @State private var canSendMail = false
-    @State private var showUserNameEditor = false
+    @State private var showEditNameDialog = false
     @State private var editingUserName = ""
     @State private var showImagePicker = false
     @State private var showToastMessage = false
@@ -31,6 +31,7 @@ struct ProfileScreen: View {
     @State private var showBuyCreditDialog = false
     @State private var showPremiumRequiredAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var isUploadingAvatar = false
     #if DEBUG
     @State private var showTestScreen = false
     #endif
@@ -58,15 +59,15 @@ struct ProfileScreen: View {
     
     private var memberName: String {
         guard subscriptionManager.isPremium else {
-            return "Basic Member"
+            return "Basic"
         }
         
         if let subscription = subscriptionManager.currentSubscription {
             switch subscription.period {
             case .weekly:
-                return "AIVO Premium Weekly"
+                return "Weekly Premium"
             case .yearly:
-                return "AIVO Premium Yearly"
+                return "Yearly Premium"
             }
         }
         
@@ -74,13 +75,13 @@ struct ProfileScreen: View {
         if let period = localStorage.subscriptionPeriod {
             switch period {
             case .weekly:
-                return "AIVO Premium Weekly"
+                return "Weekly Premium"
             case .yearly:
-                return "AIVO Premium Yearly"
+                return "Yearly Premium"
             }
         }
         
-        return "Basic Member"
+        return "Basic"
     }
     
     private var memberIconColor: Color {
@@ -164,20 +165,19 @@ struct ProfileScreen: View {
         .overlay(
             // Edit Name Dialog
             Group {
-                if showUserNameEditor {
+                if showEditNameDialog {
                     EditNameDialog(
-                        currentName: userName,
+                        currentName: localStorage.getLocalProfile().userName,
                         onSave: { newName in
-                            editingUserName = newName
-                            saveUserName()
-                            showUserNameEditor = false
+                            saveUserName(newName)
+                            showEditNameDialog = false
                         },
                         onCancel: {
-                            showUserNameEditor = false
+                            showEditNameDialog = false
                         }
                     )
                     .transition(.opacity.combined(with: .scale(scale: 0.9)))
-                    .animation(.easeInOut(duration: 0.2), value: showUserNameEditor)
+                    .animation(.easeInOut(duration: 0.2), value: showEditNameDialog)
                 }
             }
         )
@@ -240,7 +240,7 @@ struct ProfileScreen: View {
                     
                     Button(action: {
                         editingUserName = userName
-                        showUserNameEditor = true
+                        showEditNameDialog = true
                     }) {
                         Image(systemName: "pencil")
                             .font(.system(size: 14))
@@ -335,6 +335,7 @@ struct ProfileScreen: View {
                         .clipShape(Circle())
                 }
                 .offset(x: 4, y: 4)
+                .disabled(isUploadingAvatar)
             }
         }
         .padding(.top, 10)
@@ -421,48 +422,51 @@ struct ProfileScreen: View {
     private var premiumBadgeRow: some View {
         HStack {
             // VIP Button icon giống HomeView
-            HStack(spacing: 4) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
-                Text(memberName)
-                    .font(.system(size: 16, weight: .medium))
-                    .fontWeight(.semibold)
-                    .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            // NỀN: chỉ có khi VIP
-            .background(
-                Group {
-                    if subscriptionManager.isPremium {
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
-                                Color(red: 1.0, green: 0.25, blue: 0.05),  // đỏ-cam
-                                Color(red: 1.0, green: 0.45, blue: 0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
+            Button(action: {
+                showSubscriptionScreen = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "crown.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
+                        .frame(width: 32, height: 32)
+                        // NỀN: chỉ có khi VIP
+                        .background(
+                            Group {
+                                if subscriptionManager.isPremium {
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [
+                                            Color(red: 1.0, green: 0.08, blue: 0.05),
+                                            Color(red: 1.0, green: 0.25, blue: 0.05),
+                                            Color(red: 1.0, green: 0.45, blue: 0.1)
+                                        ]),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                } else {
+                                    Color.gray.opacity(0.3)
+                                }
+                            }
                         )
-                        .clipShape(Capsule())
-                    } else {
-                        Color.clear.clipShape(Capsule())
-                    }
+                        .clipShape(Circle())
+                        // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
+                        .overlay(
+                            Circle().stroke(
+                                subscriptionManager.isPremium
+                                ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                                : Color.white.opacity(0.5),
+                                lineWidth: 1
+                            )
+                        )
+                        // Bóng nhẹ chỉ khi VIP để nổi bật
+                        .shadow(color: subscriptionManager.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                                radius: 8, x: 0, y: 3)
+                    
+                    Text(memberName)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(subscriptionManager.isPremium ? Color(red: 1.0, green: 0.4, blue: 0.1) : .white)
                 }
-            )
-            // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
-            .overlay(
-                Capsule().stroke(
-                    subscriptionManager.isPremium
-                    ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
-                    : Color.white.opacity(0.5),
-                    lineWidth: 1
-                )
-            )
-            // Bóng nhẹ chỉ khi VIP để nổi bật
-            .shadow(color: subscriptionManager.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
-                    radius: 8, x: 0, y: 3)
+            }
             
             Spacer()
         }
@@ -663,10 +667,32 @@ struct ProfileScreen: View {
         }
     }
     
-    private func saveUserName() {
-        var profile = localStorage.getLocalProfile()
-        profile.updateUserName(editingUserName)
-        localStorage.updateLocalProfile(profile)
+    private func saveUserName(_ newName: String) {
+        guard !newName.isEmpty else { return }
+        
+        let oldName = localStorage.getLocalProfile().userName
+        
+        Task {
+            do {
+                // 1. Update in Firestore (claims new, releases old atomically)
+                try await FirestoreService.shared.updateUsername(profileID: profileID, newUsername: newName, oldUsername: oldName)
+                
+                // 2. Update local profile
+                await MainActor.run {
+                    var profile = localStorage.getLocalProfile()
+                    profile.updateUserName(newName)
+                    localStorage.updateLocalProfile(profile)
+                    
+                    showEditNameDialog = false
+                    showToast(message: "Username updated successfully")
+                }
+            } catch {
+                Logger.e("❌ Failed to update username: \(error.localizedDescription)")
+                await MainActor.run {
+                    showToast(message: "Error: \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     private func loadAvatarFromDocuments(imageName: String) -> UIImage? {
@@ -687,53 +713,79 @@ struct ProfileScreen: View {
     
     @MainActor
     private func saveSelectedImage(_ image: UIImage) async {
-        // Save image to Documents directory
-        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+        guard !isUploadingAvatar else { return }
+        
+        isUploadingAvatar = true
+        
+        // Resize image to 256x256 for optimal avatar size
+        let optimizedSize = CGSize(width: 256, height: 256)
+        let resizedImage = image.resized(to: optimizedSize) ?? image
+        
+        // Use high compression (0.5 for small size but still decent quality)
+        guard let imageData = resizedImage.jpegData(compressionQuality: 0.5) else {
+            isUploadingAvatar = false
+            showToast(message: "Failed to process image")
             return
         }
         
-        let fileName = "avatar_\(profileID).jpg"
-        let fileURL = documentsDirectory.appendingPathComponent(fileName)
-        
-        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            return
-        }
+        let fileSizeKB = Double(imageData.count) / 1024.0
+        Logger.d("🖼️ Optimized image size: \(String(format: "%.2f", fileSizeKB)) KB")
         
         do {
-            try imageData.write(to: fileURL)
+            // 1. Upload to S3
+            Logger.d("☁️ Starting S3 upload for avatar...")
+            let publicUrl = try await S3Service.shared.uploadAvatar(data: imageData, profileID: profileID)
+            Logger.d("✅ Avatar uploaded to S3: \(publicUrl)")
             
-            // Update profile with new avatar image name
+            // 2. Update local profile
             var profile = localStorage.getLocalProfile()
-            profile.updateAvatarUrl(fileName)
+            profile.updateAvatarUrl(publicUrl)
             localStorage.updateLocalProfile(profile)
+            
+            // 3. Sync to Firestore
+            try await FirestoreService.shared.saveProfile(profile)
+            
+            showToast(message: "Avatar updated successfully")
         } catch {
-            Logger.e("Failed to save avatar image: \(error)")
+            Logger.e("❌ Avatar upload failed: \(error.localizedDescription)")
+            showToast(message: "Update failed: \(error.localizedDescription)")
         }
+        
+        isUploadingAvatar = false
     }
 }
 
-// MARK: - Image Picker View (iOS 15+ compatible)
+// MARK: - UIImage Extension for resizing
+extension UIImage {
+    func resized(to size: CGSize) -> UIImage? {
+        UIGraphicsBeginImageContextWithOptions(size, false, 0.0)
+        draw(in: CGRect(origin: .zero, size: size))
+        let newImage = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return newImage
+    }
+}
+
+// MARK: - Image Picker View (using UIImagePickerController for cropping support)
 struct ImagePickerView: UIViewControllerRepresentable {
     let onImageSelected: (UIImage) -> Void
     @Environment(\.dismiss) private var dismiss
     
-    func makeUIViewController(context: Context) -> PHPickerViewController {
-        var configuration = PHPickerConfiguration()
-        configuration.filter = .images
-        configuration.selectionLimit = 1
-        
-        let picker = PHPickerViewController(configuration: configuration)
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
         picker.delegate = context.coordinator
+        picker.allowsEditing = true // Enable square cropping
+        picker.sourceType = .photoLibrary
         return picker
     }
     
-    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
     
     func makeCoordinator() -> Coordinator {
         Coordinator(onImageSelected: onImageSelected, dismiss: { dismiss() })
     }
     
-    class Coordinator: NSObject, PHPickerViewControllerDelegate {
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
         let onImageSelected: (UIImage) -> Void
         let dismiss: () -> Void
         
@@ -742,37 +794,53 @@ struct ImagePickerView: UIViewControllerRepresentable {
             self.dismiss = dismiss
         }
         
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            dismiss()
-            
-            guard let result = results.first else { return }
-            
-            result.itemProvider.loadObject(ofClass: UIImage.self) { [weak self] object, error in
-                guard let self = self else { return }
-                
-                if let error = error {
-                    Logger.e("Failed to load image: \(error.localizedDescription)")
-                    return
-                }
-                
-                if let image = object as? UIImage {
-                    DispatchQueue.main.async {
-                        self.onImageSelected(image)
-                    }
-                }
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
+            // Get the edited image (cropped) if available, otherwise original
+            if let image = info[.editedImage] as? UIImage ?? info[.originalImage] as? UIImage {
+                onImageSelected(image)
             }
+            dismiss()
+        }
+        
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            dismiss()
         }
     }
 }
 
 // MARK: - Edit Name Dialog
+// MARK: - Edit Name Dialog Redesigned
 struct EditNameDialog: View {
     let currentName: String
     let onSave: (String) -> Void
     let onCancel: () -> Void
     
     @State private var editedName: String
+    @State private var isChecking = false
+    @State private var verificationResult: VerificationResult = .idle
     @FocusState private var isTextFieldFocused: Bool
+    
+    enum VerificationResult: Equatable {
+        case idle, available, taken, error(String)
+        
+        var color: Color {
+            switch self {
+            case .idle: return .gray.opacity(0.6)
+            case .available: return .green
+            case .taken: return .red
+            case .error: return .red
+            }
+        }
+        
+        var message: String? {
+            switch self {
+            case .idle: return nil
+            case .available: return "Username available!"
+            case .taken: return "Username already taken"
+            case .error(let msg): return msg
+            }
+        }
+    }
     
     init(currentName: String, onSave: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.currentName = currentName
@@ -786,82 +854,124 @@ struct EditNameDialog: View {
             // Background overlay
             Color.black.opacity(0.6)
                 .ignoresSafeArea()
-                .onTapGesture {
-                    onCancel()
-                }
+                .onTapGesture { onCancel() }
             
             // Dialog Content
-            VStack(spacing: 20) {
-                // Title
-                Text("Edit Name")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                
-                // TextField
-                TextField("Your name", text: $editedName)
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-                    .padding(14)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(Color.white.opacity(0.15))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                    )
-                    .focused($isTextFieldFocused)
-                    .onAppear {
-                        isTextFieldFocused = true
-                    }
-                
-                // Buttons
-                HStack(spacing: 12) {
-                    // Cancel Button
+            VStack(spacing: 12) {
+                // Header: Title and Close
+                HStack {
+                    Spacer()
+                    Text("Edit Username")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                    Spacer()
                     Button(action: onCancel) {
-                        Text("Cancel")
-                            .font(.system(size: 16, weight: .semibold))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 16, weight: .bold))
                             .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Color.gray.opacity(0.3))
-                            .cornerRadius(10)
-                    }
-                    
-                    // Save Button
-                    Button(action: {
-                        onSave(editedName)
-                    }) {
-                        Text("Save")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color(red: 1.0, green: 0.5, blue: 0.0),
-                                        Color(red: 1.0, green: 0.7, blue: 0.2)
-                                    ]),
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(10)
                     }
                 }
+                .padding(.bottom, 8)
+                
+                // TextField with Verify Button
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        TextField("Username", text: $editedName)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .padding(.leading, 16)
+                            .frame(height: 54)
+                            .focused($isTextFieldFocused)
+                            .onChange(of: editedName) { _ in
+                                if verificationResult != .idle {
+                                    verificationResult = .idle
+                                }
+                            }
+                        
+                        Button(action: verifyUsername) {
+                            if isChecking {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .frame(width: 80, height: 38)
+                            } else {
+                                Text("Verify")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 80, height: 38)
+                            }
+                        }
+                        .background(verificationResult == .idle ? Color.gray.opacity(0.3) : verificationResult.color)
+                        .cornerRadius(19)
+                        .padding(.trailing, 8)
+                        .disabled(isChecking || editedName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                    .background(Color.white.opacity(0.95))
+                    .cornerRadius(12)
+                    
+                    // Reserved space for message to avoid jumping
+                    Text(verificationResult.message ?? "")
+                        .font(.system(size: 12))
+                        .foregroundColor(verificationResult.color)
+                        .padding(.leading, 4)
+                        .frame(height: 18) // Fixed height
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                
+                Button(action: { onSave(editedName) }) {
+                    Text("Save Username")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(AivoTheme.Primary.orange)
+                        .cornerRadius(28)
+                        .opacity(isSaveEnabled ? 1.0 : 0.5)
+                }
+                .disabled(!isSaveEnabled)
             }
             .padding(24)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(Color.black)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24)
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
                     )
             )
-            .frame(maxWidth: 320)
-            .padding(.horizontal, 40)
+            .frame(maxWidth: 340)
+            .padding(.horizontal, 20)
+            .onAppear { isTextFieldFocused = true }
+        }
+    }
+    
+    private var isSaveEnabled: Bool {
+        // Allow save if verified as available OR if it's the current name and we just want to close/save
+        return verificationResult == .available || (editedName == currentName && !editedName.isEmpty)
+    }
+    
+    private func verifyUsername() {
+        let name = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        
+        if name.lowercased() == currentName.lowercased() {
+            verificationResult = .available
+            return
+        }
+        
+        isChecking = true
+        Task {
+            do {
+                let isAvailable = try await FirestoreService.shared.checkUsernameAvailability(username: name)
+                await MainActor.run {
+                    verificationResult = isAvailable ? .available : .taken
+                    isChecking = false
+                }
+            } catch {
+                await MainActor.run {
+                    verificationResult = .error("Check failed")
+                    isChecking = false
+                }
+            }
         }
     }
 }

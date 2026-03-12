@@ -11,6 +11,7 @@ final class FirestoreService: ObservableObject {
     }
     private let usersCollection = "users"
     private let purchasesCollection = "purchases"
+    private let usernamesCollection = "usernames" // Collection for unique usernames
     
     @Published var currentProfile: UserProfile?
     
@@ -56,6 +57,67 @@ final class FirestoreService: ObservableObject {
         await MainActor.run {
             self.currentProfile = profile
         }
+    }
+    
+    // MARK: - Username Uniqueness
+    
+    /// Checks if a username is available (case-insensitive check using lowercase IDs)
+    func checkUsernameAvailability(username: String) async throws -> Bool {
+        ensureFirebaseConfigured()
+        let normalizedName = username.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if normalizedName.isEmpty { return false }
+        
+        let docRef = db.collection(usernamesCollection).document(normalizedName)
+        let snapshot = try await docRef.getDocument()
+        return !snapshot.exists
+    }
+    
+    /// Atomically updates a username (claims new, releases old)
+    func updateUsername(profileID: String, newUsername: String, oldUsername: String?) async throws {
+        ensureFirebaseConfigured()
+        let normalizedNew = newUsername.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedOld = oldUsername?.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // If name hasn't changed, do nothing
+        if normalizedNew == normalizedOld { return }
+        
+        Logger.d("🔥 Firestore: Updating username from '\(oldUsername ?? "nil")' to '\(newUsername)'")
+        
+        try await db.runTransaction({ (transaction, errorPointer) -> Any? in
+            let newDocRef = self.db.collection(self.usernamesCollection).document(normalizedNew)
+            
+            // 1. Check if new name is taken
+            let newDoc: DocumentSnapshot
+            do {
+                newDoc = try transaction.getDocument(newDocRef)
+            } catch let error as NSError {
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            if newDoc.exists {
+                let error = NSError(domain: "FirestoreService", code: 409, userInfo: [NSLocalizedDescriptionKey: "Username is already taken"])
+                errorPointer?.pointee = error
+                return nil
+            }
+            
+            // 2. Claim new username
+            transaction.setData(["profileID": profileID], forDocument: newDocRef)
+            
+            // 3. Update user profile
+            let userDocRef = self.db.collection(self.usersCollection).document(profileID)
+            transaction.updateData(["userName": newUsername], forDocument: userDocRef)
+            
+            // 4. Release old username
+            if let old = normalizedOld, !old.isEmpty {
+                let oldDocRef = self.db.collection(self.usernamesCollection).document(old)
+                transaction.deleteDocument(oldDocRef)
+            }
+            
+            return nil
+        })
+        
+        Logger.d("✅ Firestore: Username updated successfully")
     }
     
     // MARK: - Purchase History

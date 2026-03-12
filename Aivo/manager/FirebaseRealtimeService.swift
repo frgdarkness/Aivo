@@ -114,7 +114,63 @@ final class FirebaseRealtimeService: ObservableObject {
     }
     
 
-    /// Increment daily counter for a package (thread-safe) - Kept for legacy analytics if needed, or can be removed if moved to Firestore
+    func checkProfileExistsOnServer(profileID: String) async throws -> Bool {
+        ensureFirebaseConfigured()
+
+        let path = userProfilePath(profileID)
+
+        return try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Bool, Error>) in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snapshot in
+                if snapshot.exists() {
+                    Logger.d("✅ Profile exists in RTDB: \(profileID)")
+                    cont.resume(returning: true)
+                } else {
+                    Logger.d("❌ Profile does not exist in RTDB: \(profileID)")
+                    cont.resume(returning: false)
+                }
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error checking profile: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
+        }
+    }
+
+    /// Fetch all purchases for a profile for migration
+    func getAllPurchases(profileID: String) async throws -> [PurchaseConsumable] {
+        ensureFirebaseConfigured()
+        let path = userPurchasesRoot(profileID)
+        return try await withCheckedThrowingContinuation { cont in
+            dbRef.child(path).observeSingleEvent(of: .value, with: { snap in
+                guard let value = snap.value as? [String: Any] else {
+                    cont.resume(returning: []); return
+                }
+                
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .secondsSince1970
+                
+                let purchases: [PurchaseConsumable] = value.compactMap { (key, val) in
+                    guard let dict = val as? [String: Any] else { return nil }
+                    do {
+                        let data = try JSONSerialization.data(withJSONObject: dict)
+                        return try decoder.decode(PurchaseConsumable.self, from: data)
+                    } catch {
+                        Logger.e("❌ Error decoding purchase \(key): \(error)")
+                        return nil
+                    }
+                }
+                cont.resume(returning: purchases)
+            }, withCancel: { error in
+                Logger.e("❌ Firebase error getting all purchases: \(error.localizedDescription)")
+                cont.resume(throwing: error)
+            })
+        }
+    }
+
+    private func dailyAnalyticsPath(_ date: String) -> String {
+        "\(basePath)/daily/\(date)"
+    }
+
+    /// Increment daily counter for a package (thread-safe) - Kept for legacy analytics if needed
     func incrementDailyCounter(packageId: String) async throws {
         ensureFirebaseConfigured()
         

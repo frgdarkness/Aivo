@@ -115,21 +115,40 @@ struct ExploreTabViewNew: View {
             
             // PRO Button
             Button(action: {
-                // Handle PRO button tap
+                showSubscription = true
             }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 12))
-                    Text("PRO")
-                        .font(.system(size: 14, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
-                )
+                Image(systemName: "crown.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Group {
+                            if SubscriptionManager.shared.isPremium {
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 1.0, green: 0.08, blue: 0.05),
+                                        Color(red: 1.0, green: 0.25, blue: 0.05),
+                                        Color(red: 1.0, green: 0.45, blue: 0.1)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            } else {
+                                Color.gray.opacity(0.3)
+                            }
+                        }
+                    )
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle().stroke(
+                            SubscriptionManager.shared.isPremium
+                            ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                            : Color.white.opacity(0.5),
+                            lineWidth: 1
+                        )
+                    )
+                    .shadow(color: SubscriptionManager.shared.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                            radius: 8, x: 0, y: 3)
             }
             
             // Profile Icon

@@ -246,5 +246,7 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Aivo needs access to your photo library to let you choose a custom avatar.</string>
 </dict>
 </plist>
