@@ -85,14 +85,16 @@ struct ExploreTabViewNew: View {
                 // Search Bar
                 //searchBarView
                 
+                // News Section
+                newsSection
+
                 // Trending Section
                 trendingSection
                 
                 // Popular Section
                 popularSection
                 
-                // News Section
-                newsSection
+                
                 
                 
                 // Genre Sections
@@ -120,18 +122,37 @@ struct ExploreTabViewNew: View {
     // MARK: - Community Songs Fetching
     private func fetchCommunitySongs() {
         guard !isFetchingCommunity else { return }
+        
+        // Check cache first
+        if let cache = LocalStorageManager.shared.getCommunityCache() {
+            let expirationTime: TimeInterval = 12 * 60 * 60 // 12 hours
+            let cacheAge = Date().timeIntervalSince(cache.lastFetch)
+            
+            if cacheAge < expirationTime {
+                self.communityHottestSongs = cache.hottest
+                self.communityNewestSongs = cache.newest
+                Logger.d("📦 [Explore] Loaded community songs from cache (Age: \(Int(cacheAge/3600))h)")
+                return
+            }
+            Logger.d("📦 [Explore] Cache expired (Age: \(Int(cacheAge/3600))h), fetching fresh data")
+        }
+        
         isFetchingCommunity = true
         
         Task {
             do {
+                // Fetch 10 hottest and 50 newest songs
                 let hottest = try await FirestoreService.shared.fetchHottestSongs(limit: 10)
-                let newest = try await FirestoreService.shared.fetchNewSongs(limit: 10)
+                let newest = try await FirestoreService.shared.fetchNewSongs(limit: 50)
                 
                 await MainActor.run {
                     self.communityHottestSongs = hottest
                     self.communityNewestSongs = newest
                     self.isFetchingCommunity = false
-                    Logger.d("✅ [Explore] Fetched community songs: \(hottest.count) hot, \(newest.count) new")
+                    
+                    // Save to cache
+                    LocalStorageManager.shared.saveCommunityCache(hottest: hottest, newest: newest)
+                    Logger.d("✅ [Explore] Fetched and cached community songs: \(hottest.count) hot, \(newest.count) new")
                 }
             } catch {
                 await MainActor.run {
@@ -309,33 +330,28 @@ struct ExploreTabViewNew: View {
                 }
             }
             
-            // Horizontal scroll with 3 rows, 5 columns per view
+            // Horizontal scroll with 3 rows
             ScrollView(.horizontal, showsIndicators: false) {
-                VStack(spacing: 16) {
-                    // Split into rows of 5 items each
-                    let newsSongs = Array(communityNewestSongs.prefix(15)) // 3 rows × 5 columns = 15 max
-                    let rowCount = (newsSongs.count + 4) / 5
-                    
-                    ForEach(0..<rowCount, id: \.self) { rowIndex in
-                        HStack(spacing: 32) {
-                            let startIndex = rowIndex * 5
-                            let endIndex = min(startIndex + 5, newsSongs.count)
-                            
-                            if startIndex < endIndex {
-                                ForEach(startIndex..<endIndex, id: \.self) { index in
-                                    let song = newsSongs[index]
-                                    NewsCardView(
-                                        song: song,
-                                        status: songStatusMap[song.id]
-                                    ) {
-                                        selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
-                                    }
-                                }
-                            }
+                let rows = [
+                    GridItem(.fixed(72), spacing: 16),
+                    GridItem(.fixed(72), spacing: 16),
+                    GridItem(.fixed(72), spacing: 16)
+                ]
+                
+                let newsSongs = Array(communityNewestSongs.prefix(15))
+                
+                LazyHGrid(rows: rows, alignment: .top, spacing: 32) {
+                    ForEach(Array(newsSongs.enumerated()), id: \.element.id) { index, song in
+                        NewsCardView(
+                            song: song,
+                            status: songStatusMap[song.id]
+                        ) {
+                            selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
                         }
-                        .padding(.horizontal, 4)
+                        .frame(width: 300) // Fixed width for alignment
                     }
                 }
+                .padding(.horizontal, 4)
             }
         }
     }

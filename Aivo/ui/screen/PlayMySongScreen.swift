@@ -158,6 +158,10 @@ struct PlayMySongScreen: View {
                 }
             }
             
+            // Reset scrubbing state for new song
+            isScrubbing = false
+            scrubTime = 0
+            
             // Load timestamped lyrics and update favorite state when song changes
             if let songId = songId {
                 loadTimestampedLyrics(for: songId)

@@ -90,8 +90,8 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
         player.play()
         isPlaying = true
         
-        // Stop offline player if running
-        MusicPlayer.shared.pause()
+        // Stop offline player fully to prevent UI duplication/persistence
+        MusicPlayer.shared.stop()
         
         Logger.d("🎵 [OnlineStreamPlayer] Playing")
         updateNowPlayingInfo()

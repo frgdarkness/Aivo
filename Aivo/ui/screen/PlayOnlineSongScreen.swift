@@ -822,9 +822,12 @@ struct PlayOnlineSongScreen: View {
         isLoading = true
         localSongs = songs
         
-        // Load the initial song into the stream player
+        // Load the initial song into the stream player only if it's not already playing it
         if !songs.isEmpty {
-            streamPlayer.loadSong(songs[initialIndex], at: initialIndex, in: songs)
+            let initialSong = songs[initialIndex]
+            if streamPlayer.currentSong?.id != initialSong.id {
+                streamPlayer.loadSong(initialSong, at: initialIndex, in: songs)
+            }
             
             // Trigger rotation check after a short delay to ensure player state is updated
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {

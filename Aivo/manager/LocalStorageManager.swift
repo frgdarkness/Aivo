@@ -11,6 +11,9 @@ final class LocalStorageManager: ObservableObject {
     private let subscriptionPeriodKey = "SubscriptionPeriod"
     private let lastCreditGrantDateKey = "LastPremiumCreditGrantDate"
     private let autoShareEnabledKey = "AutoShareEnabled"
+    private let hottestCacheKey = "CachedHottestSongs"
+    private let newestCacheKey = "CachedNewestSongs"
+    private let lastFetchKey = "LastCommunityFetchTime"
     
     @Published var localProfile: UserProfile?
     @Published var hasRemoteProfile = false
@@ -349,5 +352,43 @@ final class LocalStorageManager: ObservableObject {
         
         // Trả về kết quả dạng user_ddMMyy_xxxxxxxx
         return "user_\(dateString)_\(hash.prefix(10))"
+    }
+    
+    // MARK: - Community Cache Management
+    
+    func saveCommunityCache(hottest: [SunoData], newest: [SunoData]) {
+        do {
+            let encoder = JSONEncoder()
+            let hottestData = try encoder.encode(hottest)
+            let newestData = try encoder.encode(newest)
+            
+            userDefaults.set(hottestData, forKey: hottestCacheKey)
+            userDefaults.set(newestData, forKey: newestCacheKey)
+            userDefaults.set(Date().timeIntervalSince1970, forKey: lastFetchKey)
+            
+            Logger.d("💾 Community cache saved (\(hottest.count) hot, \(newest.count) new)")
+        } catch {
+            Logger.e("❌ Failed to save community cache: \(error)")
+        }
+    }
+    
+    func getCommunityCache() -> (hottest: [SunoData], newest: [SunoData], lastFetch: Date)? {
+        guard let hottestData = userDefaults.data(forKey: hottestCacheKey),
+              let newestData = userDefaults.data(forKey: newestCacheKey) else {
+            return nil
+        }
+        
+        let lastFetchTimestamp = userDefaults.double(forKey: lastFetchKey)
+        let lastFetch = Date(timeIntervalSince1970: lastFetchTimestamp)
+        
+        do {
+            let decoder = JSONDecoder()
+            let hottest = try decoder.decode([SunoData].self, from: hottestData)
+            let newest = try decoder.decode([SunoData].self, from: newestData)
+            return (hottest, newest, lastFetch)
+        } catch {
+            Logger.e("❌ Failed to decode community cache: \(error)")
+            return nil
+        }
     }
 }

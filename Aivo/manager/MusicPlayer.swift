@@ -109,6 +109,9 @@ class MusicPlayer: NSObject, ObservableObject {
         isPlaying = false
         currentTime = 0
         duration = 0
+        seekOffset = 0 
+        Logger.d("🎵 [MusicPlayer] loadSong: seekOffset reset to 0")
+        updateNowPlayingInfo(onlyTime: true) // Immediately update system center
         stopPlaybackTimer()
         
         // Now set the new song
@@ -150,8 +153,8 @@ class MusicPlayer: NSObject, ObservableObject {
         isPlaying = true
         Logger.d("🎵 [MusicPlayer] Playing (Engine)")
         
-        // Stop online player if running
-        OnlineStreamPlayer.shared.pause()
+        // Stop online player fully if running to prevent UI duplication/persistence
+        OnlineStreamPlayer.shared.stop()
         
         startPlaybackTimer()
         updateNowPlayingInfo()
@@ -175,6 +178,7 @@ class MusicPlayer: NSObject, ObservableObject {
         isPlaying = false
         currentTime = 0
         duration = 0
+        seekOffset = 0 // Reset seek offset
         currentSong = nil
         songs = []
         currentIndex = 0
@@ -195,6 +199,7 @@ class MusicPlayer: NSObject, ObservableObject {
     /// Seek to specific time
     func seek(to time: TimeInterval) {
         guard let file = audioFile else { return }
+        if isSeeking { return } // Prevent re-entrant seek
         
         isSeeking = true
         
@@ -205,6 +210,7 @@ class MusicPlayer: NSObject, ObservableObject {
         
         playerNode.stop()
         seekOffset = time
+        Logger.d("🎵 [MusicPlayer] seek to: \(time), seekOffset set to \(seekOffset)")
         
         if remainingFrames > 0 {
             playerNode.scheduleSegment(file, startingFrame: frame, frameCount: remainingFrames, at: nil) {
@@ -465,6 +471,9 @@ class MusicPlayer: NSObject, ObservableObject {
             }
             
             playerNode.stop()
+            self.seekOffset = 0 
+            self.currentTime = 0
+            Logger.d("🎵 [MusicPlayer] setupLocalFile: seekOffset reset to 0")
             playerNode.scheduleFile(file, at: nil) {
                  // Completion
             }
@@ -473,6 +482,7 @@ class MusicPlayer: NSObject, ObservableObject {
             playerNode.play()
             
             isPlaying = true
+            startPlaybackTimer() // Ensure timer starts for UI updates (seekbar/lyrics)
             updateEqualizer() // Apply EQ
             updateNowPlayingInfo()
             
@@ -513,6 +523,11 @@ class MusicPlayer: NSObject, ObservableObject {
         let currentFrame = playerTime.sampleTime
         var calculatedTime = (Double(currentFrame) / sampleRate) + seekOffset
         
+        // Log periodically to avoid spamming too much but enough to see jumps
+        if Int(calculatedTime) % 5 == 0 && currentFrame % 10 == 0 {
+            // Logger.d("🎵 [MusicPlayer] Progress: frame=\(currentFrame), offset=\(seekOffset), calcTime=\(calculatedTime)")
+        }
+
         if calculatedTime >= 0 {
             self.currentTime = calculatedTime
         }
