@@ -53,6 +53,23 @@ struct PlayMySongScreen: View {
     private var currentSong: SunoData? { musicPlayer.currentSong }
     private var displaySongs: [SunoData] { musicPlayer.songs.isEmpty ? songs : musicPlayer.songs }
 
+    private var isOwnSong: Bool {
+        guard let song = currentSong, let profileID = LocalStorageManager.shared.localProfile?.profileID else { 
+            Logger.d("🔍 [ShareDebug] isOwnSong: false (currentSong or profileID is nil)")
+            return false 
+        }
+        let matches = song.profileID == profileID
+        Logger.d("🔍 [ShareDebug] isOwnSong: \(matches) (Song ProfileID: \(song.profileID ?? "nil") vs Local ProfileID: \(profileID))")
+        return matches
+    }
+    
+    private var isAlreadyShared: Bool {
+        guard let song = currentSong else { return false }
+        let shared = LocalStorageManager.shared.isSongShared(id: song.id)
+        Logger.d("🔍 [ShareDebug] isAlreadyShared: \(shared) (Song ID: \(song.id))")
+        return shared
+    }
+
     var body: some View {
         ZStack {
             // Custom Background với gradient
@@ -434,7 +451,32 @@ struct PlayMySongScreen: View {
             Divider().background(Color.white.opacity(0.2))
 
             Button {
-                shareToCommunity()
+                Logger.d("🔘 [ShareDebug] Share button clicked. isSharing: \(isSharing), isAlreadyShared: \(isAlreadyShared), isOwnSong: \(isOwnSong)")
+                
+                if isSharing { 
+                    Logger.d("🚫 [ShareDebug] Sharing already in progress, ignoring click")
+                    return 
+                }
+                
+                if isAlreadyShared {
+                    Logger.d("🚫 [ShareDebug] Restricted: Song is already shared")
+                    shareError = "You have already shared this song"
+                    // Hide message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        shareError = nil
+                    }
+                } else if !isOwnSong {
+                    Logger.d("🚫 [ShareDebug] Restricted: Not own song")
+                    shareError = "You cannot share this song"
+                    // Hide message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        shareError = nil
+                    }
+                } else {
+                    Logger.d("🚀 [ShareDebug] Checks passed, calling shareToCommunity()")
+                    shareToCommunity()
+                }
+                
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                     showMenu = false
                 }
@@ -449,7 +491,7 @@ struct PlayMySongScreen: View {
                         .font(.system(size: 16, weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
-                .foregroundColor(AivoTheme.Primary.orange)
+                .foregroundColor((!isOwnSong || isAlreadyShared) ? .gray.opacity(0.6) : AivoTheme.Primary.orange)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
@@ -1222,6 +1264,12 @@ struct PlayMySongScreen: View {
                         "song_title": song.title,
                         "timestamp": Date().timeIntervalSince1970
                     ])
+                    
+                    // Mark as shared locally
+                    LocalStorageManager.shared.markSongAsShared(id: song.id)
+                    
+                    // Log to credit history
+                    CreditHistoryManager.shared.addRequest(.shareSong)
                     
                     // Hide success message after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

@@ -131,7 +131,7 @@ struct CreditUsageHistoryScreen: View {
             
             // Right: Credit Cost with Icon
             HStack(spacing: 4) {
-                Text("\(request.requestType.creditCost)")
+                Text("\(request.creditCost)")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
                 

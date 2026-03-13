@@ -14,18 +14,21 @@ final class LocalStorageManager: ObservableObject {
     private let hottestCacheKey = "CachedHottestSongs"
     private let newestCacheKey = "CachedNewestSongs"
     private let lastFetchKey = "LastCommunityFetchTime"
+    private let sharedSongIDsKey = "SharedSongIDs"
     
     @Published var localProfile: UserProfile?
     @Published var hasRemoteProfile = false
     @Published var isPremiumUser = false
     @Published var subscriptionPeriod: SubscriptionInfo.SubscriptionPeriod?
     @Published var autoShareEnabled = true
+    @Published var sharedSongIDs: Set<String> = []
     
     private init() {
         loadLocalProfile()
         loadRemoteProfileStatus()
         //loadPremiumStatus()
         loadAutoShareStatus()
+        loadSharedSongIDs()
         
         // Ensure localProfile is never null
         if localProfile == nil {
@@ -390,5 +393,24 @@ final class LocalStorageManager: ObservableObject {
             Logger.e("❌ Failed to decode community cache: \(error)")
             return nil
         }
+    }
+    
+    // MARK: - Shared Song Management
+    
+    private func loadSharedSongIDs() {
+        if let array = userDefaults.stringArray(forKey: sharedSongIDsKey) {
+            sharedSongIDs = Set(array)
+            Logger.d("💾 Loaded \(sharedSongIDs.count) shared song IDs")
+        }
+    }
+    
+    func markSongAsShared(id: String) {
+        sharedSongIDs.insert(id)
+        userDefaults.set(Array(sharedSongIDs), forKey: sharedSongIDsKey)
+        Logger.d("💾 Song marked as shared: \(id)")
+    }
+    
+    func isSongShared(id: String) -> Bool {
+        return sharedSongIDs.contains(id)
     }
 }

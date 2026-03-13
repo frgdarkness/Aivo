@@ -21,8 +21,8 @@ final class CreditHistoryManager: ObservableObject {
     
     // MARK: - History Management
     
-    func addRequest(_ requestType: RequestType) {
-        let requestData = RequestData(requestType: requestType, time: Date())
+    func addRequest(_ requestType: RequestType, cost: Int? = nil) {
+        let requestData = RequestData(requestType: requestType, time: Date(), creditCost: cost)
         history.insert(requestData, at: 0) // Thêm vào đầu list
         
         // Giới hạn số lượng history

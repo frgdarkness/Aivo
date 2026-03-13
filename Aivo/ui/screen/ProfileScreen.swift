@@ -482,78 +482,98 @@ struct ProfileScreen: View {
     
     // MARK: - Menu Items Section
     private var menuItemsSection: some View {
-        VStack(spacing: 12) {
-            // Credit Usage History
-            menuRow(
-                icon: "clock.arrow.circlepath",
-                title: "Credit Usage History",
-                showArrow: true,
-                action: { showCreditHistory = true }
-            )
+        VStack(spacing: 20) {
+            // Card 1: Usage History
+            VStack(spacing: 0) {
+                menuRow(
+                    icon: "clock.arrow.circlepath",
+                    title: "Credit Usage History",
+                    showArrow: true,
+                    action: { showCreditHistory = true }
+                )
+            }
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
-            // Contact
-            menuRow(
-                icon: "envelope",
-                title: "Contact",
-                showArrow: true,
-                action: {
-                    if canSendMail {
-                        showMailComposer = true
-                    } else {
-                        // Fallback: mở mail app với email
-                        openMailApp()
+            // Card 2: Notifications & Auto Share
+            VStack(spacing: 0) {
+                menuRowWithToggle(
+                    icon: "bell.fill",
+                    title: "Notifications",
+                    isOn: $notificationsEnabled
+                )
+                
+                Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
+                
+                menuRowWithToggle(
+                    icon: "arrow.2.squarepath",
+                    title: "Auto Share Song",
+                    isOn: Binding(
+                        get: { LocalStorageManager.shared.autoShareEnabled },
+                        set: { LocalStorageManager.shared.setAutoShareEnabled($0) }
+                    )
+                )
+            }
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            
+            // Card 3: Support & Feedback
+            VStack(spacing: 0) {
+                menuRow(
+                    icon: "envelope.fill",
+                    title: "Contact",
+                    showArrow: true,
+                    action: {
+                        if canSendMail {
+                            showMailComposer = true
+                        } else {
+                            openMailApp()
+                        }
                     }
-                }
-            )
-            
-            // Notifications (Toggle)
-            menuRowWithToggle(
-                icon: "bell",
-                title: "Notifications",
-                isOn: $notificationsEnabled
-            )
-            
-            // Language
-//            menuRow(
-//                icon: "globe",
-//                title: "Language",
-//                showArrow: true,
-//                action: { showLanguageScreen = true }
-//            )
-            
-            // FAQ
-//            menuRow(
-//                icon: "questionmark.square",
-//                title: "FAQ",
-//                showArrow: true,
-//                action: { openFAQUrl() }
-//            )
-            
-            // Rate Us
-            menuRow(
-                icon: "star.fill",
-                title: "Rate Us",
-                showArrow: true,
-                action: { AppRatingManager.shared.forceShowRateApp() }
-            )
+                )
+                
+                Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
+                
+                menuRow(
+                    icon: "star.fill",
+                    title: "Rate Us",
+                    showArrow: true,
+                    action: { AppRatingManager.shared.forceShowRateApp() }
+                )
+            }
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
             #if DEBUG
-            // Test Screen (Debug Only)
-            menuRow(
-                icon: "wrench.and.screwdriver.fill",
-                title: "Test Screen",
-                showArrow: true,
-                action: { showTestScreen = true }
-            )
+            // Debug card
+            VStack(spacing: 0) {
+                menuRow(
+                    icon: "wrench.and.screwdriver.fill",
+                    title: "Test Screen",
+                    showArrow: true,
+                    action: { showTestScreen = true }
+                )
+            }
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
             #endif
             
-            // Version
-            menuRow(
-                icon: "arrow.triangle.2.circlepath",
-                title: "Version",
-                value: appVersion,
-                showArrow: false
-            )
+            // Card 4: App Info
+            VStack(spacing: 0) {
+                menuRow(
+                    icon: "info.circle.fill",
+                    title: "Version",
+                    value: appVersion,
+                    showArrow: false
+                )
+            }
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
         }
     }
     
@@ -593,10 +613,9 @@ struct ProfileScreen: View {
                         .foregroundColor(.gray)
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
             .padding(.horizontal, 16)
-            .background(Color.gray.opacity(0.1))
-            .cornerRadius(8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
     }
@@ -620,12 +639,10 @@ struct ProfileScreen: View {
             Spacer()
             
             Toggle("", isOn: isOn)
-                .tint(Color(red: 1.0, green: 0.85, blue: 0.4))
+                .tint(AivoTheme.Primary.orange)
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 14)
         .padding(.horizontal, 16)
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(8)
     }
     
     // MARK: - Helper Methods
@@ -900,7 +917,7 @@ struct EditNameDialog: View {
                                     .frame(width: 80, height: 38)
                             }
                         }
-                        .background(verificationResult == .idle ? Color.gray.opacity(0.3) : verificationResult.color)
+                        .background(verificationResult == .idle ? Color.gray.opacity(0.5) : verificationResult.color)
                         .cornerRadius(19)
                         .padding(.trailing, 8)
                         .disabled(isChecking || editedName.trimmingCharacters(in: .whitespaces).isEmpty)

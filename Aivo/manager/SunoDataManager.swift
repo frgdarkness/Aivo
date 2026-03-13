@@ -48,7 +48,13 @@ class SunoDataManager {
             prompt: sunoData.prompt,
             tags: sunoData.tags,
             createTime: sunoData.createTime,
-            savedAt: Int64(Date().timeIntervalSince1970 * 1000)
+            savedAt: Int64(Date().timeIntervalSince1970 * 1000),
+            playCount: sunoData.playCount,
+            weekTag: sunoData.weekTag,
+            profileID: sunoData.profileID,
+            isPublic: sunoData.isPublic,
+            likeCount: sunoData.likeCount,
+            username: sunoData.username
         )
         
         let metadataURL = sunoDataDirectory.appendingPathComponent("\(sunoData.id).json")
@@ -96,7 +102,13 @@ class SunoDataManager {
                 prompt: metadata.prompt,
                 tags: metadata.tags,
                 createTime: metadata.createTime,
-                savedAt: metadata.savedAt
+                savedAt: metadata.savedAt,
+                playCount: metadata.playCount,
+                weekTag: metadata.weekTag,
+                profileID: metadata.profileID,
+                isPublic: metadata.isPublic,
+                likeCount: metadata.likeCount,
+                username: metadata.username
             )
             
             // Save updated metadata
@@ -143,7 +155,13 @@ class SunoDataManager {
                 prompt: metadata.prompt,
                 tags: metadata.tags,
                 createTime: metadata.createTime,
-                savedAt: metadata.savedAt
+                savedAt: metadata.savedAt,
+                playCount: metadata.playCount,
+                weekTag: metadata.weekTag,
+                profileID: metadata.profileID,
+                isPublic: metadata.isPublic,
+                likeCount: metadata.likeCount,
+                username: metadata.username
             )
             
             // Save updated metadata
@@ -220,7 +238,7 @@ class SunoDataManager {
                     let data = try Data(contentsOf: metadataFile)
                     let metadata = try JSONDecoder().decode(SunoDataMetadata.self, from: data)
                     
-                    let sunoData = SunoData(
+                    var sunoData = SunoData(
                         id: metadata.id,
                         audioUrl: metadata.audioUrl,
                         sourceAudioUrl: metadata.sourceAudioUrl,
@@ -233,8 +251,23 @@ class SunoDataManager {
                         title: metadata.title,
                         tags: metadata.tags,
                         createTime: metadata.createTime,
-                        duration: metadata.duration
+                        duration: metadata.duration,
+                        playCount: metadata.playCount,
+                        weekTag: metadata.weekTag,
+                        profileID: metadata.profileID,
+                        isPublic: metadata.isPublic,
+                        likeCount: metadata.likeCount,
+                        username: metadata.username
                     )
+                    
+                    // Migration: If profileID is missing for a locally saved song, 
+                    // assume it belongs to the current user (if they have a profile).
+                    if sunoData.profileID == nil, let currentProfileID = LocalStorageManager.shared.localProfile?.profileID {
+                        sunoData.profileID = currentProfileID
+                        if sunoData.username == nil || sunoData.username == "Aivo Music" {
+                            sunoData.username = LocalStorageManager.shared.localProfile?.userName ?? "Aivo Music"
+                        }
+                    }
                     
                     sunoDataList.append(sunoData)
                 } catch {
@@ -401,6 +434,14 @@ struct SunoDataMetadata: Codable {
     let tags: String
     let createTime: Int64
     let savedAt: Int64
+    
+    // Community Sharing Fields
+    var playCount: Int?
+    var weekTag: String?
+    var profileID: String?
+    var isPublic: Bool?
+    var likeCount: Int?
+    var username: String?
 }
 
 // MARK: - SunoDataError

@@ -78,7 +78,8 @@ class BackgroundGenerationManager: ObservableObject {
         model: SunoModel,
         vocalGender: VocalGender? = nil,
         selectedMoods: [SongMood] = [],
-        selectedGenres: [SongGenre] = []
+        selectedGenres: [SongGenre] = [],
+        creditCost: Int = 30
     ) {
         guard !isGenerating else { return }
         
@@ -121,7 +122,14 @@ class BackgroundGenerationManager: ObservableObject {
                 var savedSongs: [SunoData] = []
                 
                 
-                for songData in generatedSongs {
+                let profileID = LocalStorageManager.shared.localProfile?.profileID
+                let username = LocalStorageManager.shared.localProfile?.userName ?? "Aivo Music"
+                
+                for var songData in generatedSongs {
+                    // Set owner info
+                    songData.profileID = profileID
+                    songData.username = username
+                    
                     do {
                         // This will trigger the download and save to SwiftData/LocalStorage
                         // Log auto download start
@@ -160,6 +168,13 @@ class BackgroundGenerationManager: ObservableObject {
                     
                     Logger.i("Generation & Download successful!", file: "BackgroundGenerationManager.swift")
                     
+                    // Deduct credits for successful generation
+                    Task {
+                        await CreditManager.shared.deductForSuccessfulRequest(count: creditCost)
+                        CreditHistoryManager.shared.addRequest(.generateSong, cost: creditCost)
+                        Logger.i("💰 [BackgroundManager] Deducted \(creditCost) credits for successful song generation", file: "BackgroundGenerationManager.swift")
+                    }
+                    
                     // Show dialog if app is active, otherwise notification
                     if UIApplication.shared.applicationState == .active {
                         self.showSuccessDialog = true
@@ -180,10 +195,17 @@ class BackgroundGenerationManager: ObservableObject {
                         for var song in savedSongs {
                             song.username = userName
                             do {
-                                try await FirestoreService.shared.saveSongToFirestore(song, isPublic: isAutoShare)
-                                Logger.d("✅ [BackgroundManager] Auto-saved \(song.title) to Firestore (public: \(isAutoShare)) with username: \(userName)", file: "BackgroundGenerationManager.swift")
+                                // Only upload to community/Firestore if auto-share is enabled
+                                if isAutoShare {
+                                    try await FirestoreService.shared.saveSongToFirestore(song, isPublic: true)
+                                    LocalStorageManager.shared.markSongAsShared(id: song.id)
+                                    Logger.d("✅ [BackgroundManager] Auto-shared \(song.title) to Firestore with username: \(userName)", file: "BackgroundGenerationManager.swift")
+                                } else {
+                                    // Optionally save locally only or just skip Firestore
+                                    Logger.d("🌐 [BackgroundManager] Auto-share disabled, skipping Firestore upload for \(song.title)", file: "BackgroundGenerationManager.swift")
+                                }
                             } catch {
-                                Logger.e("❌ [BackgroundManager] Failed to auto-save \(song.title) to Firestore: \(error)", file: "BackgroundGenerationManager.swift")
+                                Logger.e("❌ [BackgroundManager] Failed to process \(song.title): \(error)", file: "BackgroundGenerationManager.swift")
                             }
                         }
                     }
@@ -235,7 +257,8 @@ class BackgroundGenerationManager: ObservableObject {
         songName: String,
         modelName: String, // The display name of the model
         coverImageUrl: String? = nil,
-        audioSource: String // "youtube" or "song"
+        audioSource: String, // "youtube" or "song"
+        creditCost: Int = 20
     ) {
         guard !isGenerating else { return }
         
@@ -324,6 +347,11 @@ class BackgroundGenerationManager: ObservableObject {
                     }
                 }
                 
+                // Deduct credits for successful cover generation
+                await CreditManager.shared.deductForSuccessfulRequest(count: creditCost)
+                CreditHistoryManager.shared.addRequest(.coverSong, cost: creditCost)
+                Logger.i("💰 [BackgroundManager] Deducted \(creditCost) credits for successful cover generation", file: "BackgroundGenerationManager.swift")
+
                 await MainActor.run {
                     self.isGenerating = false
                     self.resultSunoDataList = savedSongs

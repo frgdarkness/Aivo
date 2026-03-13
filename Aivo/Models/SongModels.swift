@@ -5,6 +5,7 @@ enum RequestType: String, CaseIterable, Codable {
     case coverSong = "cover_song"
     case generateSong = "generate_song"
     case generateLyric = "generate_lyric"
+    case shareSong = "share_song"
     
     var displayName: String {
         switch self {
@@ -14,6 +15,8 @@ enum RequestType: String, CaseIterable, Codable {
             return "Generate Song"
         case .generateLyric:
             return "Generate Lyric"
+        case .shareSong:
+            return "Share to Community"
         }
     }
     
@@ -25,6 +28,8 @@ enum RequestType: String, CaseIterable, Codable {
             return 4
         case .coverSong:
             return 10
+        case .shareSong:
+            return 0 // Free or handled dynamically
         }
     }
 }

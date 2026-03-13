@@ -1129,7 +1129,8 @@ struct GenerateSongTabView: View {
             model: selectedModel,
             vocalGender: vocalGender,
             selectedMoods: selectedMoods,
-            selectedGenres: selectedGenres
+            selectedGenres: selectedGenres,
+            creditCost: creditsRequired
         )
         // showToastMessage("Generation started in background! You can continue using the app.")
         

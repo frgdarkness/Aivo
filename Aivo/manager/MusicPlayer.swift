@@ -101,8 +101,8 @@ class MusicPlayer: NSObject, ObservableObject {
     
     /// Load a song and start playing
     func loadSong(_ song: SunoData, at index: Int, in songs: [SunoData]) {
-        Logger.d("🎵 [MusicPlayer] Loading song: \(song.title)")
-        Logger.d("songInfo: \(song)")
+        let profileID = LocalStorageManager.shared.localProfile?.profileID ?? "Unknown"
+        Logger.d("🎵 [MusicPlayer] Song Played - ID: \(song.id), Title: \(song.title), ProfileID: \(profileID)")
         // Stop current playback first (but don't clear currentSong yet)
         playerNode.stop()
         

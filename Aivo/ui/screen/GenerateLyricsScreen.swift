@@ -789,7 +789,7 @@ struct GenerateLyricsScreen: View {
                             await CreditManager.shared.deductForSuccessfulRequest(count: totalCost)
                             Logger.i("📝 [GenerateLyrics] Deducted \(totalCost) credits for successful lyrics generation")
                             // Save to history
-                            CreditHistoryManager.shared.addRequest(.generateLyric)
+                            CreditHistoryManager.shared.addRequest(.generateLyric, cost: totalCost)
                             
                             // Try to show rating dialog with delay
                             DispatchQueue.main.asyncAfter(deadline: .now() + 3) {

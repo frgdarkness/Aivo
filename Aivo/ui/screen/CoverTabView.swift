@@ -599,7 +599,8 @@ struct CoverTabView: View {
                     songName: songName,
                     modelName: coverModelName,
                     coverImageUrl: coverImageUrl,
-                    audioSource: selectedSource == .song ? "song" : "youtube"
+                    audioSource: selectedSource == .song ? "song" : "youtube",
+                    creditCost: creditsRequired
                 )
                 //showToastMessage("Cover generation started in background!")
             }
