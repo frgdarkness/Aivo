@@ -10,16 +10,19 @@ final class LocalStorageManager: ObservableObject {
     private let isPremiumUserKey = "IsPremiumUser"
     private let subscriptionPeriodKey = "SubscriptionPeriod"
     private let lastCreditGrantDateKey = "LastPremiumCreditGrantDate"
+    private let autoShareEnabledKey = "AutoShareEnabled"
     
     @Published var localProfile: UserProfile?
     @Published var hasRemoteProfile = false
     @Published var isPremiumUser = false
     @Published var subscriptionPeriod: SubscriptionInfo.SubscriptionPeriod?
+    @Published var autoShareEnabled = true
     
     private init() {
         loadLocalProfile()
         loadRemoteProfileStatus()
         //loadPremiumStatus()
+        loadAutoShareStatus()
         
         // Ensure localProfile is never null
         if localProfile == nil {
@@ -157,6 +160,24 @@ final class LocalStorageManager: ObservableObject {
         }
         
         Logger.d("💎 Premium status loaded: \(isPremiumUser), period: \(subscriptionPeriod?.rawValue ?? "none")")
+    }
+    
+    // MARK: - Auto Share Management
+    
+    func setAutoShareEnabled(_ enabled: Bool) {
+        userDefaults.set(enabled, forKey: autoShareEnabledKey)
+        autoShareEnabled = enabled
+        Logger.d("🌐 Auto share status updated: \(enabled)")
+    }
+    
+    func loadAutoShareStatus() {
+        // Default to true if not set
+        if userDefaults.object(forKey: autoShareEnabledKey) == nil {
+            autoShareEnabled = true
+        } else {
+            autoShareEnabled = userDefaults.bool(forKey: autoShareEnabledKey)
+        }
+        Logger.d("🌐 Auto share status loaded: \(autoShareEnabled)")
     }
     
     func getPremiumStatus() -> (isPremium: Bool, period: SubscriptionInfo.SubscriptionPeriod?) {

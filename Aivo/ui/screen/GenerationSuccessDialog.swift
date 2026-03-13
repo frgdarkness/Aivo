@@ -13,6 +13,9 @@ struct GenerationSuccessDialog: View {
     let onPlayNow: () -> Void
     let onClose: () -> Void
     
+    @ObservedObject private var storage = LocalStorageManager.shared
+    @State private var showInfoAlert = false
+    
     var body: some View {
         ZStack {
             // Dimmed background
@@ -58,6 +61,9 @@ struct GenerationSuccessDialog: View {
                         }
                     }
                     .padding(.horizontal, 16)
+                    
+                    // Auto Share Toggle
+                    autoShareRow
                     
                     Spacer().frame(height: 8)
                     
@@ -133,6 +139,40 @@ struct GenerationSuccessDialog: View {
         }
         .transition(.opacity.combined(with: .scale(scale: 0.9)))
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: true)
+        .alert("Auto Share Mode", isPresented: $showInfoAlert) {
+            Button("Got it!", role: .cancel) { }
+        } message: {
+            Text("If you enable this mode, your songs will be shared with the community. The top 10 most-played songs each week will be honored and receive rewards.")
+        }
+    }
+    
+    // MARK: - Auto Share Row
+    private var autoShareRow: some View {
+        HStack(spacing: 8) {
+            Button(action: {
+                showInfoAlert = true
+            }) {
+                Image(systemName: "info.circle")
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .font(.system(size: 18))
+            }
+            
+            Text("Auto Share Song")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.white.opacity(0.85))
+            
+            Spacer()
+            
+            Toggle("", isOn: Binding(
+                get: { storage.autoShareEnabled },
+                set: { storage.setAutoShareEnabled($0) }
+            ))
+            .labelsHidden()
+            .tint(AivoTheme.Primary.orange)
+            .scaleEffect(0.85)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 4)
     }
     
     // MARK: - Song Item View

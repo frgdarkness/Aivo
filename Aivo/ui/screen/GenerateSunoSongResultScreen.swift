@@ -32,6 +32,12 @@ struct GenerateSunoSongResultScreen: View {
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
     
+    // Community Sharing
+    @State private var isSharing = false
+    @State private var sharingSongID: String? = nil
+    @State private var showShareSuccess = false
+    @State private var shareError: String? = nil
+    
     @Environment(\.dismiss) private var dismiss
     
     private var currentSong: SunoData {
@@ -151,13 +157,34 @@ struct GenerateSunoSongResultScreen: View {
 //                SubscriptionScreenIntro()
 //            }
         }
-        .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
-            Button("Upgrade to Premium", role: .none) {
-                showSubscriptionScreen = true
+        
+        .overlay {
+            VStack {
+                Spacer()
+                if showShareSuccess {
+                    Text("Song shared to community! 🎉")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 40)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                if let error = shareError {
+                    Text(error)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.red.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 40)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
             }
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("You can only export 1 song per day as a free user. Upgrade to Premium for unlimited exports.")
         }
     }
     
@@ -316,6 +343,9 @@ struct GenerateSunoSongResultScreen: View {
                                        currentFileURL = fileURL
                                        showExportSheet = true
                                    }
+                               },
+                               onShareToCommunity: {
+                                   shareToCommunity(song)
                                }
                            )
                        }
@@ -582,6 +612,53 @@ struct GenerateSunoSongResultScreen: View {
         Logger.d("🎵 [SunoResult] Song loaded into MusicPlayer")
     }
     
+    private func shareToCommunity(_ song: SunoData) {
+        sharingSongID = song.id
+        isSharing = true
+        shareError = nil
+        
+        Task {
+            do {
+                try await FirestoreService.shared.shareSongToCommunity(song)
+                await MainActor.run {
+                    isSharing = false
+                    sharingSongID = nil
+                    withAnimation {
+                        showShareSuccess = true
+                    }
+                    
+                    // Log sharing event
+                    AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_SHARE_SONG_COMMUNITY, parameters: [
+                        "song_id": song.id,
+                        "song_title": song.title,
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
+                    
+                    // Hide success message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation {
+                            showShareSuccess = false
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSharing = false
+                    sharingSongID = nil
+                    withAnimation {
+                        shareError = "Failed to share: \(error.localizedDescription)"
+                    }
+                    
+                    // Hide error message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation {
+                            shareError = nil
+                        }
+                    }
+                }
+            }
+        }
+    }
     
     private func rewind10s() {
         let newTime = max(0, musicPlayer.currentTime - 10)
@@ -626,6 +703,7 @@ struct SunoSongRowView: View {
     let onTap: () -> Void
     let onSave: () -> Void
     let onExport: () -> Void
+    let onShareToCommunity: () -> Void
 
     var body: some View {
         // Card nền
@@ -703,16 +781,16 @@ struct SunoSongRowView: View {
                     }
                     .disabled(!isDownloaded)
                     
-                    // Export button (phải)
+                    // Community Share button
                     Button {
-                        onExport()
+                        onShareToCommunity()
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        Image(systemName: "globe")
                             .font(.title3)
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
                             .background(
-                                Circle().fill(Color.blue.opacity(0.8))
+                                Circle().fill(AivoTheme.Primary.orange.opacity(0.8))
                             )
                     }
                     .disabled(!isDownloaded)

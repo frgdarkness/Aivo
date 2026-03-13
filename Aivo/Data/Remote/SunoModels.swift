@@ -96,6 +96,18 @@ struct SunoData: Codable, Identifiable, Equatable {
     let createTime: Int64
     var duration: Double
     
+    // Community Sharing Fields (Optional for backward compatibility)
+    var playCount: Int?
+    var weekTag: String?
+    var profileID: String?
+    var isPublic: Bool?
+    var likeCount: Int?
+    
+    enum CodingKeys: String, CodingKey {
+        case id, audioUrl, sourceAudioUrl, streamAudioUrl, sourceStreamAudioUrl, imageUrl, sourceImageUrl, prompt, modelName, title, tags, createTime, duration
+        case playCount, weekTag, profileID, isPublic, likeCount
+    }
+    
     // Custom Decodable init to handle missing fields with default values
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -116,6 +128,13 @@ struct SunoData: Codable, Identifiable, Equatable {
         tags = try container.decodeIfPresent(String.self, forKey: .tags) ?? ""
         createTime = try container.decodeIfPresent(Int64.self, forKey: .createTime) ?? 0
         duration = try container.decodeIfPresent(Double.self, forKey: .duration) ?? 0
+        
+        // Community Sharing Fields
+        playCount = try container.decodeIfPresent(Int.self, forKey: .playCount)
+        weekTag = try container.decodeIfPresent(String.self, forKey: .weekTag)
+        profileID = try container.decodeIfPresent(String.self, forKey: .profileID)
+        isPublic = try container.decodeIfPresent(Bool.self, forKey: .isPublic)
+        likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount)
     }
     
     // Default init for creating SunoData manually
@@ -132,7 +151,12 @@ struct SunoData: Codable, Identifiable, Equatable {
         title: String = "",
         tags: String = "",
         createTime: Int64 = 0,
-        duration: Double = 0
+        duration: Double = 0,
+        playCount: Int? = 0,
+        weekTag: String? = nil,
+        profileID: String? = nil,
+        isPublic: Bool? = false,
+        likeCount: Int? = 0
     ) {
         self.id = id
         self.audioUrl = audioUrl
@@ -147,6 +171,12 @@ struct SunoData: Codable, Identifiable, Equatable {
         self.tags = tags
         self.createTime = createTime
         self.duration = duration
+        
+        self.playCount = playCount
+        self.weekTag = weekTag
+        self.profileID = profileID
+        self.isPublic = isPublic
+        self.likeCount = likeCount
     }
     
     static func == (lhs: SunoData, rhs: SunoData) -> Bool {

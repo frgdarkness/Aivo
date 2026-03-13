@@ -135,6 +135,9 @@ class MusicPlayer: NSObject, ObservableObject {
         // Use new Engine Setup
         setupAudio(with: audioURL, songRaw: song)
         updateNowPlayingInfo()
+        
+        // Increment play count in Firestore for community songs
+        FirestoreService.shared.incrementPlayCount(songID: song.id)
     }
     
     /// Play current song

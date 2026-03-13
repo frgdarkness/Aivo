@@ -171,7 +171,19 @@ class BackgroundGenerationManager: ObservableObject {
 
                     // Log output to Firebase
                     Task {
+                        // Log to Realtime Database for raw response backup
                         try? await FirebaseRealtimeService.shared.logGeneratedSong(jsonString: jsonString)
+                        
+                        // Save each song to Firestore for community-ready library
+                        let isAutoShare = LocalStorageManager.shared.autoShareEnabled
+                        for song in savedSongs {
+                            do {
+                                try await FirestoreService.shared.saveSongToFirestore(song, isPublic: isAutoShare)
+                                Logger.d("✅ [BackgroundManager] Auto-saved \(song.title) to Firestore (public: \(isAutoShare))", file: "BackgroundGenerationManager.swift")
+                            } catch {
+                                Logger.e("❌ [BackgroundManager] Failed to auto-save \(song.title) to Firestore: \(error)", file: "BackgroundGenerationManager.swift")
+                            }
+                        }
                     }
                     
                     // Try to show rating dialog

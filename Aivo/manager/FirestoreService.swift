@@ -12,6 +12,7 @@ final class FirestoreService: ObservableObject {
     private let usersCollection = "users"
     private let purchasesCollection = "purchases"
     private let usernamesCollection = "usernames" // Collection for unique usernames
+    private let songsCollection = "shared_songs"   // Collection for community shared songs
     
     @Published var currentProfile: UserProfile?
     
@@ -120,6 +121,114 @@ final class FirestoreService: ObservableObject {
         Logger.d("✅ Firestore: Username updated successfully")
     }
     
+    // MARK: - Community Song Sharing
+    
+    /// Save a song to Firestore (either private or shared)
+    func saveSongToFirestore(_ song: SunoData, isPublic: Bool = false) async throws {
+        ensureFirebaseConfigured()
+        Logger.d("🔥 Firestore: Saving song \(song.id) to Firestore (isPublic: \(isPublic))")
+        
+        var songToSave = song
+        
+        // Ensure profileID is set if possible
+        if songToSave.profileID == nil {
+            if let profileID = currentProfile?.profileID {
+                songToSave.profileID = profileID
+            } else {
+                songToSave.profileID = try? await LocalStorageManager.shared.getOrCreateProfileID()
+            }
+        }
+        
+        // Ensure weekTag is set
+        if songToSave.weekTag == nil {
+            songToSave.weekTag = DateUtils.getCurrentWeekTag()
+        }
+        
+        // Set public status if explicitly provided or keep existing
+        if isPublic {
+            songToSave.isPublic = true
+        } else if songToSave.isPublic == nil {
+            songToSave.isPublic = false
+        }
+        
+        // Initialize other fields if missing
+        if songToSave.playCount == nil { songToSave.playCount = 0 }
+        if songToSave.likeCount == nil { songToSave.likeCount = 0 }
+        
+        let songRef = db.collection(songsCollection).document(songToSave.id)
+        let data = try mapFromSunoData(songToSave)
+        
+        try await songRef.setData(data, merge: true)
+        Logger.d("✅ Firestore: Song saved successfully")
+    }
+    
+    /// Share a song to the community
+    func shareSongToCommunity(_ song: SunoData) async throws {
+        try await saveSongToFirestore(song, isPublic: true)
+    }
+    
+    /// Increment play count for a song
+    func incrementPlayCount(songID: String) {
+        ensureFirebaseConfigured()
+        let songRef = db.collection(songsCollection).document(songID)
+        songRef.updateData([
+            "playCount": FieldValue.increment(Int64(1))
+        ]) { error in
+            if let error = error as NSError?, error.domain == FirestoreErrorDomain, error.code == 5 {
+                // Silently ignore - song is not in Firestore (likely private/intro song)
+                return
+            }
+            if let error = error {
+                Logger.e("❌ Firestore: Failed to increment playCount for \(songID): \(error)")
+            } else {
+                Logger.d("✅ Firestore: playCount incremented for \(songID)")
+            }
+        }
+    }
+    
+    /// Fetch hottest songs of the week
+    func fetchHottestSongs(weekTag: String? = nil, limit: Int = 10) async throws -> [SunoData] {
+        ensureFirebaseConfigured()
+        let targetWeek = weekTag ?? DateUtils.getCurrentWeekTag()
+        Logger.d("🔥 Firestore: Fetching hottest songs for \(targetWeek)")
+        
+        let query = db.collection(songsCollection)
+            .whereField("isPublic", isEqualTo: true)
+            .whereField("weekTag", isEqualTo: targetWeek)
+            .order(by: "playCount", descending: true)
+            .limit(to: limit)
+            
+        let snapshot = try await query.getDocuments()
+        Logger.d("🔥 Firestore: Hottest query returned \(snapshot.documents.count) docs")
+        
+        // Debug check
+        let allDocsS = try? await db.collection(songsCollection).limit(to: 5).getDocuments()
+        if let docs = allDocsS?.documents {
+            Logger.d("🔥 Firestore: Found \(docs.count) sample docs in total")
+            for doc in docs {
+                let d = doc.data()
+                Logger.d("📝 Sample Song \(doc.documentID): isPublic=\(d["isPublic"] ?? "nil"), weekTag=\(d["weekTag"] ?? "nil")")
+            }
+        }
+
+        return snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
+    }
+    
+    /// Fetch newest shared songs
+    func fetchNewSongs(limit: Int = 10) async throws -> [SunoData] {
+        ensureFirebaseConfigured()
+        Logger.d("🔥 Firestore: Fetching newest community songs")
+        
+        let query = db.collection(songsCollection)
+            .whereField("isPublic", isEqualTo: true)
+            .order(by: "createTime", descending: true)
+            .limit(to: limit)
+            
+        let snapshot = try await query.getDocuments()
+        Logger.d("🔥 Firestore: Newest query returned \(snapshot.documents.count) docs")
+        return snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
+    }
+    
     // MARK: - Purchase History
     
     /// Log a purchase to the user's sub-collection
@@ -154,6 +263,17 @@ final class FirestoreService: ObservableObject {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .secondsSince1970
         let data = try encoder.encode(profile)
+        return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
+    }
+    
+    // SunoData Mapping
+    private func mapToSunoData(data: [String: Any]) throws -> SunoData {
+        let jsonData = try JSONSerialization.data(withJSONObject: data)
+        return try JSONDecoder().decode(SunoData.self, from: jsonData)
+    }
+    
+    private func mapFromSunoData(_ song: SunoData) throws -> [String: Any] {
+        let data = try JSONEncoder().encode(song)
         return try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
     }
 }

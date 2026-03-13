@@ -233,6 +233,9 @@ extension FirebaseLogger {
     // Export Events
     static let EVENT_EXPORT_SONG = "event_export_song"
     
+    // Community Sharing Events
+    static let EVENT_SHARE_SONG_COMMUNITY = "event_share_song_community"
+    
     // Purchase Events
     static let EVENT_BUY_CREDIT = "event_buy_credit"
     static let EVENT_BUY_SUBSCRIPTION = "event_buy_subscription"

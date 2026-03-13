@@ -30,6 +30,11 @@ struct ExploreTabViewNew: View {
     @State private var showSubscription = false
     @State private var songsForYou: [SunoData] = []
     
+    // Community Sharing
+    @State private var communityHottestSongs: [SunoData] = []
+    @State private var communityNewestSongs: [SunoData] = []
+    @State private var isFetchingCommunity = false
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
@@ -47,6 +52,21 @@ struct ExploreTabViewNew: View {
                         },
                         onSeeAll: {
                             selectedThemeList = ThemeList(title: "Songs For You", songs: songsForYou)
+                        }
+                    )
+                }
+                
+                // Community Hottest Section
+                if !communityHottestSongs.isEmpty {
+                    CommunityHottestSection(
+                        songs: communityHottestSongs,
+                        onPlay: { song in
+                            if let index = communityHottestSongs.firstIndex(where: { $0.id == song.id }) {
+                                selectedSongForPlayback = SongPlaybackItem(songs: communityHottestSongs, initialIndex: index)
+                            }
+                        },
+                        onSeeAll: {
+                            selectedThemeList = ThemeList(title: "Weekly Top 10", songs: communityHottestSongs)
                         }
                     )
                 }
@@ -69,6 +89,21 @@ struct ExploreTabViewNew: View {
                 // News Section
                 newsSection
                 
+                // Community Newest Section
+                if !communityNewestSongs.isEmpty {
+                    CommunityNewestSection(
+                        songs: communityNewestSongs,
+                        onPlay: { song in
+                            if let index = communityNewestSongs.firstIndex(where: { $0.id == song.id }) {
+                                selectedSongForPlayback = SongPlaybackItem(songs: communityNewestSongs, initialIndex: index)
+                            }
+                        },
+                        onSeeAll: {
+                            selectedThemeList = ThemeList(title: "New from the Community", songs: communityNewestSongs)
+                        }
+                    )
+                }
+                
                 // Genre Sections
                 genreSections
             }
@@ -87,6 +122,32 @@ struct ExploreTabViewNew: View {
         }
         .onAppear {
             loadSongStatus()
+            fetchCommunitySongs()
+        }
+    }
+    
+    // MARK: - Community Songs Fetching
+    private func fetchCommunitySongs() {
+        guard !isFetchingCommunity else { return }
+        isFetchingCommunity = true
+        
+        Task {
+            do {
+                let hottest = try await FirestoreService.shared.fetchHottestSongs(limit: 10)
+                let newest = try await FirestoreService.shared.fetchNewSongs(limit: 10)
+                
+                await MainActor.run {
+                    self.communityHottestSongs = hottest
+                    self.communityNewestSongs = newest
+                    self.isFetchingCommunity = false
+                    Logger.d("✅ [Explore] Fetched community songs: \(hottest.count) hot, \(newest.count) new")
+                }
+            } catch {
+                await MainActor.run {
+                    self.isFetchingCommunity = false
+                    Logger.e("❌ [Explore] Error fetching community songs: \(error)")
+                }
+            }
         }
     }
     
@@ -763,10 +824,131 @@ struct NewsCardView: View {
     }
 }
 
+// MARK: - Community Sections
+struct CommunityHottestSection: View {
+    let songs: [SunoData]
+    let onPlay: (SunoData) -> Void
+    let onSeeAll: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Weekly Top 10")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: onSeeAll) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AivoTheme.Primary.orange)
+                }
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(songs) { song in
+                        CommunitySongCard(song: song) {
+                            onPlay(song)
+                        }
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+    }
+}
+
+struct CommunityNewestSection: View {
+    let songs: [SunoData]
+    let onPlay: (SunoData) -> Void
+    let onSeeAll: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("New from the Community")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Button(action: onSeeAll) {
+                    Text("See All")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(AivoTheme.Primary.orange)
+                }
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    ForEach(songs) { song in
+                        CommunitySongCard(song: song) {
+                            onPlay(song)
+                        }
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
+    }
+}
+
+struct CommunitySongCard: View {
+    let song: SunoData
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 8) {
+                ZStack(alignment: .bottomTrailing) {
+                    AsyncImage(url: URL(string: song.imageUrl)) { image in
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } placeholder: {
+                        Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
+                    }
+                    .frame(width: 140, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    
+                    // Play Count Badge
+                    HStack(spacing: 4) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 10))
+                        Text("\(song.playCount ?? 0)")
+                            .font(.system(size: 10, weight: .bold))
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.6))
+                    .foregroundColor(.white)
+                    .clipShape(Capsule())
+                    .padding(8)
+                }
+                
+                Text(song.title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                Text(song.modelName)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.6))
+                    .lineLimit(1)
+            }
+            .frame(width: 140)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
 // MARK: - Preview
 struct ExploreTabViewNew_Previews: PreviewProvider {
     static var previews: some View {
         ExploreTabViewNew()
+        // - [x] Integrate `incrementPlayCount` in `MusicPlayer` `[x]`
+        // - [x] Update `ExploreTabViewNew` to show community categories `[x]`
+        // - [x] Final walkthrough and verification `[x]`
             .background(AivoSunsetBackground())
     }
 }

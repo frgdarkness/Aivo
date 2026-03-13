@@ -39,6 +39,11 @@ struct PlayMySongScreen: View {
     @State private var lyricSentences: [LyricSentence] = []
     @State private var currentSentenceIndex: Int = 0
     @State private var cachedCoverImageURL: URL?
+    
+    // Community Sharing
+    @State private var isSharing = false
+    @State private var showShareSuccess = false
+    @State private var shareError: String? = nil
 
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
@@ -182,9 +187,33 @@ struct PlayMySongScreen: View {
             // Update current sentence based on playback time
             updateCurrentSentence(for: currentTime)
         }
-        .onChange(of: musicPlayer.currentSong) { _ in
-            // Force refresh UI when MusicPlayer changes song
-            // This helps update cover image when playing next song
+        .overlay {
+            VStack {
+                Spacer()
+                if showShareSuccess {
+                    Text("Song shared to community! 🎉")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.green.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 100)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                if let error = shareError {
+                    Text(error)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 12)
+                        .background(Color.red.opacity(0.8))
+                        .cornerRadius(8)
+                        .padding(.bottom, 100)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
     }
 
@@ -397,6 +426,30 @@ struct PlayMySongScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
             }
+
+            Divider().background(Color.white.opacity(0.2))
+
+            Button {
+                shareToCommunity()
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+                    showMenu = false
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    if isSharing {
+                        ProgressView().tint(.white).scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "globe").font(.system(size: 16))
+                    }
+                    Text("Share to Community")
+                        .font(.system(size: 16, weight: .medium))
+                        .multilineTextAlignment(.leading)
+                }
+                .foregroundColor(AivoTheme.Primary.orange)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            }
+            .disabled(isSharing)
 
             Divider().background(Color.white.opacity(0.2))
 
@@ -1143,7 +1196,54 @@ struct PlayMySongScreen: View {
         let m = Int(t) / 60, s = Int(t) % 60
         return String(format: "%d:%02d", m, s)
     }
-
+    
+    private func shareToCommunity() {
+        guard let song = currentSong else { return }
+        
+        isSharing = true
+        shareError = nil
+        
+        Task {
+            do {
+                try await FirestoreService.shared.shareSongToCommunity(song)
+                await MainActor.run {
+                    isSharing = false
+                    withAnimation {
+                        showShareSuccess = true
+                    }
+                    
+                    // Log sharing event
+                    AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_SHARE_SONG_COMMUNITY, parameters: [
+                        "song_id": song.id,
+                        "song_title": song.title,
+                        "timestamp": Date().timeIntervalSince1970
+                    ])
+                    
+                    // Hide success message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation {
+                            showShareSuccess = false
+                        }
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isSharing = false
+                    withAnimation {
+                        shareError = "Failed to share: \(error.localizedDescription)"
+                    }
+                    
+                    // Hide error message after 3 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        withAnimation {
+                            shareError = nil
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     private func deleteCurrentSong() {
         guard let song = currentSong else { return }
         Task {
