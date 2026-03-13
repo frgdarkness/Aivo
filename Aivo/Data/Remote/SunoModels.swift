@@ -102,10 +102,11 @@ struct SunoData: Codable, Identifiable, Equatable {
     var profileID: String?
     var isPublic: Bool?
     var likeCount: Int?
+    var username: String?
     
     enum CodingKeys: String, CodingKey {
         case id, audioUrl, sourceAudioUrl, streamAudioUrl, sourceStreamAudioUrl, imageUrl, sourceImageUrl, prompt, modelName, title, tags, createTime, duration
-        case playCount, weekTag, profileID, isPublic, likeCount
+        case playCount, weekTag, profileID, isPublic, likeCount, username
     }
     
     // Custom Decodable init to handle missing fields with default values
@@ -135,6 +136,7 @@ struct SunoData: Codable, Identifiable, Equatable {
         profileID = try container.decodeIfPresent(String.self, forKey: .profileID)
         isPublic = try container.decodeIfPresent(Bool.self, forKey: .isPublic)
         likeCount = try container.decodeIfPresent(Int.self, forKey: .likeCount)
+        username = try container.decodeIfPresent(String.self, forKey: .username)
     }
     
     // Default init for creating SunoData manually
@@ -156,7 +158,8 @@ struct SunoData: Codable, Identifiable, Equatable {
         weekTag: String? = nil,
         profileID: String? = nil,
         isPublic: Bool? = false,
-        likeCount: Int? = 0
+        likeCount: Int? = 0,
+        username: String? = "Aivo Music"
     ) {
         self.id = id
         self.audioUrl = audioUrl
@@ -177,6 +180,7 @@ struct SunoData: Codable, Identifiable, Equatable {
         self.profileID = profileID
         self.isPublic = isPublic
         self.likeCount = likeCount
+        self.username = username ?? "Aivo Music"
     }
     
     static func == (lhs: SunoData, rhs: SunoData) -> Bool {

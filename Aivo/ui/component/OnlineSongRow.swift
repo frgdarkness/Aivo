@@ -30,7 +30,7 @@ struct OnlineSongRow: View {
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
-                Text(song.modelName)
+                Text(song.username ?? "Aivo Music")
                     .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.7))
                     .lineLimit(1)

@@ -19,7 +19,7 @@ struct PlaylistRowView: View {
                         .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
                         .lineLimit(1)
                     
-                    Text(song.modelName)
+                    Text(song.username ?? "Aivo Music")
                         .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)

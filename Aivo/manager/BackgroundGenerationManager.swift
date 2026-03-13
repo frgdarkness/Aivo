@@ -176,10 +176,12 @@ class BackgroundGenerationManager: ObservableObject {
                         
                         // Save each song to Firestore for community-ready library
                         let isAutoShare = LocalStorageManager.shared.autoShareEnabled
-                        for song in savedSongs {
+                        let userName = LocalStorageManager.shared.localProfile?.userName ?? "Aivo Music"
+                        for var song in savedSongs {
+                            song.username = userName
                             do {
                                 try await FirestoreService.shared.saveSongToFirestore(song, isPublic: isAutoShare)
-                                Logger.d("✅ [BackgroundManager] Auto-saved \(song.title) to Firestore (public: \(isAutoShare))", file: "BackgroundGenerationManager.swift")
+                                Logger.d("✅ [BackgroundManager] Auto-saved \(song.title) to Firestore (public: \(isAutoShare)) with username: \(userName)", file: "BackgroundGenerationManager.swift")
                             } catch {
                                 Logger.e("❌ [BackgroundManager] Failed to auto-save \(song.title) to Firestore: \(error)", file: "BackgroundGenerationManager.swift")
                             }

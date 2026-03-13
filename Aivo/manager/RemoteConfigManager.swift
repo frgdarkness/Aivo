@@ -20,6 +20,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var hottestList: [SunoData] = []
     @Published var newList: [SunoData] = []
     @Published var trendingList: [SunoData] = []
+    @Published var bestAivoSongsList: [SunoData] = []
     @Published var allSongsList: [SunoData] = []
     @Published var subscriptionSongsList: [SunoData] = []
     @Published var coverModelList: [CoverSongModel] = []
@@ -189,6 +190,16 @@ class RemoteConfigManager: ObservableObject {
             } else {
                 trendingList = loadSunoDataFromResource(filename: "trending_songs")
                 Logger.d("### RemoteConfigManager: Loaded \(newList.count) trending songs from resource")
+            }
+            
+            // Build best aivo songs
+            if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "BEST_AIVO_SONGS").stringValue) {
+                bestAivoSongsList = songs
+                Logger.d("### RemoteConfigManager: Loaded \(songs.count) best aivo songs from remote config")
+            } else {
+                // Use trending as fallback or empty
+                bestAivoSongsList = loadSunoDataFromResource(filename: "trending_songs")
+                Logger.d("### RemoteConfigManager: Loaded fallback best aivo songs from resource")
             }
             
             if let songs = parseSunoDataList(from: remoteConfig.configValue(forKey: "ALL_SONGS").stringValue) {

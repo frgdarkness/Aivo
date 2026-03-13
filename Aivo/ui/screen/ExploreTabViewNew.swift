@@ -41,20 +41,25 @@ struct ExploreTabViewNew: View {
                 // Header
                 //headerView
                 
-                // Songs For You Section
-                if !songsForYou.isEmpty {
+                // AIVO BILLBOARD Section
+                if !remoteConfig.bestAivoSongsList.isEmpty {
                     SongsForYouSection(
-                        songs: Array(songsForYou.prefix(4)),
+                        title: "AIVO BILLBOARD",
+                        songs: Array(remoteConfig.bestAivoSongsList.prefix(4)),
                         onPlay: { song in
-                            if let index = songsForYou.firstIndex(where: { $0.id == song.id }) {
-                                selectedSongForPlayback = SongPlaybackItem(songs: songsForYou, initialIndex: index)
+                            if let index = remoteConfig.bestAivoSongsList.firstIndex(where: { $0.id == song.id }) {
+                                selectedSongForPlayback = SongPlaybackItem(songs: remoteConfig.bestAivoSongsList, initialIndex: index)
                             }
                         },
                         onSeeAll: {
-                            selectedThemeList = ThemeList(title: "Songs For You", songs: songsForYou)
+                            selectedThemeList = ThemeList(title: "AIVO BILLBOARD", songs: remoteConfig.bestAivoSongsList)
                         }
                     )
                 }
+                
+                // Songs For You Section (Optional, keeping it below if needed, or removing)
+                // if !songsForYou.isEmpty { ... }
+                
                 
                 // Community Hottest Section
                 if !communityHottestSongs.isEmpty {
@@ -89,20 +94,6 @@ struct ExploreTabViewNew: View {
                 // News Section
                 newsSection
                 
-                // Community Newest Section
-                if !communityNewestSongs.isEmpty {
-                    CommunityNewestSection(
-                        songs: communityNewestSongs,
-                        onPlay: { song in
-                            if let index = communityNewestSongs.firstIndex(where: { $0.id == song.id }) {
-                                selectedSongForPlayback = SongPlaybackItem(songs: communityNewestSongs, initialIndex: index)
-                            }
-                        },
-                        onSeeAll: {
-                            selectedThemeList = ThemeList(title: "New from the Community", songs: communityNewestSongs)
-                        }
-                    )
-                }
                 
                 // Genre Sections
                 genreSections
@@ -310,7 +301,7 @@ struct ExploreTabViewNew: View {
                 Spacer()
                 
                 Button(action: {
-                    selectedThemeList = ThemeList(title: "News", songs: remoteConfig.newList)
+                    selectedThemeList = ThemeList(title: "News", songs: communityNewestSongs)
                 }) {
                     Text("See All")
                         .font(.system(size: 14, weight: .medium))
@@ -322,20 +313,23 @@ struct ExploreTabViewNew: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 VStack(spacing: 16) {
                     // Split into rows of 5 items each
-                    let newsSongs = Array(remoteConfig.newList.prefix(15)) // 3 rows × 5 columns = 15 max
+                    let newsSongs = Array(communityNewestSongs.prefix(15)) // 3 rows × 5 columns = 15 max
+                    let rowCount = (newsSongs.count + 4) / 5
                     
-                    ForEach(0..<3) { rowIndex in
+                    ForEach(0..<rowCount, id: \.self) { rowIndex in
                         HStack(spacing: 32) {
                             let startIndex = rowIndex * 5
                             let endIndex = min(startIndex + 5, newsSongs.count)
                             
-                            ForEach(startIndex..<endIndex, id: \.self) { index in
-                                let song = newsSongs[index]
-                                NewsCardView(
-                                    song: song,
-                                    status: songStatusMap[song.id]
-                                ) {
-                                    selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
+                            if startIndex < endIndex {
+                                ForEach(startIndex..<endIndex, id: \.self) { index in
+                                    let song = newsSongs[index]
+                                    NewsCardView(
+                                        song: song,
+                                        status: songStatusMap[song.id]
+                                    ) {
+                                        selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
+                                    }
                                 }
                             }
                         }
@@ -762,18 +756,10 @@ struct NewsCardView: View {
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.6))
                         
-                        Text(song.modelName)
+                        Text(song.username ?? "Aivo Music")
                             .font(.system(size: 11, weight: .regular))
                             .foregroundColor(.white.opacity(0.7))
                             .lineLimit(1)
-                        
-                        Image(systemName: "headphones")
-                            .font(.system(size: 10))
-                            .foregroundColor(.white.opacity(0.6))
-                        
-                        Text(formatCount(status?.playCount ?? 0))
-                            .font(.system(size: 11, weight: .regular))
-                            .foregroundColor(.white.opacity(0.6))
                     }
                     
                     // Row 3: Tags
@@ -786,13 +772,13 @@ struct NewsCardView: View {
                 
                 //Spacer()
                 
-                // Like Section (Right)
+                // Play Count Section (Right)
                 VStack(spacing: 4) {
-                    Image(systemName: "heart.fill")
-                        .font(.system(size: 16))
+                    Image(systemName: "headphones")
+                        .font(.system(size: 14))
                         .foregroundColor(.white.opacity(0.8))
                     
-                    Text(formatCount(status?.likeCount ?? 0))
+                    Text(formatCount(status?.playCount ?? song.playCount ?? 0))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
@@ -848,8 +834,8 @@ struct CommunityHottestSection: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
-                    ForEach(songs) { song in
-                        CommunitySongCard(song: song) {
+                    ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
+                        CommunitySongCard(song: song, rank: index + 1) {
                             onPlay(song)
                         }
                     }
@@ -860,44 +846,17 @@ struct CommunityHottestSection: View {
     }
 }
 
-struct CommunityNewestSection: View {
-    let songs: [SunoData]
-    let onPlay: (SunoData) -> Void
-    let onSeeAll: () -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("New from the Community")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Button(action: onSeeAll) {
-                    Text("See All")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AivoTheme.Primary.orange)
-                }
-            }
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    ForEach(songs) { song in
-                        CommunitySongCard(song: song) {
-                            onPlay(song)
-                        }
-                    }
-                }
-                .padding(.horizontal, 2)
-            }
-        }
-    }
-}
 
 struct CommunitySongCard: View {
     let song: SunoData
+    let rank: Int?
     let onTap: () -> Void
+    
+    init(song: SunoData, rank: Int? = nil, onTap: @escaping () -> Void) {
+        self.song = song
+        self.rank = rank
+        self.onTap = onTap
+    }
     
     var body: some View {
         Button(action: onTap) {
@@ -911,7 +870,19 @@ struct CommunitySongCard: View {
                     .frame(width: 140, height: 140)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     
-                    // Play Count Badge
+                    // Rank Label (Bottom-Left)
+                    if let rank = rank {
+                        Text("#\(rank)")
+                            .font(.system(size: 38, weight: .black))
+                            .italic()
+                            .foregroundColor(AivoTheme.Primary.orange)
+                            .shadow(color: .black.opacity(0.8), radius: 4, x: 2, y: 2)
+                            .padding(.leading, 8)
+                            .padding(.bottom, 0)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                    }
+                    
+                    // Play Count Badge (Bottom-Right)
                     HStack(spacing: 4) {
                         Image(systemName: "play.fill")
                             .font(.system(size: 10))
@@ -931,7 +902,7 @@ struct CommunitySongCard: View {
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
-                Text(song.modelName)
+                Text(song.username ?? "Aivo Music")
                     .font(.system(size: 12))
                     .foregroundColor(.white.opacity(0.6))
                     .lineLimit(1)
@@ -1007,6 +978,7 @@ struct DiscountAdView: View {
 }
 
 struct SongsForYouSection: View {
+    let title: String
     let songs: [SunoData]
     let onPlay: (SunoData) -> Void
     let onSeeAll: () -> Void
@@ -1014,10 +986,10 @@ struct SongsForYouSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: "person.circle.fill")
+                Image(systemName: title.contains("Community") ? "globe" : "person.circle.fill")
                     .font(.system(size: 20))
-                    .foregroundColor(.white)
-                Text("Songs For You")
+                    .foregroundColor(AivoTheme.Primary.orange)
+                Text(title)
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
@@ -1042,7 +1014,7 @@ struct SongsForYouSection: View {
                 .fill(Color.white.opacity(0.05))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.05), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
                 )
         )
     }
@@ -1070,7 +1042,7 @@ struct SongForYouRow: View {
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
-                Text(song.modelName)
+                Text(song.username ?? "Aivo Music")
                     .font(.system(size: 13))
                     .foregroundColor(.gray)
                     .lineLimit(1)
