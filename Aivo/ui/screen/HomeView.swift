@@ -268,12 +268,7 @@ struct HomeView: View {
                 .shadow(color: .black.opacity(0.3), radius: 10, x: 0, y: -5)
         )
         .fullScreenCover(isPresented: $showSubscription) {
-            SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
+            SubscriptionView()
         }
         .fullScreenCover(isPresented: $showFullPlayer) {
              PlayMySongScreen(

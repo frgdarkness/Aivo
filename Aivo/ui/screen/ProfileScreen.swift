@@ -124,7 +124,7 @@ struct ProfileScreen: View {
              editingUserName = userName
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreen()
+            SubscriptionView()
         }
         .sheet(isPresented: $showLanguageScreen) {
             SelectLanguageScreen { _ in
@@ -346,9 +346,7 @@ struct ProfileScreen: View {
         VStack(spacing: 12) {
             // Membership Row - VIP icon và tên gói bên phải
             Button(action: {
-                if subscriptionManager.isPremium {
-                    showSubscriptionScreen = true
-                }
+                showSubscriptionScreen = true
             }) {
                 premiumBadgeRow
             }
@@ -410,8 +408,7 @@ struct ProfileScreen: View {
             .padding(12)
             .background(Color.gray.opacity(0.25))
             .cornerRadius(12)
-            .opacity(subscriptionManager.isPremium ? 1.0 : 0.5)
-            .disabled(!subscriptionManager.isPremium)
+            .opacity(subscriptionManager.isPremium ? 1.0 : 0.8)
         }
         .padding(16)
         .background(Color.gray.opacity(0.15))

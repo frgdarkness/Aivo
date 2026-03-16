@@ -384,7 +384,16 @@ struct PlayOnlineSongScreen: View {
     private var seekBarView: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .leading) {
-                // Buffer Track (behind slider)
+                // Background Track (dark gray - always visible, shows unloaded portion)
+                GeometryReader { geo in
+                    Capsule()
+                        .fill(Color.white.opacity(0.15))
+                        .frame(width: geo.size.width, height: 4)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
+                }
+                .frame(height: 20)
+                
+                // Buffer Track (lighter gray - shows loaded/buffered portion)
                 GeometryReader { geo in
                     let duration = max(0.1, streamPlayer.duration)
                     

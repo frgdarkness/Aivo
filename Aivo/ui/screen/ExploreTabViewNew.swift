@@ -111,7 +111,7 @@ struct ExploreTabViewNew: View {
             OnlineSongListView(title: themeList.title, songs: themeList.songs)
         }
         .fullScreenCover(isPresented: $showSubscription) {
-            SubscriptionScreen()
+            SubscriptionView()
         }
         .onAppear {
             loadSongStatus()

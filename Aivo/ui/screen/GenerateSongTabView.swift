@@ -166,12 +166,7 @@ struct GenerateSongTabView: View {
             GenerateLyricsScreen(lyrics: $songLyrics, songName: $songName)
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
+            SubscriptionView()
         }
         .alert("Content Policy Violation", isPresented: $showArtistNameAlert) {
             Button("OK", role: .cancel) { }

@@ -150,12 +150,7 @@ struct GenerateSunoSongResultScreen: View {
             Text("\(downloadingSongs.count) song(s) are still downloading. Do you want to exit anyway?")
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
+            SubscriptionView()
         }
         
         .overlay {

@@ -65,7 +65,7 @@ struct RootView: View {
                 .transition(.pushFromRight)
                 
             case .subscription:
-                SubscriptionScreenIntro {
+                SubscriptionView {
                     // When subscription screen is dismissed (user taps X), navigate to home
                     // This allows user to skip subscription and use app with limited features
                     withAnimation(.easeInOut(duration: 0.3)) {

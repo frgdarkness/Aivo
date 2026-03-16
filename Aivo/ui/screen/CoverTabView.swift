@@ -120,12 +120,7 @@ struct CoverTabView: View {
             }
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
+            SubscriptionView()
         }
         .fullScreenCover(isPresented: $showModelSelectionScreen) {
             SelectModelScreen(

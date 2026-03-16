@@ -15,6 +15,7 @@ struct SubscriptionScreen: View {
     @State private var purchaseErrorMessage = ""
     @State private var buttonScale: CGFloat = 1.0
     @State private var glowIntensity: Double = 0.5
+    @State private var showBuyCreditDialog = false
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -28,23 +29,36 @@ struct SubscriptionScreen: View {
 
             VStack(spacing: 0) {
                 header
-                Spacer(minLength: 20)
+                Spacer(minLength: 6)
                 
-                if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
-                    // Active subscription view
-                    activeSubscriptionView(subscription: currentSub)
-                } else {
-                    // Purchase view
-                    purchaseView
+                // Scrollable content area
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        // Cover tròn hiển thị tĩnh
+                        coverImage
+                            .padding(.top, 2)
+                            .padding(.bottom, 20)
+                        
+                        if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
+                            // Active subscription view
+                            activeSubscriptionView(subscription: currentSub)
+                        } else {
+                            // Purchase view
+                            purchaseView
+                        }
+                    }
+                    .padding(.horizontal, 20)
                 }
                 
+                // Footer
                 footer
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
             }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 24)
         }
         .ignoresSafeArea()
         .background(AivoTheme.Background.primary.ignoresSafeArea())
+        .buyCreditDialog(isPresented: $showBuyCreditDialog)
         .onAppear {
             // Log screen view
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_SUBSCRIPTION)
@@ -107,7 +121,7 @@ struct SubscriptionScreen: View {
                     Image("demo_cover")
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: geometry.size.width, height: geometry.size.height * 0.55, alignment: .center)
+                        .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                         .clipped()
 
                     Spacer()
@@ -118,7 +132,7 @@ struct SubscriptionScreen: View {
                     Spacer()
                     AivoTheme.Primary.blackOrangeDark
                         .opacity(0.9)
-                        .frame(height: geometry.size.height * 0.45)
+                        .frame(height: geometry.size.height * 0.4)
                 }
 
                 // Overlay đen dần từ đỉnh đến cuối (nhấn cam nhẹ)
@@ -136,7 +150,7 @@ struct SubscriptionScreen: View {
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.clear,
-                        AivoTheme.Primary.orange.opacity(0.08)
+                        AivoTheme.Primary.orange.opacity(0.18)
                     ]),
                     startPoint: .center,
                     endPoint: .bottom
@@ -144,6 +158,40 @@ struct SubscriptionScreen: View {
             }
             .ignoresSafeArea()
             .drawingGroup()
+        }
+    }
+
+    // MARK: - Cover Image
+    private var coverImage: some View {
+        ZStack {
+            // Background circle (mờ)
+            Circle()
+                .stroke(Color.white.opacity(0.2), lineWidth: 4)
+                .frame(width: 200, height: 200)
+            
+            // Progress circle (màu cam) - full circle for visual
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            AivoTheme.Primary.orange,
+                            AivoTheme.Secondary.goldenSun
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    style: StrokeStyle(lineWidth: 4, lineCap: .round)
+                )
+                .frame(width: 200, height: 200)
+                .rotationEffect(.degrees(-90))
+            
+            // Cover tròn
+            Image("cover_default_resize")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 190, height: 190)
+                .clipShape(Circle())
+                .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
         }
     }
 
@@ -239,45 +287,55 @@ struct SubscriptionScreen: View {
     
     // MARK: - Credit Info View (from CreditDialogModifier)
     private var creditInfoView: some View {
-        VStack(spacing: 16) {
-            // Coin icon + Credits count
-            VStack(spacing: 12) {
-//                HStack(spacing: 8) {
-//                    Text("Your credit:")
-//                        .font(.system(size: 16, weight: .medium))
-//                        .foregroundColor(.white)
-//                        .padding(.leading, 12)
-//                        //.padding(.top, 8)
-//                    Spacer()
-//                }
-                Image("icon_coin_512")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .shadow(radius: 8, y: 4)
-                
-                HStack(spacing: 8) {
-                    Text("\(creditManager.credits)")
-                        .font(.system(size: 42, weight: .bold))
-                        .foregroundColor(.white)
-                    Text("Credits")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white.opacity(0.9))
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 16) {
+                // Coin icon + Credits count
+                VStack(spacing: 12) {
+                    Image("icon_coin_512")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 80, height: 80)
+                        .shadow(radius: 8, y: 4)
+                    
+                    HStack(spacing: 8) {
+                        Text("\(creditManager.credits)")
+                            .font(.system(size: 42, weight: .bold))
+                            .foregroundColor(.white)
+                        Text("Credits")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                    }
                 }
             }
-            //.padding(.top, 20)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 28)
+            .padding(.top, 28)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color.white.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+            )
+            
+            // Add button ở góc trên phải
+            Button(action: {
+                showBuyCreditDialog = true
+            }) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .background(
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 28, height: 28)
+                    )
+                    .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 4, x: 0, y: 2)
+            }
+            .padding(.top, 12)
+            .padding(.trailing, 12)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.bottom, 28)
-        .padding(.top, 28)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.06))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                )
-        )
     }
     
     // Helper function to format date

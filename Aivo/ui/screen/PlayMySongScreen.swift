@@ -126,12 +126,7 @@ struct PlayMySongScreen: View {
             Text("Are you sure you want to delete this song? This action cannot be undone.")
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
+            SubscriptionView()
         }
         .sheet(isPresented: $showSleepTimer) {
              SleepTimerView()
@@ -677,21 +672,33 @@ struct PlayMySongScreen: View {
 
     private var seekBarView: some View {
         VStack(spacing: 0) {
-            Slider(
-                value: Binding(
-                    get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
-                    set: { v in if isScrubbing { scrubTime = v } else { musicPlayer.currentTime = v } }
-                ),
-                in: 0...max(0.1, musicPlayer.duration),
-                onEditingChanged: { editing in
-                    if editing {
-                        isScrubbing = true; scrubTime = musicPlayer.currentTime
-                    } else {
-                        isScrubbing = false; musicPlayer.seek(to: scrubTime)
-                    }
+            ZStack(alignment: .leading) {
+                // Background Track (dark gray - always visible)
+                GeometryReader { geo in
+                    Capsule()
+                        .fill(Color.white.opacity(0.15))
+                        .frame(width: geo.size.width, height: 4)
+                        .position(x: geo.size.width / 2, y: geo.size.height / 2)
                 }
-            )
-            .accentColor(AivoTheme.Primary.orange)
+                .frame(height: 20)
+                
+                // Native Slider
+                Slider(
+                    value: Binding(
+                        get: { isScrubbing ? scrubTime : musicPlayer.currentTime },
+                        set: { v in if isScrubbing { scrubTime = v } else { musicPlayer.currentTime = v } }
+                    ),
+                    in: 0...max(0.1, musicPlayer.duration),
+                    onEditingChanged: { editing in
+                        if editing {
+                            isScrubbing = true; scrubTime = musicPlayer.currentTime
+                        } else {
+                            isScrubbing = false; musicPlayer.seek(to: scrubTime)
+                        }
+                    }
+                )
+                .accentColor(AivoTheme.Primary.orange)
+            }
 
             HStack {
                 Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))

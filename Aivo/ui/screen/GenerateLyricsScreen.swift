@@ -170,7 +170,7 @@ struct GenerateLyricsScreen: View {
             )
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
-            SubscriptionScreenIntro()
+            SubscriptionView()
         }
         .fullScreenCover(isPresented: $showResultScreen) {
             GenerateLyricResultScreen(
