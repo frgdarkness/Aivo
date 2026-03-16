@@ -569,3 +569,13 @@ struct Song {
         coverImageName: "tokyo_cover"
     )
 }
+
+// MARK: - Weekly Board Model
+struct WeeklyBoard: Identifiable, Codable {
+    let id: String // weekTag (e.g., "2026-w11")
+    let title: String // Display title (e.g., "2026 week 11")
+    let songIDs: [String]
+    let timestamp: Int64
+    
+    var weekTag: String { id }
+}

@@ -28,6 +28,7 @@ struct ExploreTabViewNew: View {
     
     @State private var selectedThemeList: ThemeList?
     @State private var showSubscription = false
+    @State private var showWeeklyHistory = false
     @State private var songsForYou: [SunoData] = []
     
     // Community Sharing
@@ -71,7 +72,7 @@ struct ExploreTabViewNew: View {
                             }
                         },
                         onSeeAll: {
-                            selectedThemeList = ThemeList(title: "Weekly Top 10", songs: communityHottestSongs)
+                            showWeeklyHistory = true
                         }
                     )
                 }
@@ -113,6 +114,9 @@ struct ExploreTabViewNew: View {
         .fullScreenCover(isPresented: $showSubscription) {
             SubscriptionView()
         }
+        .fullScreenCover(isPresented: $showWeeklyHistory) {
+            WeeklyBoardHistoryScreen()
+        }
         .onAppear {
             loadSongStatus()
             fetchCommunitySongs()
@@ -120,11 +124,11 @@ struct ExploreTabViewNew: View {
     }
     
     // MARK: - Community Songs Fetching
-    private func fetchCommunitySongs() {
+    private func fetchCommunitySongs(force: Bool = false) {
         guard !isFetchingCommunity else { return }
         
-        // Check cache first
-        if let cache = LocalStorageManager.shared.getCommunityCache() {
+        // Check cache first (unless forced)
+        if !force, let cache = LocalStorageManager.shared.getCommunityCache() {
             let expirationTime: TimeInterval = 12 * 60 * 60 // 12 hours
             let cacheAge = Date().timeIntervalSince(cache.lastFetch)
             
@@ -152,7 +156,7 @@ struct ExploreTabViewNew: View {
                     
                     // Save to cache
                     LocalStorageManager.shared.saveCommunityCache(hottest: hottest, newest: newest)
-                    Logger.d("✅ [Explore] Fetched and cached community songs: \(hottest.count) hot, \(newest.count) new")
+                    Logger.d("✅ [Explore] Fetched and cached community songs: \(hottest.count) hot, \(newest.count) new (Force: \(force))")
                 }
             } catch {
                 await MainActor.run {
@@ -311,18 +315,29 @@ struct ExploreTabViewNew: View {
         }
     }
     
-    // MARK: - News Section
+    // MARK: - Community Newest Section (New from the Community)
     private var newsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("News")
+            HStack(spacing: 12) {
+                Text("New from the Community")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.white)
+                
+                Button(action: {
+                    fetchCommunitySongs(force: true)
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white.opacity(0.8))
+                        .rotationEffect(.degrees(isFetchingCommunity ? 360 : 0))
+                        .animation(isFetchingCommunity ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isFetchingCommunity)
+                }
+                .disabled(isFetchingCommunity)
                 
                 Spacer()
                 
                 Button(action: {
-                    selectedThemeList = ThemeList(title: "News", songs: communityNewestSongs)
+                    selectedThemeList = ThemeList(title: "New from the Community", songs: communityNewestSongs)
                 }) {
                     Text("See All")
                         .font(.system(size: 14, weight: .medium))
@@ -340,7 +355,7 @@ struct ExploreTabViewNew: View {
                 
                 let newsSongs = Array(communityNewestSongs.prefix(15))
                 
-                LazyHGrid(rows: rows, alignment: .top, spacing: 32) {
+                LazyHGrid(rows: rows, alignment: .top, spacing: 12) {
                     ForEach(Array(newsSongs.enumerated()), id: \.element.id) { index, song in
                         NewsCardView(
                             song: song,
@@ -348,7 +363,6 @@ struct ExploreTabViewNew: View {
                         ) {
                             selectedSongForPlayback = SongPlaybackItem(songs: newsSongs, initialIndex: index)
                         }
-                        .frame(width: 300) // Fixed width for alignment
                     }
                 }
                 .padding(.horizontal, 4)
@@ -722,7 +736,7 @@ struct NewsCardView: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 // Cover Image with Play Icon (Left)
                 ZStack {
                     AsyncImage(url: getImageURL(for: song)) { phase in
@@ -767,7 +781,7 @@ struct NewsCardView: View {
                         .truncationMode(.tail)
                     
                     // Row 2: Model Name + Play Count
-                    HStack(spacing: 8) {
+                    HStack(spacing: 4) {
                         Image(systemName: "person.fill")
                             .font(.system(size: 10))
                             .foregroundColor(.white.opacity(0.6))
@@ -785,8 +799,9 @@ struct NewsCardView: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
-                //Spacer()
+                Spacer(minLength: 8)
                 
                 // Play Count Section (Right)
                 VStack(spacing: 4) {
@@ -798,9 +813,11 @@ struct NewsCardView: View {
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
+                .frame(width: 44) // Constant width for right side
             }
-            .frame(width: 300)
+            .frame(width: 280) // Fixed card width for alignment
             .padding(.vertical, 8)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }

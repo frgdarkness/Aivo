@@ -15,6 +15,8 @@ final class LocalStorageManager: ObservableObject {
     private let newestCacheKey = "CachedNewestSongs"
     private let lastFetchKey = "LastCommunityFetchTime"
     private let sharedSongIDsKey = "SharedSongIDs"
+    private let weeklyBoardHistoryKey = "WeeklyBoardHistory"
+    private let weeklySongsCachePrefix = "WeeklySongs_"
     
     @Published var localProfile: UserProfile?
     @Published var hasRemoteProfile = false
@@ -412,5 +414,36 @@ final class LocalStorageManager: ObservableObject {
     
     func isSongShared(id: String) -> Bool {
         return sharedSongIDs.contains(id)
+    }
+    
+    // MARK: - Weekly Board Caching
+    
+    func saveWeeklyBoardHistory(_ history: [[String: Any]]) {
+        userDefaults.set(history, forKey: weeklyBoardHistoryKey)
+        Logger.d("💾 Weekly board history cached (\(history.count) items)")
+    }
+    
+    func getWeeklyBoardHistory() -> [[String: Any]]? {
+        return userDefaults.array(forKey: weeklyBoardHistoryKey) as? [[String: Any]]
+    }
+    
+    func saveWeeklySongs(weekTag: String, songs: [SunoData]) {
+        do {
+            let data = try JSONEncoder().encode(songs)
+            userDefaults.set(data, forKey: weeklySongsCachePrefix + weekTag)
+            Logger.d("💾 Weekly songs cached for \(weekTag) (\(songs.count) songs)")
+        } catch {
+            Logger.e("❌ Failed to cache weekly songs for \(weekTag): \(error)")
+        }
+    }
+    
+    func getWeeklySongs(weekTag: String) -> [SunoData]? {
+        guard let data = userDefaults.data(forKey: weeklySongsCachePrefix + weekTag) else { return nil }
+        do {
+            return try JSONDecoder().decode([SunoData].self, from: data)
+        } catch {
+            Logger.e("❌ Failed to decode weekly songs for \(weekTag): \(error)")
+            return nil
+        }
     }
 }
