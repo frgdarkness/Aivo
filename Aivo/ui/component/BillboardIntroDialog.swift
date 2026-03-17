@@ -64,7 +64,6 @@ struct BillboardIntroDialog: View {
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 10)
                     .padding(.bottom, 20)
                 
                 // Rewards Table
@@ -101,7 +100,11 @@ struct BillboardIntroDialog: View {
                 
                 // Action Buttons
                 VStack(spacing: 0) {
-                    Button(action: { isPresented = false }) {
+                    Button(action: {
+                        isPresented = false
+                        // Switch to Generate Song tab (index 1: explore=0, home=1, cover=2, library=3)
+                        NotificationCenter.default.post(name: NSNotification.Name("SwitchMainTab"), object: 1)
+                    }) {
                         Text("Create a Track Now")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)

@@ -47,8 +47,9 @@ struct ExploreTabViewNew: View {
                 // AIVO BILLBOARD Section
                 if !remoteConfig.bestAivoSongsList.isEmpty {
                     SongsForYouSection(
-                        title: "AIVO BILLBOARD",
+                        title: "AIVO GREATEST HITS",
                         songs: Array(remoteConfig.bestAivoSongsList.prefix(4)),
+                        onTitleTap: { showBillboardIntro = true },
                         onPlay: { song in
                             if let index = remoteConfig.bestAivoSongsList.firstIndex(where: { $0.id == song.id }) {
                                 selectedSongForPlayback = SongPlaybackItem(songs: remoteConfig.bestAivoSongsList, initialIndex: index)
@@ -125,7 +126,7 @@ struct ExploreTabViewNew: View {
                 BillboardIntroDialog(isPresented: $showBillboardIntro)
             }
             if showBillboardCongrats {
-                BillboardCongratsDialog(isPresented: $showBillboardCongrats, rank: 3, song: communityHottestSongs.first, rewardAmount: 1000)
+                BillboardCongratsDialog(isPresented: $showBillboardCongrats, rank: 3, song: communityHottestSongs.first, rewardAmount: WeeklyRewardManager.rewardForRank(3))
             }
         }
         .onAppear {
@@ -885,7 +886,7 @@ struct CommunityHottestSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Button(action: { onTitleTap?() }) {
-                    Text("Weekly Top 10")
+                    Text("Weekly Billboard")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                 }
@@ -897,7 +898,7 @@ struct CommunityHottestSection: View {
                 Button(action: onSeeAll) {
                     Text("See All")
                         .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(AivoTheme.Primary.orange)
+                        .foregroundColor(.white.opacity(0.7))
                 }
             }
             
@@ -1064,21 +1065,28 @@ struct SongsForYouSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Image(systemName: title.contains("Community") ? "globe" : "person.circle.fill")
-                    .font(.system(size: 20))
-                    .foregroundColor(AivoTheme.Primary.orange)
-                Button(action: { onTitleTap?() }) {
+                Image("icon_app_small")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 24, height: 24)
+                    .clipShape(Circle())
+                if let onTitleTap = onTitleTap {
+                    Button(action: onTitleTap) {
+                        Text(title)
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(Color.white)
+                    }
+                    .buttonStyle(.plain)
+                } else {
                     Text(title)
                         .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(Color.white)
                 }
-                .buttonStyle(.plain)
-                .disabled(onTitleTap == nil)
                 Spacer()
                 Button(action: onSeeAll) {
                     Text("See All")
-                        .font(.system(size: 13))
-                        .foregroundColor(.gray)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.7))
                 }
             }
             .padding(.top, 16)

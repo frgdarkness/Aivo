@@ -47,7 +47,7 @@ struct WeeklyBoardHistoryScreen: View {
                     .clipShape(Circle())
             }
             
-            Text("Weekly Top 10 History")
+            Text("Weekly Billboard History")
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
             

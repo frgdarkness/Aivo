@@ -4,7 +4,7 @@ import SwiftUI
 struct HomeView: View {
     @StateObject private var subscriptionManager = SubscriptionManager.shared
     @ObservedObject private var backgroundManager = BackgroundGenerationManager.shared
-    @State private var selectedTab: TabItem = .home
+    @State private var selectedTab: TabItem = .explore
     @State private var showGenerateSongResult = false
     @State private var showSunoSongResult = false
     @State private var showSubscription = false
@@ -420,17 +420,17 @@ struct HomeView: View {
 
 // MARK: - Tab Item Enum
 enum TabItem: String, CaseIterable {
-    case home = "Home"
     case explore = "Explore"
+    case home = "Generate"
     case cover = "Cover"
     case library = "Library"
     
     var icon: String {
         switch self {
+        case .explore:
+            return "globe"
         case .home:
             return "music.note"
-        case .explore:
-            return "headphones"
         case .cover:
             return "mic"
         case .library:
