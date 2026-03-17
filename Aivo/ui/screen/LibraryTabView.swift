@@ -70,12 +70,12 @@ struct LibraryTabView: View {
                     }
                 } label: {
                     Text(type.rawValue)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .foregroundColor(selectedTab == type ? .white : .white.opacity(0.7))
                         .frame(maxWidth: .infinity) // Equal width
-                        .padding(.vertical, 12)
+                        .padding(.vertical, iPadScaleSmall(12))
                         .background(
-                            RoundedRectangle(cornerRadius: 8)
+                            RoundedRectangle(cornerRadius: iPadScale(8))
                                 .fill(selectedTab == type ? AivoTheme.Primary.orange : .clear)
                         )
                 }
@@ -109,23 +109,22 @@ struct LibraryTabView: View {
             VStack(spacing: 16) {
                 // Reuse the Vinyl UI code from before or simplification
                Image(systemName: "music.mic")
-                    .font(.system(size: 60))
+                    .font(.system(size: iPadScale(60)))
                     .foregroundColor(.gray)
                 
                 // Empty State Text
                 VStack(spacing: 8) {
                     Text("No AI Songs yet")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: iPadScale(22), weight: .bold))
                         .foregroundColor(.white)
                     
                     HStack(spacing: 4) {
                         Text("Start creating with")
-                            .font(.subheadline)
+                            .font(.system(size: iPadScale(15)))
                             .foregroundColor(.white)
                         
                         Text("AIVO AI")
-                            .font(.system(size: 16, weight: .black, design: .monospaced))
+                            .font(.system(size: iPadScale(16), weight: .black, design: .monospaced))
                             .foregroundColor(AivoTheme.Primary.orange)
                     }
                 }
@@ -133,13 +132,12 @@ struct LibraryTabView: View {
                 // Start Creating Button
                 Button(action: startCreating) {
                     Text("Start Creating")
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(.system(size: iPadScale(17), weight: .bold))
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: iPadScale(50))
                         .background(AivoTheme.Primary.orange)
-                        .cornerRadius(12)
+                        .cornerRadius(iPadScale(12))
                         .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
                 }
                 .padding(.horizontal, 40)
@@ -293,18 +291,18 @@ struct LibrarySongRowView: View {
     
     var body: some View {
         // Card nền
+        let coverSize: CGFloat = DeviceScale.isIPad ? 90 : 60
+        
         ZStack {
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: iPadScale(12))
                 .fill(Color.white.opacity(0.05))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: iPadScale(12))
                         .stroke(Color.clear, lineWidth: 2)
                 )
 
             // Nội dung: ảnh (trái sát), info (giữa), nút (phải sát)
-            HStack(spacing: 12) {
-                let coverSize: CGFloat = 60
-
+            HStack(spacing: iPadScaleSmall(12)) {
                 ZStack {
                     // Cover image using Kingfisher for optimized loading
                     KFImage(getImageURL(for: song))
@@ -318,29 +316,29 @@ struct LibrarySongRowView: View {
                         .resizable()
                         .scaledToFill()
                         .frame(width: coverSize, height: coverSize)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(8)))
                 }
                 .frame(width: coverSize, height: coverSize)
-                .padding(.leading, 12)
+                .padding(.leading, iPadScaleSmall(12))
 
                 // INFO: chiếm toàn bộ phần còn lại
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: iPadScaleSmall(4)) {
                     Text(song.title)
-                        .font(.headline).fontWeight(.medium)
+                        .font(.system(size: iPadScale(17), weight: .medium))
                         .foregroundColor(.white)
                         .lineLimit(1).truncationMode(.tail)
 
-                    HStack(spacing: 12) {
+                    HStack(spacing: iPadScaleSmall(12)) {
                         // Duration
                         Label(formatDuration(song.duration), systemImage: "clock.fill")
                             .labelStyle(.titleAndIcon)
-                            .font(.caption)
+                            .font(.system(size: iPadScale(12)))
                             .foregroundColor(.gray)
                             .lineLimit(1)
                         
                         // Voice model
                         Text(song.modelName)
-                            .font(.caption)
+                            .font(.system(size: iPadScale(12)))
                             .foregroundColor(.gray)
                             .lineLimit(1)
                         
@@ -348,7 +346,7 @@ struct LibrarySongRowView: View {
                         if isFavorite {
                             Label("", systemImage: "heart.fill")
                                 .labelStyle(.titleAndIcon)
-                                .font(.caption)
+                                .font(.system(size: iPadScale(12)))
                                 .foregroundColor(.red)
                                 .lineLimit(1)
                         }
@@ -376,15 +374,15 @@ struct LibrarySongRowView: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 20))
+                        .font(.system(size: iPadScale(20)))
                         .foregroundColor(.white)
-                        .frame(width: 40, height: 40)
+                        .frame(width: iPadScale(40), height: iPadScale(40))
                         .contentShape(Rectangle())
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, iPadScaleSmall(12))
             }
-            .frame(height: 76)
-            .contentShape(RoundedRectangle(cornerRadius: 12))
+            .frame(height: DeviceScale.isIPad ? 110 : 76)
+            .contentShape(RoundedRectangle(cornerRadius: iPadScale(12)))
         }
         .padding(.vertical, 4)
         .onTapGesture {

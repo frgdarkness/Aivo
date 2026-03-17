@@ -29,8 +29,8 @@ struct IntroScreen: View {
                 // Continue Button
                 continueButton
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 50)
+            .padding(.horizontal, iPadScaleSmall(20))
+            .padding(.top, iPadScaleSmall(50))
         }
         .onAppear {
             // Log screen view to both Firebase and AppsFlyer
@@ -40,18 +40,18 @@ struct IntroScreen: View {
             ZStack {
                 AivoSunsetBackground()
                 
-                VStack(spacing: 30) {
+                VStack(spacing: iPadScaleSmall(30)) {
                     Text("Just a Moment!")
-                        .font(.system(size: 28, weight: .bold))
+                        .font(.system(size: iPadScale(28), weight: .bold))
                         .foregroundColor(.white)
                     
                     ProgressView()
-                        .scaleEffect(2.0)
+                        .scaleEffect(DeviceScale.isIPad ? 3.0 : 2.0)
                         .tint(.white)
-                        .padding(20)
+                        .padding(iPadScaleSmall(20))
                         
                     Text("Creating your personalized song...")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white.opacity(0.9))
                         
                     Button("Cancel") {
@@ -84,47 +84,47 @@ struct IntroScreen: View {
     
     // MARK: - Header View
     private var headerView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: iPadScaleSmall(8)) {
             Text("LET'S START!")
-                .font(.system(size: 32, weight: .black, design: .monospaced))
+                .font(.system(size: iPadScale(32), weight: .black, design: .monospaced))
                 .foregroundColor(.white)
             
             // Fixed height container for text to prevent layout shifts (~3 lines)
             VStack(spacing: 0) {
                 if let mood = selectedMood, let genre = selectedGenre, let theme = selectedTheme {
                     Text("Make a \(mood.displayName) & \(genre.displayName) song for \(theme.displayName)")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let mood = selectedMood, let genre = selectedGenre {
                     Text("Make a \(mood.displayName) & \(genre.displayName) song")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                 } else if let mood = selectedMood {
                     Text("Make a \(mood.displayName) song")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text("Make a song")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            .frame(height: 52) // Fixed height for ~3 lines (headline font ~20pt per line with 4pt spacing)
+            .frame(height: iPadScale(52))
             .frame(maxWidth: .infinity)
         }
-        .padding(.bottom, 40)
+        .padding(.bottom, iPadScaleSmall(40))
     }
     
     // MARK: - Content View
@@ -147,22 +147,21 @@ struct IntroScreen: View {
         Button(action: handleContinue) {
             HStack {
                 Text("Continue")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                 
                 Image(systemName: "arrow.right")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17)))
             }
             .foregroundColor(.black)
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: iPadScale(50))
             .background(AivoTheme.Primary.orange)
-            .cornerRadius(12)
+            .cornerRadius(iPadScale(12))
             .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
         }
         .disabled(!canContinue)
         .opacity(canContinue ? 1.0 : 0.6)
-        .padding(.bottom, 30)
+        .padding(.bottom, iPadScaleSmall(30))
     }
     
     // MARK: - Computed Properties
@@ -284,21 +283,20 @@ struct MoodSelectionView: View {
     @Binding var selectedMood: SongMood?
     
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: iPadScaleSmall(30)) {
             // Step indicator
-            VStack(spacing: 8) {
+            VStack(spacing: iPadScaleSmall(8)) {
                 Text("STEP I")
-                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .font(.system(size: iPadScale(28), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 
                 Text("What is the **MOOD** of your song?")
-                    .font(.title2)
-                    .fontWeight(.medium)
+                    .font(.system(size: iPadScale(22), weight: .medium))
                     .foregroundColor(.white)
             }
             
             // Mood options
-            VStack(spacing: 16) {
+            VStack(spacing: iPadScaleSmall(16)) {
                 ForEach(SongMood.getIntroList(), id: \.self) { mood in
                     MoodOptionButton(
                         mood: mood,
@@ -316,21 +314,20 @@ struct GenreSelectionView: View {
     @Binding var selectedGenre: SongGenre?
     
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: iPadScaleSmall(30)) {
             // Step indicator
-            VStack(spacing: 8) {
+            VStack(spacing: iPadScaleSmall(8)) {
                 Text("STEP 2")
-                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .font(.system(size: iPadScale(28), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 
                 Text("What is the **GENRE** of your song?")
-                    .font(.title2)
-                    .fontWeight(.medium)
+                    .font(.system(size: iPadScale(22), weight: .medium))
                     .foregroundColor(.white)
             }
             
             // Genre options
-            VStack(spacing: 16) {
+            VStack(spacing: iPadScaleSmall(16)) {
                 ForEach(SongGenre.getIntroList(), id: \.self) { genre in
                     GenreOptionButton(
                         genre: genre,
@@ -348,21 +345,20 @@ struct ThemeSelectionView: View {
     @Binding var selectedTheme: SongTheme?
     
     var body: some View {
-        VStack(spacing: 30) {
+        VStack(spacing: iPadScaleSmall(30)) {
             // Step indicator
-            VStack(spacing: 8) {
+            VStack(spacing: iPadScaleSmall(8)) {
                 Text("STEP 3")
-                    .font(.system(size: 28, weight: .black, design: .monospaced))
+                    .font(.system(size: iPadScale(28), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 
                 Text("WHO is song for?")
-                    .font(.title2)
-                    .fontWeight(.medium)
+                    .font(.system(size: iPadScale(22), weight: .medium))
                     .foregroundColor(.white)
             }
             
             // Theme options
-            VStack(spacing: 16) {
+            VStack(spacing: iPadScaleSmall(16)) {
                 ForEach(SongTheme.getHottest(), id: \.self) { theme in
                     ThemeOptionButton(
                         theme: theme,
@@ -384,16 +380,15 @@ struct MoodOptionButton: View {
     var body: some View {
         Button(action: action) {
             Text(mood.displayName)
-                .font(.headline)
-                .fontWeight(.medium)
+                .font(.system(size: iPadScale(17), weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: iPadScale(50))
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: iPadScale(12))
                         .fill(isSelected ? Color.clear : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .stroke(
                                     isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
                                     lineWidth: isSelected ? 3 : 1
@@ -414,16 +409,15 @@ struct GenreOptionButton: View {
     var body: some View {
         Button(action: action) {
             Text(genre.displayName)
-                .font(.headline)
-                .fontWeight(.medium)
+                .font(.system(size: iPadScale(17), weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: iPadScale(50))
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: iPadScale(12))
                         .fill(isSelected ? Color.clear : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .stroke(
                                     isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
                                     lineWidth: isSelected ? 3 : 1
@@ -444,16 +438,15 @@ struct ThemeOptionButton: View {
     var body: some View {
         Button(action: action) {
             Text(theme.displayName)
-                .font(.headline)
-                .fontWeight(.medium)
+                .font(.system(size: iPadScale(17), weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: iPadScale(50))
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: iPadScale(12))
                         .fill(isSelected ? Color.clear : Color.clear)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .stroke(
                                     isSelected ? AivoTheme.Primary.orange : Color.white.opacity(0.3),
                                     lineWidth: isSelected ? 3 : 1

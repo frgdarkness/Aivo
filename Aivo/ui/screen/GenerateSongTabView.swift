@@ -229,10 +229,10 @@ struct GenerateSongTabView: View {
                         }
                     } label: {
                         Text(type.rawValue)
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: iPadScale(16), weight: .medium))
                             .foregroundColor(selectedInputType == type ? .white : .white.opacity(0.7))
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, iPadScaleSmall(20))
+                            .padding(.vertical, iPadScaleSmall(12))
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(selectedInputType == type ? AivoTheme.Primary.orange : .clear)
@@ -251,7 +251,7 @@ struct GenerateSongTabView: View {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(spacing: 8) {
                     Text(selectedInputType == .description ? "Describe the Song" : "Enter lyrics")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .foregroundColor(.white)
 
                     Spacer()
@@ -264,18 +264,18 @@ struct GenerateSongTabView: View {
                             getInspired()
                         }
                     }) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: iPadScaleSmall(6)) {
                             Image(systemName: "lightbulb.fill")
-                                .font(.caption)
+                                .font(.system(size: iPadScale(12)))
                                 .foregroundColor(.yellow)
                             Text(selectedInputType == .lyrics ? "Generate Lyrics" : "Get Inspired")
-                                .font(.caption)
+                                .font(.system(size: iPadScale(12)))
                                 .foregroundColor(.white.opacity(0.8))
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, iPadScaleSmall(10))
+                        .padding(.vertical, iPadScaleSmall(6))
                         .background(
-                            RoundedRectangle(cornerRadius: 6)
+                            RoundedRectangle(cornerRadius: iPadScale(6))
                                 .fill(Color.white.opacity(0.12))
                         )
                     }
@@ -315,13 +315,13 @@ struct GenerateSongTabView: View {
                     Group {
                         if selectedInputType == .description, songDescription.isEmpty {
                             Text("Describe the music and topic you want (e.g. make a chill song about overcoming my biggest regret)")
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.75)) // hint bớt mờ
+                                .font(.system(size: iPadScale(14)))
+                                .foregroundColor(.white.opacity(0.45))
                                 .padding(EdgeInsets(top: insets.top, leading: insets.left, bottom: 0, trailing: insets.right))
                         } else if selectedInputType == .lyrics, songLyrics.isEmpty {
                             Text(lyrics)
-                                .font(.system(size: 14))
-                                .foregroundColor(.white.opacity(0.75))
+                                .font(.system(size: iPadScale(14)))
+                                .foregroundColor(.white.opacity(0.45))
                                 .padding(EdgeInsets(top: insets.top, leading: insets.left, bottom: 0, trailing: insets.right))
                         }
                     }
@@ -329,7 +329,7 @@ struct GenerateSongTabView: View {
                     // TextEditor đã tuỳ biến (căn top đúng, cuộn nội bộ)
                     if selectedInputType == .description {
                         PaddedTextEditor(text: $songDescription,
-                                         font: .systemFont(ofSize: 14),
+                                         font: .systemFont(ofSize: DeviceScale.isIPad ? 20 : 14),
                                          textColor: .white,
                                          insets: insets,
                                          autocap: .sentences,
@@ -345,7 +345,7 @@ struct GenerateSongTabView: View {
                         }
                     } else {
                         PaddedTextEditor(text: $songLyrics,
-                                         font: .systemFont(ofSize: 14),
+                                         font: .systemFont(ofSize: DeviceScale.isIPad ? 20 : 14),
                                          textColor: .white,
                                          insets: insets,
                                          autocap: .none,
@@ -367,7 +367,7 @@ struct GenerateSongTabView: View {
                         HStack {
                             Spacer()
                             Text("\(selectedInputType == .description ? songDescription.count : songLyrics.count) / \(selectedInputType == .description ? 500 : 3000)")
-                                .font(.caption)
+                                .font(.system(size: iPadScale(11)))
                                 .foregroundColor(.white.opacity(0.6))
                                 .padding(.trailing, 10)
                                 .padding(.bottom, 8)
@@ -380,11 +380,11 @@ struct GenerateSongTabView: View {
                 if selectedInputType == .description {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Language")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: iPadScale(14), weight: .medium))
                             .foregroundColor(.white)
                         
                         TextField("Enter language (e.g., English, Vietnamese, Spanish)", text: $selectedLanguage)
-                            .font(.system(size: 14))
+                            .font(.system(size: iPadScale(14)))
                             .foregroundColor(.white)
                             .padding(12)
                             .background(
@@ -416,22 +416,22 @@ struct GenerateSongTabView: View {
     
     // MARK: - Mood Selection Section
     private var moodSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(12)) {
             Text("Select Mood (Optional)")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: iPadScaleSmall(12)) {
                     ForEach(SongMood.getHottest().prefix(10), id: \.self) { mood in
                         Button(action: {
                             toggleMoodSelection(mood)
                         }) {
                             Text(mood.displayName)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: iPadScale(14), weight: .medium))
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
+                                .padding(.horizontal, iPadScaleSmall(16))
+                                .padding(.vertical, iPadScaleSmall(10))
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(selectedMoods.contains(mood) ? AivoTheme.Secondary.coralRed : Color.gray.opacity(0.3))
@@ -443,10 +443,10 @@ struct GenerateSongTabView: View {
                         showMultiMoodScreen = true
                     }) {
                         Text("More")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: iPadScale(14), weight: .medium))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
+                            .padding(.horizontal, iPadScaleSmall(16))
+                            .padding(.vertical, iPadScaleSmall(10))
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(Color.clear)
@@ -464,13 +464,13 @@ struct GenerateSongTabView: View {
     
     // MARK: - Genre Selection Section
     private var genreSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(12)) {
             Text("Select Genre (Optional)")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: iPadScaleSmall(12)) {
                     ForEach(SongGenre.getHottest().prefix(10), id: \.self) { genre in
                         Button(action: {
                             toggleGenreSelection(genre)
@@ -479,15 +479,15 @@ struct GenerateSongTabView: View {
                                 Image(genre.icon)
                                     .resizable()
                                     .aspectRatio(contentMode: .fill)
-                                    .frame(width: 72, height: 72)
-                                    .clipShape(RoundedRectangle(cornerRadius: 8)) // 🟡 Bo góc ảnh
+                                    .frame(width: iPadScale(72), height: iPadScale(72))
+                                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(8)))
                                     .padding(.top, 4)
                                 
                                 Text(genre.displayName)
-                                    .font(.system(size: 12, weight: .medium))
+                                    .font(.system(size: iPadScale(12), weight: .medium))
                                     .foregroundColor(.white)
                             }
-                            .frame(width: 86, height: 100)
+                            .frame(width: iPadScale(86), height: iPadScale(100))
                             .background(
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(selectedGenres.contains(genre) ?
@@ -509,15 +509,15 @@ struct GenerateSongTabView: View {
                     }) {
                         VStack(spacing: 4) {
                             Image(systemName: "ellipsis")
-                                .font(.system(size: 24))
+                                .font(.system(size: iPadScale(24)))
                                 .foregroundColor(.white)
-                                .frame(width: 60, height: 60)
+                                .frame(width: iPadScale(60), height: iPadScale(60))
                             
                             Text("More")
-                                .font(.system(size: 12, weight: .medium))
+                                .font(.system(size: iPadScale(12), weight: .medium))
                                 .foregroundColor(.white)
                         }
-                        .frame(width: 88, height: 88)
+                        .frame(width: iPadScale(88), height: iPadScale(88))
                         .background(
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color.clear)
@@ -558,10 +558,10 @@ struct GenerateSongTabView: View {
                         withAnimation { generationMode = mode }
                     }) {
                         Text(mode.rawValue)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: iPadScale(14), weight: .medium))
                             .foregroundColor(generationMode == mode ? .black : .white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, iPadScaleSmall(10))
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(generationMode == mode ? Color.white : Color.clear)
@@ -591,7 +591,7 @@ struct GenerateSongTabView: View {
     private var structureSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Structure")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
             
             if #available(iOS 16.0, *) {
@@ -622,10 +622,10 @@ struct GenerateSongTabView: View {
                 }
             }) {
                 Text(part.rawValue)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: iPadScale(13), weight: .medium))
                     .foregroundColor(isSelected ? .black : .white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, iPadScaleSmall(12))
+                    .padding(.vertical, iPadScaleSmall(6))
                     .background(
                         Capsule()
                             .fill(isSelected ? Color.white : Color.white.opacity(0.1))
@@ -788,16 +788,16 @@ struct GenerateSongTabView: View {
         VStack(alignment: .leading, spacing: 12) {
              HStack {
                  Text("Song Name (Optional)")
-                     .font(.system(size: 16, weight: .medium))
+                     .font(.system(size: iPadScale(16), weight: .medium))
                      .foregroundColor(.white)
                  Spacer()
                  Text("\(songName.count) / 80")
-                     .font(.system(size: 11))
+                     .font(.system(size: iPadScale(11)))
                      .foregroundColor(.white.opacity(0.5))
              }
              
-             TextField("Name", text: $songName)
-                 .font(.system(size: 14))
+             TextField("", text: $songName, prompt: Text("Name").foregroundColor(.white.opacity(0.45)))
+                 .font(.system(size: iPadScale(14)))
                  .foregroundColor(.white)
                  .padding(12)
                  .background(
@@ -814,7 +814,7 @@ struct GenerateSongTabView: View {
     private var modelSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("AI Model")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -824,11 +824,11 @@ struct GenerateSongTabView: View {
                             selectedModel = model
                         }) {
                             Text(model.rawValue)
-                                .font(.system(size: 14, weight: .medium))
+                                .font(.system(size: iPadScale(14), weight: .medium))
                                 .foregroundColor(selectedModel == model ? .black : .white)
-                                .frame(minWidth: 50)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .frame(minWidth: iPadScale(50))
+                                .padding(.horizontal, iPadScaleSmall(16))
+                                .padding(.vertical, iPadScaleSmall(12))
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(selectedModel == model ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
@@ -1018,21 +1018,20 @@ struct GenerateSongTabView: View {
         Button(action: {
             generateSong()
         }) {
-            HStack(spacing: 8) {
+            HStack(spacing: iPadScaleSmall(8)) {
                 Text(selectedInputType == .description ? "Create with Description" : "Create with Lyrics")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: iPadScale(16), weight: .semibold))
                     .foregroundColor(.black)
                 
-                // Credit cost display
                 HStack(spacing: 2) {
                     Text("(-\(creditsRequired)")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: iPadScale(16), weight: .semibold))
                     Image("icon_coin")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 14, height: 14)
+                        .frame(width: iPadScale(14), height: iPadScale(14))
                     Text(")")
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: iPadScale(16), weight: .semibold))
                     
                 }
                 .foregroundColor(.black.opacity(0.8))
@@ -1040,7 +1039,7 @@ struct GenerateSongTabView: View {
                 .foregroundColor(.black)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(height: iPadScale(50))
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(AivoTheme.Primary.orange)

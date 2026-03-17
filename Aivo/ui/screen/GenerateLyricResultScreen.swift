@@ -43,9 +43,9 @@ struct GenerateLyricResultScreen: View {
         HStack {
             Button(action: { dismiss() }) {
                 Image(systemName: "arrow.left")
-                    .font(.title3)
+                    .font(.system(size: iPadScale(18)))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: iPadScale(40), height: iPadScale(40))
                     .background(Color.gray.opacity(0.3))
                     .clipShape(Circle())
             }
@@ -53,74 +53,74 @@ struct GenerateLyricResultScreen: View {
             Spacer()
             
             Text("Generated Results")
-                .font(.headline)
+                .font(.system(size: iPadScale(18), weight: .semibold))
                 .foregroundColor(.white)
             
             Spacer()
             
             Button(action: { copyAllLyrics() }) {
                 Image(systemName: "doc.on.doc")
-                    .font(.system(size: 16))
+                    .font(.system(size: iPadScale(16)))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: iPadScale(40), height: iPadScale(40))
                     .background(Color.gray.opacity(0.3))
                     .clipShape(Circle())
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 16)
+        .padding(.top, iPadScaleSmall(10))
+        .padding(.bottom, iPadScaleSmall(16))
     }
     
     // MARK: - Lyrics Card
     private func lyricsCard(for result: LyricsResult) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(12)) {
             // Title
             Text(result.title)
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(AivoTheme.Primary.orange)
             
             // Lyrics Text
             Text(result.text)
-                .font(.system(size: 15))
+                .font(.system(size: iPadScale(15)))
                 .foregroundColor(.white.opacity(0.9))
-                .lineSpacing(6)
+                .lineSpacing(iPadScaleSmall(6))
             
-            HStack(spacing: 12) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 // Copy Button
                 Button(action: { copyLyrics(result.text, title: result.title) }) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: iPadScaleSmall(6)) {
                         Image(systemName: "doc.on.doc")
                         Text("Copy")
                     }
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: iPadScale(14), weight: .medium))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, iPadScaleSmall(8))
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: iPadScale(8))
                             .fill(Color.white.opacity(0.15))
                     )
                 }
                 
                 // Select Button
                 Button(action: { selectLyrics(result.text, title: result.title) }) {
-                    HStack(spacing: 6) {
+                    HStack(spacing: iPadScaleSmall(6)) {
                         Image(systemName: "checkmark.circle.fill")
                         Text("Use This")
                     }
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: iPadScale(14), weight: .bold))
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, iPadScaleSmall(8))
                     .background(
-                        RoundedRectangle(cornerRadius: 8)
+                        RoundedRectangle(cornerRadius: iPadScale(8))
                             .fill(AivoTheme.Primary.orange)
                     )
                 }
             }
         }
-        .padding(16)
+        .padding(iPadScaleSmall(16))
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -175,10 +175,10 @@ struct GenerateLyricResultScreen: View {
             Spacer()
             if showToast {
                 Text(toastMessage)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: iPadScale(16), weight: .medium))
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 12)
+                    .padding(.horizontal, iPadScaleSmall(20))
+                    .padding(.vertical, iPadScaleSmall(12))
                     .background(Color.black.opacity(0.8))
                     .cornerRadius(8)
                     .padding(.bottom, 50)

@@ -73,16 +73,16 @@ struct PlaySunoSongIntroScreen: View {
                 
                 // Seekbar with play/pause button
                 seekBarView
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(.horizontal, iPadScaleSmall(20))
+                    .padding(.top, iPadScaleSmall(20))
                 
                 Spacer()
                 
                 // Continue button
                 continueButton
-                    .padding(.horizontal, 20)
-                    .padding(.top, 12)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, iPadScaleSmall(20))
+                    .padding(.top, iPadScaleSmall(12))
+                    .padding(.bottom, iPadScaleSmall(20))
             }
             
             // Rating Dialog Overlay
@@ -172,23 +172,23 @@ struct PlaySunoSongIntroScreen: View {
     private var headerView: some View {
         HStack {
             Text("HERE'S YOUR SONG")
-                .font(.system(size: 24, weight: .black, design: .monospaced))
+                .font(.system(size: iPadScale(24), weight: .black, design: .monospaced))
                 .foregroundColor(.white)
             
             Spacer()
             
-            // Spacer để balance layout
             Color.clear
-                .frame(width: 24, height: 24)
+                .frame(width: iPadScale(24), height: iPadScale(24))
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 20)
+        .padding(.horizontal, iPadScaleSmall(20))
+        .padding(.top, iPadScaleSmall(10))
+        .padding(.bottom, iPadScaleSmall(20))
     }
     
     // MARK: - Album Art View with Download Progress
     private var albumArtView: some View {
-        ZStack {
+        let coverSize: CGFloat = iPadScaleLarge(280)
+        return ZStack {
             AsyncImage(url: resolvedCoverURL) { phase in
                 switch phase {
                 case .empty:
@@ -201,7 +201,7 @@ struct PlaySunoSongIntroScreen: View {
                     Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                 }
             }
-            .frame(width: 280, height: 280)
+            .frame(width: coverSize, height: coverSize)
             .clipShape(Circle())
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
             .rotationEffect(.degrees(rotationAngle))
@@ -215,14 +215,14 @@ struct PlaySunoSongIntroScreen: View {
             if downloadingSongs.contains(sunoData.id) {
                 Circle()
                     .fill(Color.black.opacity(0.7))
-                    .frame(width: 280, height: 280)
+                    .frame(width: coverSize, height: coverSize)
                     .overlay(
                         VStack(spacing: 12) {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(1.5)
+                                .scaleEffect(DeviceScale.isIPad ? 2.0 : 1.5)
                             Text("Downloading...")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.system(size: iPadScale(16), weight: .medium))
                                 .foregroundColor(.white)
                         }
                     )
@@ -232,16 +232,15 @@ struct PlaySunoSongIntroScreen: View {
     
     // MARK: - Song Info View
     private var songInfoView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: iPadScaleSmall(8)) {
             Text(sunoData.title)
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
-                .padding(.top, 12)
+                .padding(.top, iPadScaleSmall(12))
         }
-        .padding(.horizontal, 40)
+        .padding(.horizontal, iPadScaleSmall(40))
     }
     
     // MARK: - Lyric Container View
@@ -258,18 +257,18 @@ struct PlaySunoSongIntroScreen: View {
             VStack(spacing: 8) {
                 if let lyric = parseLyric(from: sunoData.prompt) {
                     Text(lyric)
-                        .font(.body)
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
-                        .lineSpacing(6)
-                        .padding(.horizontal, 20)
+                        .lineSpacing(iPadScaleSmall(6))
+                        .padding(.horizontal, iPadScaleSmall(20))
                 } else {
                     Text("Lyric not available")
-                        .font(.body)
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.white.opacity(0.6))
                         .italic()
                         .multilineTextAlignment(.center)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, iPadScaleSmall(20))
                 }
             }
             .padding(.vertical, 16)
@@ -295,62 +294,70 @@ struct PlaySunoSongIntroScreen: View {
         let isCurrentSongDownloaded = downloadedFileURLs[sunoData.id] != nil
         let isSongReady = !isDownloadingCurrentSong && isCurrentSongDownloaded && musicPlayer.duration > 0
         
-        return VStack(spacing: 8) {
-            // Play/Pause button ở trên bên phải
+        return VStack(spacing: iPadScaleSmall(8)) {
+            // Play/Pause button
             HStack {
                 Spacer()
                 Button(action: { musicPlayer.togglePlayPause() }) {
                     Image(systemName: musicPlayer.isPlaying ? "pause" : "play")
-                        .font(.system(size: 24))
+                        .font(.system(size: iPadScale(24)))
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(AivoTheme.Primary.orange, .gray.opacity(0.3))
-                        .frame(width: 44, height: 44)
+                        .frame(width: iPadScale(44), height: iPadScale(44))
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
                 }
                 .disabled(!isSongReady)
             }
             
-            Slider(
-                value: Binding(
-                    get: {
-                        if !isSongReady {
-                            return 0
+            // Seekbar with gray track background
+            ZStack(alignment: .leading) {
+                // Gray track background
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(height: 4)
+                
+                Slider(
+                    value: Binding(
+                        get: {
+                            if !isSongReady {
+                                return 0
+                            }
+                            return isScrubbing ? scrubTime : musicPlayer.currentTime
+                        },
+                        set: { newVal in
+                            if !isSongReady { return }
+                            if isScrubbing {
+                                scrubTime = newVal
+                            } else {
+                                musicPlayer.currentTime = newVal
+                            }
                         }
-                        return isScrubbing ? scrubTime : musicPlayer.currentTime
-                    },
-                    set: { newVal in
+                    ),
+                    in: 0...max(0.1, isSongReady ? musicPlayer.duration : 1.0),
+                    onEditingChanged: { editing in
                         if !isSongReady { return }
-                        if isScrubbing {
-                            scrubTime = newVal
+                        if editing {
+                            isScrubbing = true
+                            scrubTime = musicPlayer.currentTime
                         } else {
-                            musicPlayer.currentTime = newVal
+                            isScrubbing = false
+                            musicPlayer.seek(to: scrubTime)
                         }
                     }
-                ),
-                in: 0...max(0.1, isSongReady ? musicPlayer.duration : 1.0),
-                onEditingChanged: { editing in
-                    if !isSongReady { return }
-                    if editing {
-                        isScrubbing = true
-                        scrubTime = musicPlayer.currentTime
-                    } else {
-                        isScrubbing = false
-                        musicPlayer.seek(to: scrubTime)
-                    }
-                }
-            )
-            .accentColor(AivoTheme.Primary.orange)
-            .disabled(!isSongReady)
-            .opacity(isSongReady ? 1.0 : 0.5)
+                )
+                .accentColor(AivoTheme.Primary.orange)
+                .disabled(!isSongReady)
+                .opacity(isSongReady ? 1.0 : 0.5)
+            }
             
             HStack {
                 Text(formatTime(isSongReady ? (isScrubbing ? scrubTime : musicPlayer.currentTime) : 0))
-                    .font(.caption)
+                    .font(.system(size: iPadScale(12)))
                     .foregroundColor(.white.opacity(0.8))
                 Spacer()
                 Text(formatTime(isSongReady ? musicPlayer.duration : sunoData.duration))
-                    .font(.caption)
+                    .font(.system(size: iPadScale(12)))
                     .foregroundColor(.white.opacity(0.8))
             }
         }
@@ -360,13 +367,12 @@ struct PlaySunoSongIntroScreen: View {
     private var continueButton: some View {
         Button(action: continueAction) {
             Text("Continue")
-                .font(.headline)
-                .fontWeight(.semibold)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
-                .frame(height: 50)
+                .frame(height: iPadScale(50))
                 .background(AivoTheme.Primary.orange)
-                .cornerRadius(12)
+                .cornerRadius(iPadScale(12))
                 .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
         }
     }

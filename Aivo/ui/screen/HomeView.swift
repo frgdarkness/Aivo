@@ -184,7 +184,7 @@ struct HomeView: View {
         HStack {
             HStack(spacing: 8) {
                 Text(backgroundManager.isGenerating ? "AIVO" : "AIVO Music")
-                    .font(.system(size: 24, weight: .black, design: .monospaced))
+                    .font(.system(size: iPadScale(24), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                     .animation(nil, value: backgroundManager.isGenerating) // Disable animation for text change
                 
@@ -202,9 +202,9 @@ struct HomeView: View {
             // VIP Button
             Button(action: { showSubscription = true }) {
                 Image(systemName: "crown.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: iPadScale(14), weight: .semibold))
                     .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
-                    .frame(width: 32, height: 32)
+                    .frame(width: iPadScale(32), height: iPadScale(32))
                     // NỀN: chỉ có khi VIP
                     .background(
                         Group {
@@ -255,7 +255,7 @@ struct HomeView: View {
                 showProfile = true
             }) {
                 Image(systemName: "gearshape.fill")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(.white)
             }
         }
@@ -272,18 +272,18 @@ struct HomeView: View {
                 Button(action: {
                     selectedTab = tab
                 }) {
-                    VStack(spacing: 4) {
+                    VStack(spacing: iPadScaleSmall(4)) {
                         Image(systemName: tab.icon)
-                            .font(.system(size: 20, weight: .medium))
+                            .font(.system(size: iPadScale(20), weight: .medium))
                             .foregroundColor(selectedTab == tab ? AivoTheme.Primary.orange : .gray)
                         
                         Text(tab.title)
-                            .font(.caption)
+                            .font(.system(size: iPadScale(11)))
                             .fontWeight(.medium)
                             .foregroundColor(selectedTab == tab ? AivoTheme.Primary.orange : .gray)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, iPadScaleSmall(8))
                 }
                 .buttonStyle(.plain)
             }

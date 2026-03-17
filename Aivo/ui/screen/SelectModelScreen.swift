@@ -62,84 +62,90 @@ struct SelectModelScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(.white)
             }
 
             Spacer()
 
             Text("Select Model")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
 
             Spacer()
 
             Color.clear
-                .frame(width: 24, height: 24)
+                .frame(width: iPadScale(24), height: iPadScale(24))
         }
         .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 16)
+        .padding(.top, iPadScaleSmall(10))
+        .padding(.bottom, iPadScaleSmall(16))
     }
 
     // MARK: - Search Bar
     private var searchBar: some View {
         HStack {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.gray)
-                .padding(.leading, 12)
+                .padding(.leading, iPadScaleSmall(12))
 
-            TextField("Search model", text: $searchText)
+            TextField("", text: $searchText, prompt: Text("Search model").foregroundColor(.white.opacity(0.45)))
                 .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.white)
-                .padding(.vertical, 12)
+                .padding(.vertical, iPadScaleSmall(12))
 
             if !searchText.isEmpty {
                 Button(action: { searchText = "" }) {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.gray)
                 }
-                .padding(.trailing, 12)
+                .padding(.trailing, iPadScaleSmall(12))
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 8)
+            RoundedRectangle(cornerRadius: iPadScale(8))
                 .fill(Color.gray.opacity(0.2))
         )
         .padding(.horizontal, 20)
-        .padding(.bottom, 16)
+        .padding(.bottom, iPadScaleSmall(16))
     }
 
     // MARK: - Model Item
     private func modelItem(_ model: CoverSongModel) -> some View {
-        Button(action: {
+        let imgSize: CGFloat = DeviceScale.isIPad ? 180 : 90
+        let itemW: CGFloat = DeviceScale.isIPad ? 200 : 100
+        let itemH: CGFloat = DeviceScale.isIPad ? 240 : 128
+        
+        return Button(action: {
             selectedModel = (selectedModel?.id == model.id) ? nil : model
         }) {
-            VStack(spacing: 6) {
+            VStack(spacing: iPadScaleSmall(6)) {
                 KFImage(URL(string: model.thumbUrl))
-                    .placeholder { ProgressView().frame(width: 70, height: 70) }
-                    .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 120, height: 120)))
+                    .placeholder { ProgressView().frame(width: imgSize * 0.78, height: imgSize * 0.78) }
+                    .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
                     .loadDiskFileSynchronously()
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 90, height: 90)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: imgSize, height: imgSize)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
 
                 Text(model.displayName)
-                    .font(.caption)
-                    .fontWeight(.medium)
+                    .font(.system(size: iPadScale(12), weight: .medium))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            .frame(width: 100, height: 128)
+            .frame(width: itemW, height: itemH)
             .background(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: iPadScale(12))
                     .fill(Color.black.opacity(0.3))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: iPadScale(12))
                     .stroke(selectedModel?.id == model.id ? AivoTheme.Primary.orange : Color.clear, lineWidth: 3)
             )
         }
@@ -154,12 +160,12 @@ struct SelectModelScreen: View {
                 dismiss()
             }) {
                 Text("Done")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: iPadScale(16), weight: .semibold))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: iPadScale(50))
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: iPadScale(12))
                             .fill(AivoTheme.Primary.orange)
                     )
             }
@@ -167,7 +173,7 @@ struct SelectModelScreen: View {
             .opacity(selectedModel == nil ? 0.5 : 1.0)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, iPadScaleSmall(14))
         .background(
             Rectangle()
                 .fill(AivoTheme.Background.primary)

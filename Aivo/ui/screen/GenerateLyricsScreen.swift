@@ -24,17 +24,17 @@ struct PromptInput: View {
                 ZStack(alignment: .topLeading) {
                     if text.isEmpty {
                         Text(placeholder)
-                            .font(.system(size: 16))
-                            .foregroundColor(.white.opacity(0.55)) // hint sáng hơn
-                            .padding(12)
+                            .font(.system(size: iPadScale(16)))
+                            .foregroundColor(.white.opacity(0.55))
+                            .padding(iPadScaleSmall(12))
                     }
 
                     TextField("", text: $text, axis: .vertical)
                         .textFieldStyle(.plain)
-                        .font(.system(size: 16))
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.white)
-                        .padding(12)
-                        .padding(.bottom, 28) // chừa chỗ cho counter
+                        .padding(iPadScaleSmall(12))
+                        .padding(.bottom, iPadScaleSmall(28))
                         .background(bg)
                         .lineLimit(minLines...maxLines)
                         .submitLabel(.done)
@@ -51,9 +51,9 @@ struct PromptInput: View {
                 // iOS 15 fallback: TextField (single line)
                 ZStack(alignment: .topLeading) {
                     TextField("", text: $text)
-                        .font(.system(size: 16))
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.white)
-                        .padding(8)
+                        .padding(iPadScaleSmall(8))
                         .frame(
                             minHeight: estimatedHeight(lines: minLines),
                             maxHeight: estimatedHeight(lines: maxLines)
@@ -72,9 +72,9 @@ struct PromptInput: View {
 
                     if text.isEmpty {
                         Text(placeholder)
-                            .font(.system(size: 16))
+                            .font(.system(size: iPadScale(16)))
                             .foregroundColor(.white.opacity(0.55))
-                            .padding(14)
+                            .padding(iPadScaleSmall(14))
                     }
                 }
                 .padding(.bottom, 28) // chừa chỗ cho counter
@@ -82,10 +82,10 @@ struct PromptInput: View {
 
             // Counter chung
             Text("\(text.count) / \(maxChars)")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: iPadScale(12), weight: .medium))
                 .foregroundColor(.white.opacity(0.6))
-                .padding(.trailing, 8)
-                .padding(.bottom, 8)
+                .padding(.trailing, iPadScaleSmall(8))
+                .padding(.bottom, iPadScaleSmall(8))
         }
     }
 
@@ -266,24 +266,23 @@ struct GenerateLyricsScreen: View {
     private var headerView: some View {
         HStack {
             Text("Generate Lyrics")
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white)
 
             Spacer()
 
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark")
-                    .font(.title3)
+                    .font(.system(size: iPadScale(18)))
                     .foregroundColor(.white)
-                    .frame(width: 40, height: 40)
+                    .frame(width: iPadScale(40), height: iPadScale(40))
                     .background(Color.gray.opacity(0.3))
                     .clipShape(Circle())
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 16)
+        .padding(.top, iPadScaleSmall(10))
+        .padding(.bottom, iPadScaleSmall(16))
     }
 
     // MARK: - Sections
@@ -291,16 +290,16 @@ struct GenerateLyricsScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Mode")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                     .foregroundColor(.white)
                 Spacer()
                 HStack(spacing: 4) {
                     Text("\(config.mode == .simple ? 10 : (config.mode == .custom ? 15 : 20))")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: iPadScale(14), weight: .bold))
                     Image("icon_coin")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 14, height: 14)
+                        .frame(width: iPadScale(14), height: iPadScale(14))
                 }
                 .foregroundColor(.yellow)
             }
@@ -312,10 +311,10 @@ struct GenerateLyricsScreen: View {
                         withAnimation { config.mode = mode }
                     }) {
                         Text(mode.rawValue)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: iPadScale(14), weight: .medium))
                             .foregroundColor(config.mode == mode ? .black : .white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
+                            .padding(.vertical, iPadScaleSmall(10))
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(config.mode == mode ? Color.white : Color.clear)
@@ -346,7 +345,7 @@ struct GenerateLyricsScreen: View {
             // Prompt
             VStack(alignment: .leading, spacing: 8) {
                 Text("Describe Your Song")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                     .foregroundColor(.white)
 
                 PromptInput(
@@ -361,11 +360,12 @@ struct GenerateLyricsScreen: View {
             // Language
             VStack(alignment: .leading, spacing: 8) {
                 Text("Language")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                     .foregroundColor(.white)
                 
-                TextField("English", text: $config.language)
-                    .padding(12)
+                TextField("", text: $config.language, prompt: Text("English").foregroundColor(.white.opacity(0.45)))
+                    .font(.system(size: iPadScale(16)))
+                    .padding(iPadScaleSmall(12))
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(8)
                     .overlay(
@@ -380,7 +380,7 @@ struct GenerateLyricsScreen: View {
     private var structureSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Structure")
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.white)
             
             if #available(iOS 16.0, *) {
@@ -420,10 +420,10 @@ struct GenerateLyricsScreen: View {
                 }
             }) {
                 Text(part.rawValue)
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: iPadScale(13), weight: .medium))
                     .foregroundColor(isSelected ? .black : .white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, iPadScaleSmall(12))
+                    .padding(.vertical, iPadScaleSmall(6))
                     .background(
                         Capsule()
                             .fill(isSelected ? Color.white : Color.white.opacity(0.1))
@@ -474,7 +474,7 @@ struct GenerateLyricsScreen: View {
     private var advanceOptionsSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("Advanced Options")
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(AivoTheme.Primary.orange)
             
             // Scheme & Style
@@ -486,7 +486,7 @@ struct GenerateLyricsScreen: View {
             // Avoid
             VStack(alignment: .leading, spacing: 12) {
                 Text("Avoid")
-                    .font(.subheadline)
+                    .font(.system(size: iPadScale(15)))
                     .foregroundColor(.white.opacity(0.8))
                 
                 if #available(iOS 16.0, *) {
@@ -521,10 +521,10 @@ struct GenerateLyricsScreen: View {
                 }
             }) {
                 Text(item.rawValue)
-                    .font(.system(size: 13))
+                    .font(.system(size: iPadScale(13)))
                     .foregroundColor(config.avoid.contains(item) ? .black : .white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, iPadScaleSmall(12))
+                    .padding(.vertical, iPadScaleSmall(6))
                     .background(
                         Capsule()
                             .fill(config.avoid.contains(item) ? Color.white : Color.white.opacity(0.1))
@@ -554,7 +554,7 @@ struct GenerateLyricsScreen: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 6) {
                 Text("Lyric Variation")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                     .foregroundColor(.white)
                 
                 Button(action: {
@@ -571,11 +571,11 @@ struct GenerateLyricsScreen: View {
                 
                 HStack(spacing: 4) {
                     Text("= \(totalCost)")
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: iPadScale(16), weight: .bold))
                     Image("icon_coin")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 14, height: 14)
+                        .frame(width: iPadScale(14), height: iPadScale(14))
                 }
                 .foregroundColor(.yellow)
             }
@@ -586,10 +586,10 @@ struct GenerateLyricsScreen: View {
                         withAnimation { config.lyricCount = count }
                     }) {
                         Text("\(count)")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: iPadScale(16), weight: .bold))
                             .foregroundColor(config.lyricCount == count ? .black : .white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 44)
+                            .frame(height: iPadScale(44))
                             .background(
                                 RoundedRectangle(cornerRadius: 8)
                                     .fill(config.lyricCount == count ? Color.white : Color.white.opacity(0.1))
@@ -625,19 +625,19 @@ struct GenerateLyricsScreen: View {
 
                 if !subscriptionManager.isPremium && remoteConfig.enableOneTimeFreeTry && !profileManager.hasUsedFreeLyricGeneration {
                     Text(isGenerating ? "Generating..." : "Generate First Lyric Free")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .fontWeight(.bold)
                 } else {
                     Text(isGenerating ? "Generating..." : "Generate Lyrics")
-                        .font(.headline)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .fontWeight(.bold)
                 }
             }
             .foregroundColor(.black)
             .frame(maxWidth: .infinity)
-            .padding()
+            .padding(iPadScaleSmall(16))
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: iPadScale(16))
                     .fill(AivoTheme.Primary.orange)
             )
             .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
@@ -651,7 +651,7 @@ struct GenerateLyricsScreen: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(title)
-                    .font(.subheadline)
+                    .font(.system(size: iPadScale(15)))
                     .foregroundColor(.white.opacity(0.8))
                 Spacer()
                 Button(action: action) {
@@ -665,16 +665,16 @@ struct GenerateLyricsScreen: View {
             
             if items.isEmpty {
                 Text("Any")
-                    .font(.system(size: 14))
+                    .font(.system(size: iPadScale(14)))
                     .foregroundColor(.white.opacity(0.5))
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack {
                         ForEach(items, id: \.self) { item in
                             Text(item)
-                                .font(.system(size: 13))
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
+                                .font(.system(size: iPadScale(13)))
+                                .padding(.horizontal, iPadScaleSmall(10))
+                                .padding(.vertical, iPadScaleSmall(5))
                                 .background(Capsule().fill(Color.white.opacity(0.2)))
                                 .foregroundColor(.white)
                         }
@@ -688,7 +688,7 @@ struct GenerateLyricsScreen: View {
     private func menuPicker<T: RawRepresentable & Hashable>(title: String, selection: Binding<T>, options: [T]) -> some View where T.RawValue == String {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.subheadline)
+                .font(.system(size: iPadScale(15)))
                 .foregroundColor(.white.opacity(0.8))
             
             Menu {
@@ -705,12 +705,12 @@ struct GenerateLyricsScreen: View {
             } label: {
                 HStack {
                     Text(selection.wrappedValue.rawValue)
-                        .font(.system(size: 14))
+                        .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white)
                         .lineLimit(1)
                     Spacer()
                     Image(systemName: "chevron.down")
-                        .font(.system(size: 10))
+                        .font(.system(size: iPadScale(10)))
                         .foregroundColor(.white.opacity(0.5))
                 }
                 .padding(12)

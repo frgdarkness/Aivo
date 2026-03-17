@@ -40,7 +40,7 @@ struct ExploreTabViewNew: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: DeviceScale.isIPad ? 36 : 24) {
                 // Header
                 //headerView
                 
@@ -288,9 +288,9 @@ struct ExploreTabViewNew: View {
     
     // MARK: - Trending Section
     private var trendingSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(16)) {
             Text("Trending")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -309,10 +309,10 @@ struct ExploreTabViewNew: View {
     
     // MARK: - Popular Section
     private var popularSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(16)) {
             HStack {
                 Text("Popular")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: iPadScale(20), weight: .bold))
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -321,7 +321,7 @@ struct ExploreTabViewNew: View {
                     selectedThemeList = ThemeList(title: "Popular", songs: remoteConfig.hottestList)
                 }) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -342,17 +342,17 @@ struct ExploreTabViewNew: View {
     
     // MARK: - Community Newest Section (New from the Community)
     private var newsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(16)) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 Text("New from the Community")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: iPadScale(20), weight: .bold))
                     .foregroundColor(.white)
                 
                 Button(action: {
                     fetchCommunitySongs(force: true)
                 }) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: iPadScale(14), weight: .bold))
                         .foregroundColor(.white.opacity(0.8))
                         .rotationEffect(.degrees(isFetchingCommunity ? 360 : 0))
                         .animation(isFetchingCommunity ? Animation.linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isFetchingCommunity)
@@ -365,7 +365,7 @@ struct ExploreTabViewNew: View {
                     selectedThemeList = ThemeList(title: "New from the Community", songs: communityNewestSongs)
                 }) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -373,9 +373,9 @@ struct ExploreTabViewNew: View {
             // Horizontal scroll with 3 rows
             ScrollView(.horizontal, showsIndicators: false) {
                 let rows = [
-                    GridItem(.fixed(72), spacing: 16),
-                    GridItem(.fixed(72), spacing: 16),
-                    GridItem(.fixed(72), spacing: 16)
+                    GridItem(.fixed(iPadScale(72)), spacing: iPadScaleSmall(16)),
+                    GridItem(.fixed(iPadScale(72)), spacing: iPadScaleSmall(16)),
+                    GridItem(.fixed(iPadScale(72)), spacing: iPadScaleSmall(16))
                 ]
                 
                 let newsSongs = Array(communityNewestSongs.prefix(15))
@@ -457,10 +457,10 @@ struct GenreSectionView: View {
     let onSeeAll: ([SunoData]) -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: iPadScaleSmall(16)) {
             HStack {
                 Text(genre.displayName)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: iPadScale(20), weight: .bold))
                     .foregroundColor(.white)
                 
                 Spacer()
@@ -469,7 +469,7 @@ struct GenreSectionView: View {
                     onSeeAll(songs)
                 }) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -509,9 +509,9 @@ struct GenreSongCardView: View {
     let onTap: () -> Void
     
     var body: some View {
+        let coverSize: CGFloat = iPadScale(120)
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 8) {
-                // Cover Image with Listen Count
+            VStack(alignment: .leading, spacing: iPadScaleSmall(8)) {
                 ZStack(alignment: .topLeading) {
                     AsyncImage(url: getImageURL(for: song)) { phase in
                         Group {
@@ -535,49 +535,32 @@ struct GenreSongCardView: View {
                             }
                         }
                     }
-                    .frame(width: 120, height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: coverSize, height: coverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                     
-                    // Listen Count - Top Left Corner
-//                    HStack(spacing: 4) {
-//                        Image(systemName: "headphones")
-//                            .font(.system(size: 10))
-//                            .foregroundColor(.white)
-//                        Text(formatCount(status?.playCount ?? 0))
-//                            .font(.system(size: 11, weight: .medium))
-//                            .foregroundColor(.white)
-//                    }
-//                    .padding(.horizontal, 6)
-//                    .padding(.vertical, 4)
-//                    .background(
-//                        RoundedRectangle(cornerRadius: 6)
-//                            .fill(Color.black.opacity(0.5))
-//                    )
                     .padding(6)
                 }
                 
-                // Song Title - Max 1 line
                 Text(song.title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: iPadScale(14), weight: .medium))
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
-                    .frame(width: 120, alignment: .leading)
+                    .frame(width: coverSize, alignment: .leading)
                 
-                // Model ID (modelName)
                 HStack(spacing: 4) {
                     Image(systemName: "person.circle.fill")
-                        .font(.system(size: 10))
+                        .font(.system(size: iPadScale(10)))
                         .foregroundColor(.white.opacity(0.6))
                     Text(song.modelName)
-                        .font(.system(size: 12, weight: .regular))
+                        .font(.system(size: iPadScale(12), weight: .regular))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
-                .frame(width: 120, alignment: .leading)
+                .frame(width: coverSize, alignment: .leading)
             }
-            .frame(width: 120)
+            .frame(width: coverSize)
         }
         .buttonStyle(.plain)
     }
@@ -610,9 +593,9 @@ struct TrendingCardView: View {
     let onTap: () -> Void
     
     var body: some View {
+        let cardSize: CGFloat = iPadScale(200)
         Button(action: onTap) {
             ZStack {
-                // Cover Image - Full width/height of item
                 AsyncImage(url: getImageURL(for: song)) { phase in
                     Group {
                         switch phase {
@@ -635,28 +618,26 @@ struct TrendingCardView: View {
                         }
                     }
                 }
-                .frame(width: 200, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .frame(width: cardSize, height: cardSize)
+                .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                 
-                // Rank Label - Center overlay
                 Text("No.\(rank)")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: iPadScale(48), weight: .bold, design: .rounded))
                     .foregroundColor(AivoTheme.Primary.orange)
                     .shadow(color: .black.opacity(0.8), radius: 8, x: 0, y: 2)
                     .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 12, x: 0, y: 0)
                 
-                // Song Title Overlay - Bottom, Full Width, Max 1 Line
                 VStack {
                     Spacer()
                     Text(song.title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: iPadScale(16), weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .multilineTextAlignment(.leading)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, iPadScaleSmall(8))
+                        .padding(.vertical, iPadScaleSmall(6))
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [
@@ -667,10 +648,10 @@ struct TrendingCardView: View {
                                 endPoint: .top
                             )
                         )
-                        .clipShape(RoundedCorner(radius: 12, corners: [.bottomLeft, .bottomRight]))
+                        .clipShape(RoundedCorner(radius: iPadScale(12), corners: [.bottomLeft, .bottomRight]))
                 }
             }
-            .frame(width: 200, height: 200)
+            .frame(width: cardSize, height: cardSize)
         }
         .buttonStyle(.plain)
     }
@@ -692,9 +673,10 @@ struct PopularCardView: View {
     let onTap: () -> Void
     
     var body: some View {
+        let coverW: CGFloat = iPadScale(120)
+        let coverH: CGFloat = iPadScale(180)
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 8) {
-                // 2:3 Aspect Ratio Image with Play Icon
+            VStack(alignment: .leading, spacing: iPadScaleSmall(8)) {
                 ZStack(alignment: .bottomTrailing) {
                     AsyncImage(url: getImageURL(for: song)) { phase in
                         Group {
@@ -718,25 +700,23 @@ struct PopularCardView: View {
                             }
                         }
                     }
-                    .frame(width: 120, height: 180) // 2:3 ratio (120 × 180)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: coverW, height: coverH)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                     
-                    // Play Icon Overlay - Bottom Right Corner
                     Image(systemName: "play.circle.fill")
-                        .font(.system(size: 32))
+                        .font(.system(size: iPadScale(32)))
                         .foregroundColor(.white.opacity(0.9))
                         .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-                        .padding(8)
+                        .padding(iPadScaleSmall(8))
                 }
                 
-                // Song Title - Max 1 line with truncation
                 Text(song.title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: iPadScale(14), weight: .medium))
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .multilineTextAlignment(.leading)
-                    .frame(width: 120, alignment: .leading)
+                    .frame(width: coverW, alignment: .leading)
             }
         }
         .buttonStyle(.plain)
@@ -760,9 +740,9 @@ struct NewsCardView: View {
     let onTap: () -> Void
     
     var body: some View {
+        let newsCoverSize: CGFloat = iPadScale(60)
         Button(action: onTap) {
-            HStack(spacing: 12) {
-                // Cover Image with Play Icon (Left)
+            HStack(spacing: iPadScaleSmall(12)) {
                 ZStack {
                     AsyncImage(url: getImageURL(for: song)) { phase in
                         Group {
@@ -786,40 +766,35 @@ struct NewsCardView: View {
                             }
                         }
                     }
-                    .frame(width: 60, height: 60)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: newsCoverSize, height: newsCoverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(8)))
                     
-                    // Play Icon Overlay
                     Image(systemName: "play.circle.fill")
-                        .font(.system(size: 24))
+                        .font(.system(size: iPadScale(24)))
                         .foregroundColor(.white.opacity(0.9))
                         .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
                 }
                 
-                // Info Section (Middle)
-                VStack(alignment: .leading, spacing: 4) {
-                    // Row 1: Song Title
+                VStack(alignment: .leading, spacing: iPadScaleSmall(4)) {
                     Text(song.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: iPadScale(14), weight: .semibold))
                         .foregroundColor(.white)
                         .lineLimit(1)
                         .truncationMode(.tail)
                     
-                    // Row 2: Model Name + Play Count
                     HStack(spacing: 4) {
                         Image(systemName: "person.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: iPadScale(10)))
                             .foregroundColor(.white.opacity(0.6))
                         
                         Text(song.username ?? "Aivo Music")
-                            .font(.system(size: 11, weight: .regular))
+                            .font(.system(size: iPadScale(11), weight: .regular))
                             .foregroundColor(.white.opacity(0.7))
                             .lineLimit(1)
                     }
                     
-                    // Row 3: Tags
                     Text(song.tags.isEmpty ? "No tags" : song.tags)
-                        .font(.system(size: 10, weight: .regular))
+                        .font(.system(size: iPadScale(10), weight: .regular))
                         .foregroundColor(.white.opacity(0.5))
                         .lineLimit(1)
                         .truncationMode(.tail)
@@ -828,20 +803,19 @@ struct NewsCardView: View {
                 
                 Spacer(minLength: 8)
                 
-                // Play Count Section (Right)
-                VStack(spacing: 4) {
+                VStack(spacing: iPadScaleSmall(4)) {
                     Image(systemName: "headphones")
-                        .font(.system(size: 14))
+                        .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.8))
                     
                     Text(formatCount(status?.playCount ?? song.playCount ?? 0))
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: iPadScale(12), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
-                .frame(width: 44) // Constant width for right side
+                .frame(width: iPadScale(44))
             }
-            .frame(width: 280) // Fixed card width for alignment
-            .padding(.vertical, 8)
+            .frame(width: iPadScale(280))
+            .padding(.vertical, iPadScaleSmall(8))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -887,7 +861,7 @@ struct CommunityHottestSection: View {
             HStack {
                 Button(action: { onTitleTap?() }) {
                     Text("Weekly Billboard")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: iPadScale(20), weight: .bold))
                         .foregroundColor(.white)
                 }
                 .buttonStyle(.plain)
@@ -897,7 +871,7 @@ struct CommunityHottestSection: View {
                 
                 Button(action: onSeeAll) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
@@ -929,55 +903,54 @@ struct CommunitySongCard: View {
     }
     
     var body: some View {
+        let cardW: CGFloat = iPadScaleLarge(140)
         Button(action: onTap) {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: iPadScaleSmall(8)) {
                 ZStack(alignment: .bottomTrailing) {
                     AsyncImage(url: URL(string: song.imageUrl)) { image in
                         image.resizable().aspectRatio(contentMode: .fill)
                     } placeholder: {
                         Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                     }
-                    .frame(width: 140, height: 140)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .frame(width: cardW, height: cardW)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                     
-                    // Rank Label (Bottom-Left)
                     if let rank = rank {
                         Text("#\(rank)")
-                            .font(.system(size: 38, weight: .black))
+                            .font(.system(size: iPadScale(38), weight: .black))
                             .italic()
                             .foregroundColor(AivoTheme.Primary.orange)
                             .shadow(color: .black.opacity(0.8), radius: 4, x: 2, y: 2)
-                            .padding(.leading, 8)
+                            .padding(.leading, iPadScaleSmall(8))
                             .padding(.bottom, 0)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
                     }
                     
-                    // Play Count Badge (Bottom-Right)
                     HStack(spacing: 4) {
                         Image(systemName: "play.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: iPadScale(10)))
                         Text("\(song.playCount ?? 0)")
-                            .font(.system(size: 10, weight: .bold))
+                            .font(.system(size: iPadScale(10), weight: .bold))
                     }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
+                    .padding(.horizontal, iPadScaleSmall(8))
+                    .padding(.vertical, iPadScaleSmall(4))
                     .background(Color.black.opacity(0.6))
                     .foregroundColor(.white)
                     .clipShape(Capsule())
-                    .padding(8)
+                    .padding(iPadScaleSmall(8))
                 }
                 
                 Text(song.title)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: iPadScale(14), weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 Text(song.username ?? "Aivo Music")
-                    .font(.system(size: 12))
+                    .font(.system(size: iPadScale(12)))
                     .foregroundColor(.white.opacity(0.6))
                     .lineLimit(1)
             }
-            .frame(width: 140)
+            .frame(width: cardW)
         }
         .buttonStyle(.plain)
     }
@@ -1003,21 +976,21 @@ struct DiscountAdView: View {
         HStack {
             Image(systemName: "tag.fill") // Placeholder
                 .resizable()
-                .frame(width: 40, height: 40)
+                .frame(width: iPadScale(40), height: iPadScale(40))
                 .foregroundColor(AivoTheme.Primary.orange)
-                .padding(8)
+                .padding(iPadScaleSmall(8))
                 .background(Color.white.opacity(0.1))
-                .cornerRadius(8)
+                .cornerRadius(iPadScale(8))
             
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text("Limited Offer")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: iPadScale(14), weight: .bold))
                         .foregroundColor(.white)
                 }
                 
                 Text("Unleash your creativity and build your music world with AI")
-                    .font(.system(size: 12))
+                    .font(.system(size: iPadScale(12)))
                     .foregroundColor(.gray)
             }
             
@@ -1027,12 +1000,12 @@ struct DiscountAdView: View {
                 showSubscription = true
             }) {
                 Text("80% OFF")
-                    .font(.system(size: 12, weight: .bold))
+                    .font(.system(size: iPadScale(12), weight: .bold))
                     .foregroundColor(.black)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(Color.yellow) // Specific ad color
-                    .cornerRadius(16)
+                    .padding(.horizontal, iPadScaleSmall(16))
+                    .padding(.vertical, iPadScaleSmall(8))
+                    .background(Color.yellow)
+                    .cornerRadius(iPadScale(16))
             }
         }
         .padding(12)
@@ -1068,28 +1041,28 @@ struct SongsForYouSection: View {
                 Image("icon_app_small")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 24, height: 24)
+                    .frame(width: iPadScale(24), height: iPadScale(24))
                     .clipShape(Circle())
                 if let onTitleTap = onTitleTap {
                     Button(action: onTitleTap) {
                         Text(title)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: iPadScale(20), weight: .bold))
                             .foregroundColor(Color.white)
                     }
                     .buttonStyle(.plain)
                 } else {
                     Text(title)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: iPadScale(20), weight: .bold))
                         .foregroundColor(Color.white)
                 }
                 Spacer()
                 Button(action: onSeeAll) {
                     Text("See All")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
             }
-            .padding(.top, 16)
+            .padding(.top, iPadScaleSmall(16))
             
             VStack(spacing: 12) {
                 ForEach(songs) { song in
@@ -1116,24 +1089,24 @@ struct SongForYouRow: View {
     @State private var showMenu = false
     
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: iPadScaleSmall(12)) {
             KFImage(URL(string: song.imageUrl.isEmpty ? song.sourceImageUrl : song.imageUrl))
                 .placeholder {
                     Color.gray.opacity(0.3)
                 }
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .frame(width: iPadScale(48), height: iPadScale(48))
+                .clipShape(RoundedRectangle(cornerRadius: iPadScale(4)))
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(song.title)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: iPadScale(15), weight: .medium))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 Text(song.username ?? "Aivo Music")
-                    .font(.system(size: 13))
+                    .font(.system(size: iPadScale(13)))
                     .foregroundColor(.gray)
                     .lineLimit(1)
             }

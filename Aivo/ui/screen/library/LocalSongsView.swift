@@ -66,28 +66,27 @@ struct LocalSongsView: View {
         VStack(spacing: 20) {
             Spacer()
             Image(systemName: "music.note.list")
-                .font(.system(size: 60))
+                .font(.system(size: iPadScale(60)))
                 .foregroundColor(.gray)
             
             Text("No Local Songs")
-                .font(.title2)
-                .fontWeight(.bold)
+                .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white)
             
             Text("Import audio files from your device to play them here.")
-                .font(.subheadline)
+                .font(.system(size: iPadScale(15)))
                 .foregroundColor(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
             Button(action: { showFilePicker = true }) {
                 Text("Import Songs")
-                    .font(.headline)
+                    .font(.system(size: iPadScale(17), weight: .semibold))
                     .foregroundColor(.black)
-                    .frame(height: 50)
+                    .frame(height: iPadScale(50))
                     .frame(maxWidth: .infinity)
                     .background(AivoTheme.Primary.orange)
-                    .cornerRadius(12)
+                    .cornerRadius(iPadScale(12))
             }
             .padding(.horizontal, 40)
             .padding(.top, 20)
@@ -103,17 +102,17 @@ struct LocalSongsView: View {
                         playSong(index: index)
                     }) {
                         // Card Background
+                        let coverSize: CGFloat = DeviceScale.isIPad ? 90 : 60
+                        
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .fill(Color.white.opacity(0.05))
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: iPadScale(12))
                                         .stroke(Color.clear, lineWidth: 2)
                                 )
                             
-                            HStack(spacing: 12) {
-                                let coverSize: CGFloat = 60
-                                
+                            HStack(spacing: iPadScaleSmall(12)) {
                                 // Cover Image
                                 ZStack {
                                     if let coverPath = song.coverImageLocalPath,
@@ -128,29 +127,28 @@ struct LocalSongsView: View {
                                     }
                                 }
                                 .frame(width: coverSize, height: coverSize)
-                                .cornerRadius(8)
+                                .cornerRadius(iPadScale(8))
                                 .clipped()
-                                .padding(.leading, 12)
+                                .padding(.leading, iPadScaleSmall(12))
                                 
                                 // Song Info
-                                VStack(alignment: .leading, spacing: 4) {
+                                VStack(alignment: .leading, spacing: iPadScaleSmall(4)) {
                                     Text(song.title)
-                                        .font(.headline)
-                                        .fontWeight(.medium)
+                                        .font(.system(size: iPadScale(17), weight: .medium))
                                         .foregroundColor(.white)
                                         .lineLimit(1)
                                     
-                                    HStack(spacing: 12) {
+                                    HStack(spacing: iPadScaleSmall(12)) {
                                         // Duration
                                         Label(formatDuration(song.duration), systemImage: "clock.fill")
                                             .labelStyle(.titleAndIcon)
-                                            .font(.caption)
+                                            .font(.system(size: iPadScale(12)))
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
                                         
                                         // Model Label
                                         Text(song.modelName)
-                                            .font(.caption)
+                                            .font(.system(size: iPadScale(12)))
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
                                     }
@@ -185,14 +183,14 @@ struct LocalSongsView: View {
                                     }
                                 } label: {
                                     Image(systemName: "ellipsis")
-                                        .font(.system(size: 20))
+                                        .font(.system(size: iPadScale(20)))
                                         .foregroundColor(.white)
-                                        .frame(width: 40, height: 40)
+                                        .frame(width: iPadScale(40), height: iPadScale(40))
                                         .contentShape(Rectangle())
                                 }
-                                .padding(.trailing, 12)
+                                .padding(.trailing, iPadScaleSmall(12))
                             }
-                            .frame(height: 76)
+                            .frame(height: DeviceScale.isIPad ? 110 : 76)
                         }
                     }
                     .padding(.vertical, 4)
@@ -211,9 +209,9 @@ struct LocalSongsView: View {
                  showFilePicker = true
             }) {
                 Image(systemName: "plus")
-                    .font(.title2.weight(.bold))
+                    .font(.system(size: iPadScale(22), weight: .bold))
                     .foregroundColor(.white)
-                    .frame(width: 56, height: 56)
+                    .frame(width: iPadScale(56), height: iPadScale(56))
                     .background(AivoTheme.Primary.orange)
                     .clipShape(Circle())
                     .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 4)

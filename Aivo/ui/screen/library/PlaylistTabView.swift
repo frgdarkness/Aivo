@@ -49,7 +49,7 @@ struct PlaylistTabView: View {
                          // My Playlists Header
                          HStack {
                              Text("My playlists (\(playlistManager.userPlaylists.count))")
-                                 .font(.system(size: 20, weight: .bold))
+                                 .font(.system(size: iPadScale(20), weight: .bold))
                                  .foregroundColor(.white)
                              Spacer()
                          }
@@ -59,24 +59,24 @@ struct PlaylistTabView: View {
                          LazyVStack(spacing: 8) {
                              // Create New Playlist Row
                              Button(action: { showingCreatePlaylist = true }) {
-                                 HStack(spacing: 16) {
+                                 HStack(spacing: iPadScaleSmall(16)) {
                                      ZStack {
                                          Color.white.opacity(0.1)
                                          Image(systemName: "plus")
-                                             .font(.system(size: 24))
+                                             .font(.system(size: iPadScale(24)))
                                              .foregroundColor(.white)
                                      }
-                                     .frame(width: 56, height: 56)
-                                     .cornerRadius(8)
+                                     .frame(width: iPadScale(56), height: iPadScale(56))
+                                     .cornerRadius(iPadScale(8))
                                      
                                      Text("Create new playlist")
-                                         .font(.system(size: 16, weight: .semibold))
+                                         .font(.system(size: iPadScale(16), weight: .semibold))
                                          .foregroundColor(.white)
                                      
                                      Spacer()
                                  }
                                  .padding(.horizontal)
-                                 .padding(.vertical, 8)
+                                 .padding(.vertical, iPadScaleSmall(8))
                              }
                              
                              // User Playlists
@@ -134,37 +134,37 @@ struct PlaylistTabView: View {
     
     private func smartPlaylistCard(originalType: SmartPlaylistType, title: String, iconName: String, colors: [Color]) -> some View {
          Button(action: { selectedSmartType = originalType }) {
-             ZStack(alignment: .topLeading) { // Changed to .topLeading
+             ZStack(alignment: .topLeading) {
                  LinearGradient(gradient: Gradient(colors: colors), startPoint: .topLeading, endPoint: .bottomTrailing)
                  
                  VStack(alignment: .leading, spacing: 4) {
                      Text(title)
-                         .font(.system(size: 16, weight: .bold))
+                         .font(.system(size: iPadScale(16), weight: .bold))
                          .foregroundColor(.white)
                          .multilineTextAlignment(.leading)
                      
                      Text("\(PlaylistManager.shared.getSongs(for: originalType).count) songs")
-                         .font(.system(size: 12))
+                         .font(.system(size: iPadScale(12)))
                          .foregroundColor(.white.opacity(0.9))
                  }
-                 .padding(12)
+                 .padding(iPadScaleSmall(12))
                  
                  // Icon Large Background
                  GeometryReader { geo in
                      Image(systemName: iconName)
-                         .font(.system(size: 80))
+                         .font(.system(size: iPadScale(80)))
                          .foregroundColor(.white.opacity(0.2))
-                         .position(x: geo.size.width - 20, y: geo.size.height - 20)
+                         .position(x: geo.size.width - iPadScale(20), y: geo.size.height - iPadScale(20))
                  }
              }
-             .frame(height: 100)
-             .cornerRadius(12)
+             .frame(height: iPadScale(100))
+             .cornerRadius(iPadScale(12))
              .overlay(
                 // Small Icon at bottom right
                 Image(systemName: iconName)
-                    .font(.system(size: 24))
+                    .font(.system(size: iPadScale(24)))
                     .foregroundColor(.white.opacity(0.5))
-                    .padding(8)
+                    .padding(iPadScaleSmall(8))
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
              )
          }
@@ -179,10 +179,10 @@ struct UserPlaylistRow: View {
     let onDelete: () -> Void
     
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: iPadScaleSmall(16)) {
             // Main Clickable Area
             Button(action: onTap) {
-                HStack(spacing: 16) {
+                HStack(spacing: iPadScaleSmall(16)) {
                     // Cover
                     ZStack {
                         if let data = playlist.coverImageData, let uiImage = UIImage(data: data) {
@@ -193,33 +193,33 @@ struct UserPlaylistRow: View {
                             Color(hex: colorHex)
                                 .overlay(
                                     Text(playlist.name.prefix(1).uppercased())
-                                        .font(.system(size: 24, weight: .bold))
+                                        .font(.system(size: iPadScale(24), weight: .bold))
                                         .foregroundColor(.white)
                                 )
                         } else {
                             Color.gray
                         }
                     }
-                    .frame(width: 56, height: 56)
-                    .cornerRadius(8)
+                    .frame(width: iPadScale(56), height: iPadScale(56))
+                    .cornerRadius(iPadScale(8))
                     .clipped()
                     
                     // Info
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: iPadScaleSmall(4)) {
                         Text(playlist.name)
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: iPadScale(16), weight: .semibold))
                             .foregroundColor(.white)
                         
                         Text("\(playlist.songIds.count) songs")
-                            .font(.system(size: 14))
+                            .font(.system(size: iPadScale(14)))
                             .foregroundColor(.gray)
                     }
                     
                     Spacer()
                 }
-                .contentShape(Rectangle()) // Ensure entire area is tappable
+                .contentShape(Rectangle())
             }
-            .buttonStyle(PlainButtonStyle()) // Prevent default button styling affecting layout
+            .buttonStyle(PlainButtonStyle())
             
             // Context Menu Button
             Menu {
@@ -236,14 +236,14 @@ struct UserPlaylistRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 20))
+                    .font(.system(size: iPadScale(20)))
                     .foregroundColor(.gray)
-                    .frame(width: 40, height: 40)
+                    .frame(width: iPadScale(40), height: iPadScale(40))
                     .contentShape(Rectangle())
             }
         }
         .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.vertical, iPadScaleSmall(8))
     }
 }
 

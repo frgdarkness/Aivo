@@ -252,7 +252,7 @@ struct CoverTabView: View {
                                 showSongSelectionDialog = true
                             }) {
                                 Text(selectedSongForCover?.title ?? "Click to select a song")
-                                    .font(.headline.weight(.semibold))
+                                    .font(.system(size: iPadScale(17), weight: .semibold))
                                     .foregroundColor(.white)
                                     .multilineTextAlignment(.center)
                                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -262,7 +262,7 @@ struct CoverTabView: View {
                             VStack(alignment: .leading, spacing: 12) {
                                 HStack {
                                     Text("Copy youtube link to here:")
-                                        .font(.subheadline.weight(.medium))
+                                        .font(.system(size: iPadScale(15), weight: .medium))
                                         .foregroundColor(.white)
                                     
                                     Spacer()
@@ -323,14 +323,14 @@ struct CoverTabView: View {
     private var songNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("New Song Name (Optional)")
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.white)
             
             HStack(spacing: 8) {
-                TextField("", text: $songName)
-                    .font(.system(size: 16))
+                TextField("", text: $songName, prompt: Text("Enter song name").foregroundColor(.white.opacity(0.45)))
+                    .font(.system(size: iPadScale(16)))
                     .foregroundColor(.white)
-                    .padding(16)
+                    .padding(iPadScaleSmall(16))
                     
                 
                 if !songName.isEmpty {
@@ -356,22 +356,21 @@ struct CoverTabView: View {
     // MARK: - Language Selection Section
     private var languageSelectionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Select Language")
-                .font(.headline)
+            Text(verbatim: "Select Language")
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.white)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
+                HStack(spacing: iPadScaleSmall(12)) {
                     ForEach(CoverLanguage.allCases, id: \.self) { language in
                         Button(action: { selectedLanguage = language }) {
                             Text(language.displayName)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
+                                .font(.system(size: iPadScale(15), weight: .medium))
                                 .foregroundColor(selectedLanguage == language ? .black : .white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, iPadScaleSmall(16))
+                                .padding(.vertical, iPadScaleSmall(12))
                                 .background(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: iPadScale(12))
                                         .fill(selectedLanguage == language ? AivoTheme.Primary.orange : Color.gray.opacity(0.3))
                                 )
                         }
@@ -384,62 +383,65 @@ struct CoverTabView: View {
 
     // MARK: - Model Selection Section (Replaces Artist Selection)
     private var modelSelectionSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        let imgSize: CGFloat = DeviceScale.isIPad ? 160 : 80
+        let itemW: CGFloat = DeviceScale.isIPad ? 180 : 90
+        let itemH: CGFloat = DeviceScale.isIPad ? 210 : 110
+        let moreIconW: CGFloat = DeviceScale.isIPad ? 160 : 80
+        
+        return VStack(alignment: .leading, spacing: iPadScaleSmall(12)) {
             Text("Select Voice Model")
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.white)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: iPadScaleSmall(6)) {
                 ForEach(Array(availableModels.prefix(8))) { model in
                     Button(action: { 
                         selectedModel = selectedModel?.id == model.id ? nil : model 
                     }) {
-                        VStack(spacing: 4) {
+                        VStack(spacing: iPadScaleSmall(4)) {
                             KFImage(URL(string: model.thumbUrl))
-                                .placeholder { ProgressView().frame(width: 70, height: 70) }
-                                .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 120, height: 120)))
+                                .placeholder { ProgressView().frame(width: imgSize * 0.875, height: imgSize * 0.875) }
+                                .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
                                 .loadDiskFileSynchronously()
                                 .resizable()
                                 .scaledToFill()
-                                .frame(width: 80, height: 80)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .frame(width: imgSize, height: imgSize)
+                                .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
 
                             Text(model.displayName)
-                                .font(.caption)
-                                .fontWeight(.medium)
+                                .font(.system(size: iPadScale(12), weight: .medium))
                                 .foregroundColor(.white)
                                 .multilineTextAlignment(.center)
                                 .lineLimit(1)
                                 .truncationMode(.tail)
                         }
-                        .frame(width: 90, height: 110)
+                        .frame(width: itemW, height: itemH)
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .fill(Color.black.opacity(0.3))
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .stroke(selectedModel?.id == model.id ? AivoTheme.Primary.orange : Color.clear, lineWidth: 3)
                         )
                     }
                 }
                 if availableModels.count > 8 {
                     Button(action: { showModelSelectionScreen = true }) {
-                        VStack(spacing: 8) {
+                        VStack(spacing: iPadScaleSmall(8)) {
                             ZStack {
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: iPadScale(12))
                                     .fill(Color.black.opacity(0.3))
-                                    .frame(width: 80, height: 80)
+                                    .frame(width: moreIconW, height: moreIconW)
                                 Image(systemName: "ellipsis")
-                                    .font(.title)
+                                    .font(.system(size: iPadScale(24)))
                                     .foregroundColor(.white)
                             }
                             Text("More")
-                                .font(.caption)
-                                .fontWeight(.medium)
+                                .font(.system(size: iPadScale(12), weight: .medium))
                                 .foregroundColor(.white)
                         }
-                        .frame(width: 90, height: 110)
+                        .frame(width: itemW, height: itemH)
                     }
                 }
             }
@@ -454,35 +456,29 @@ struct CoverTabView: View {
             }
         }) {
             HStack(spacing: 8) {
-//                Image(systemName: "mic.fill")
-//                    .font(.title3)
-//                    .foregroundColor(.black)
                 Text("Generate Cover")
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.system(size: iPadScale(17), weight: .bold))
                     .foregroundColor(.black)
 
                 // Credit cost display
                 HStack(spacing: 2) {
                     Text("(-\(creditsRequired)")
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(.system(size: iPadScale(17), weight: .bold))
                     Image("icon_coin")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 16, height: 16)
+                        .frame(width: iPadScale(16), height: iPadScale(16))
                     Text(")")
-                        .font(.headline)
-                        .fontWeight(.bold)
+                        .font(.system(size: iPadScale(17), weight: .bold))
                 }
                 .foregroundColor(.black.opacity(0.8))
 
                 
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: iPadScale(56))
             .background(AivoTheme.Primary.orange)
-            .cornerRadius(12)
+            .cornerRadius(iPadScale(12))
             .disabled(!isGenerateEnabled)
             .opacity((!isGenerateEnabled) ? 0.5 : 1.0)
             .shadow(color: (isGenerateEnabled && hasEnoughCreditsForCover) ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
