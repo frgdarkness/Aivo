@@ -29,6 +29,8 @@ struct ExploreTabViewNew: View {
     @State private var selectedThemeList: ThemeList?
     @State private var showSubscription = false
     @State private var showWeeklyHistory = false
+    @State private var showBillboardIntro = false
+    @State private var showBillboardCongrats = false
     @State private var songsForYou: [SunoData] = []
     
     // Community Sharing
@@ -47,6 +49,7 @@ struct ExploreTabViewNew: View {
                     SongsForYouSection(
                         title: "AIVO BILLBOARD",
                         songs: Array(remoteConfig.bestAivoSongsList.prefix(4)),
+                        onTitleTap: { showBillboardIntro = true },
                         onPlay: { song in
                             if let index = remoteConfig.bestAivoSongsList.firstIndex(where: { $0.id == song.id }) {
                                 selectedSongForPlayback = SongPlaybackItem(songs: remoteConfig.bestAivoSongsList, initialIndex: index)
@@ -66,6 +69,7 @@ struct ExploreTabViewNew: View {
                 if !communityHottestSongs.isEmpty {
                     CommunityHottestSection(
                         songs: communityHottestSongs,
+                        onTitleTap: { showBillboardCongrats = true },
                         onPlay: { song in
                             if let index = communityHottestSongs.firstIndex(where: { $0.id == song.id }) {
                                 selectedSongForPlayback = SongPlaybackItem(songs: communityHottestSongs, initialIndex: index)
@@ -116,6 +120,14 @@ struct ExploreTabViewNew: View {
         }
         .fullScreenCover(isPresented: $showWeeklyHistory) {
             WeeklyBoardHistoryScreen()
+        }
+        .overlay {
+            if showBillboardIntro {
+                BillboardIntroDialog(isPresented: $showBillboardIntro)
+            }
+            if showBillboardCongrats {
+                BillboardCongratsDialog(isPresented: $showBillboardCongrats, rank: 3, song: communityHottestSongs.first, rewardAmount: 1000)
+            }
         }
         .onAppear {
             loadSongStatus()
@@ -846,15 +858,27 @@ struct NewsCardView: View {
 // MARK: - Community Sections
 struct CommunityHottestSection: View {
     let songs: [SunoData]
+    let onTitleTap: (() -> Void)?
     let onPlay: (SunoData) -> Void
     let onSeeAll: () -> Void
+    
+    init(songs: [SunoData], onTitleTap: (() -> Void)? = nil, onPlay: @escaping (SunoData) -> Void, onSeeAll: @escaping () -> Void) {
+        self.songs = songs
+        self.onTitleTap = onTitleTap
+        self.onPlay = onPlay
+        self.onSeeAll = onSeeAll
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Weekly Top 10")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                Button(action: { onTitleTap?() }) {
+                    Text("Weekly Top 10")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+                .disabled(onTitleTap == nil)
                 
                 Spacer()
                 
@@ -1013,8 +1037,17 @@ struct DiscountAdView: View {
 struct SongsForYouSection: View {
     let title: String
     let songs: [SunoData]
+    let onTitleTap: (() -> Void)?
     let onPlay: (SunoData) -> Void
     let onSeeAll: () -> Void
+    
+    init(title: String, songs: [SunoData], onTitleTap: (() -> Void)? = nil, onPlay: @escaping (SunoData) -> Void, onSeeAll: @escaping () -> Void) {
+        self.title = title
+        self.songs = songs
+        self.onTitleTap = onTitleTap
+        self.onPlay = onPlay
+        self.onSeeAll = onSeeAll
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1022,9 +1055,13 @@ struct SongsForYouSection: View {
                 Image(systemName: title.contains("Community") ? "globe" : "person.circle.fill")
                     .font(.system(size: 20))
                     .foregroundColor(AivoTheme.Primary.orange)
-                Text(title)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
+                Button(action: { onTitleTap?() }) {
+                    Text(title)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                .buttonStyle(.plain)
+                .disabled(onTitleTap == nil)
                 Spacer()
                 Button(action: onSeeAll) {
                     Text("See All")
