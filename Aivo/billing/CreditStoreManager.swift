@@ -212,6 +212,17 @@ final class CreditStoreManager: ObservableObject {
             await CreditManager.shared.increaseCredits(by: credits)
             Logger.i("creditsGranted: + \(credits) -> total=\(CreditManager.shared.credits)")
             
+            // Log to credit history
+            let historyType: RequestType = {
+                switch credits {
+                case 500: return .buyCredits500
+                case 1000: return .buyCredits1000
+                case 5000: return .buyCredits5000
+                default: return .buyCredits1000 // fallback
+                }
+            }()
+            CreditHistoryManager.shared.addRequest(historyType, cost: credits)
+            
             // ✅ Log purchase to Facebook App Events for conversion tracking
             if let product = products.first(where: { $0.id == productID }) {
                 let amount = Double(truncating: product.price as NSDecimalNumber)

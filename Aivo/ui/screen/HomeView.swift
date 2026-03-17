@@ -11,6 +11,8 @@ struct HomeView: View {
     @State private var showProfile = false
     @State private var showBuyCreditDialog = false
     @State private var showFullPlayer = false
+    @StateObject private var weeklyRewardManager = WeeklyRewardManager.shared
+    @State private var showWeeklyRewardDialog = false
     
     // Hardcoded SunoData for testing
     private let hardcodedSunoData: [SunoData] = [
@@ -134,6 +136,32 @@ struct HomeView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: showProfile)
         .buyCreditDialog(isPresented: $showBuyCreditDialog)
+        .overlay {
+            if showWeeklyRewardDialog, let reward = weeklyRewardManager.pendingReward {
+                BillboardCongratsDialog(
+                    isPresented: $showWeeklyRewardDialog,
+                    rank: reward.rank,
+                    song: reward.song,
+                    rewardAmount: reward.rewardAmount
+                )
+                .transition(.opacity)
+            }
+        }
+        .onReceive(weeklyRewardManager.$pendingReward) { reward in
+            if reward != nil {
+                // Delay slightly to let the Home screen appear first
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                    withAnimation {
+                        showWeeklyRewardDialog = true
+                    }
+                }
+            }
+        }
+        .onChange(of: showWeeklyRewardDialog) { newValue in
+            if !newValue {
+                weeklyRewardManager.dismissReward()
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchMainTab"))) { notification in
             if let index = notification.object as? Int {
                 // index matches TabItem case order: Home, Explore, Cover, Library

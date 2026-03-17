@@ -10,6 +10,7 @@ struct UserProfile: Codable {
     var subscriptionStartDate: Date?
     var subscriptionExpiredDate: Date?
     var lastBonusTime: Date?
+    var weeklyRewardTag: String?
     
     init(
         profileID: String,
@@ -20,7 +21,8 @@ struct UserProfile: Codable {
         subscriptionPlan: SubscriptionInfo.SubscriptionPeriod? = nil,
         subscriptionStartDate: Date? = nil,
         subscriptionExpiredDate: Date? = nil,
-        lastBonusTime: Date? = nil
+        lastBonusTime: Date? = nil,
+        weeklyRewardTag: String? = nil
     ) {
         self.profileID = profileID
         self.currentCredits = currentCredits
@@ -31,6 +33,7 @@ struct UserProfile: Codable {
         self.subscriptionStartDate = subscriptionStartDate
         self.subscriptionExpiredDate = subscriptionExpiredDate
         self.lastBonusTime = lastBonusTime
+        self.weeklyRewardTag = weeklyRewardTag
     }
     
     enum CodingKeys: String, CodingKey {
@@ -43,6 +46,7 @@ struct UserProfile: Codable {
         case subscriptionStartDate
         case subscriptionExpiredDate
         case lastBonusTime
+        case weeklyRewardTag
         case avatarImageName // For backward compatibility with RTDB/Old Local Storage
         case lastUpdated // For backward compatibility
         case createdAt // For backward compatibility
@@ -89,6 +93,8 @@ struct UserProfile: Codable {
         } else {
             lastBonusTime = nil
         }
+        
+        weeklyRewardTag = try? c.decodeIfPresent(String.self, forKey: .weeklyRewardTag)
     }
     
     func encode(to encoder: Encoder) throws {
@@ -102,6 +108,7 @@ struct UserProfile: Codable {
         try c.encodeIfPresent(subscriptionStartDate?.timeIntervalSince1970, forKey: .subscriptionStartDate)
         try c.encodeIfPresent(subscriptionExpiredDate?.timeIntervalSince1970, forKey: .subscriptionExpiredDate)
         try c.encodeIfPresent(lastBonusTime?.timeIntervalSince1970, forKey: .lastBonusTime)
+        try c.encodeIfPresent(weeklyRewardTag, forKey: .weeklyRewardTag)
     }
     
     mutating func addCredits(_ amount: Int) {

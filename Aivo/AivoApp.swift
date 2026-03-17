@@ -104,6 +104,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
                 
                 // Check and grant bonus credits for subscription (separate from purchase flow)
                 await SubscriptionManager.shared.checkBonusCreditForSubscription()
+                
+                // Check weekly billboard reward
+                await WeeklyRewardManager.shared.checkAndClaimWeeklyReward()
             } catch {
                 Logger.d("❌ Failed to load profile on startup: \(error)")
             }

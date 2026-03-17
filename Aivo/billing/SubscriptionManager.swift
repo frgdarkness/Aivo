@@ -452,6 +452,11 @@ final class SubscriptionManager: ObservableObject {
             let days = now.timeIntervalSince(last) / (60 * 60 * 24)
             if days >= interval {
                 await CreditManager.shared.increaseCredits(by: bonusAmount)
+                
+                // Log to credit history
+                let historyType: RequestType = (currentSubscription?.period == .yearly) ? .bonusPremiumYearly : .bonusPremiumWeekly
+                CreditHistoryManager.shared.addRequest(historyType, cost: bonusAmount)
+                
                 KeychainManager.shared.saveLastBonusDate(now)
                 // Also save to UserDefaults for backward compatibility
                 UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")
@@ -474,6 +479,11 @@ final class SubscriptionManager: ObservableObject {
         } else {
             // First time after sub
             await CreditManager.shared.increaseCredits(by: bonusAmount)
+            
+            // Log to credit history
+            let historyType: RequestType = (currentSubscription?.period == .yearly) ? .bonusPremiumYearly : .bonusPremiumWeekly
+            CreditHistoryManager.shared.addRequest(historyType, cost: bonusAmount)
+            
             KeychainManager.shared.saveLastBonusDate(now)
             // Also save to UserDefaults for backward compatibility
             UserDefaults.standard.set(now, forKey: "AIVO_LastBonusCreditDate")

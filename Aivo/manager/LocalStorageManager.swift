@@ -276,6 +276,12 @@ final class LocalStorageManager: ObservableObject {
         updateLocalProfile(profile)
     }
     
+    func updateWeeklyRewardTag(_ tag: String) {
+        var profile = getLocalProfile()
+        profile.weeklyRewardTag = tag
+        updateLocalProfile(profile)
+    }
+    
     func getCurrentCredits() -> Int {
         return getLocalProfile().currentCredits
     }

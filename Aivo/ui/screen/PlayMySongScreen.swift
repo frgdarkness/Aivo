@@ -1275,9 +1275,6 @@ struct PlayMySongScreen: View {
                     // Mark as shared locally
                     LocalStorageManager.shared.markSongAsShared(id: song.id)
                     
-                    // Log to credit history
-                    CreditHistoryManager.shared.addRequest(.shareSong)
-                    
                     // Hide success message after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         withAnimation {

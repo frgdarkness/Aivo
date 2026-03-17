@@ -249,6 +249,20 @@ final class FirestoreService: ObservableObject {
         }
     }
     
+    /// Fetch a specific weekly board by week tag
+    func fetchWeeklyBoard(weekTag: String) async throws -> [String: Any]? {
+        ensureFirebaseConfigured()
+        Logger.d("🔥 Firestore: Fetching weekly board for \(weekTag)")
+        
+        let doc = try await db.collection(leaderboardsCollection).document(weekTag).getDocument()
+        guard doc.exists, var data = doc.data() else {
+            Logger.d("🔥 Firestore: No leaderboard found for \(weekTag)")
+            return nil
+        }
+        data["id"] = doc.documentID
+        return convertTimestamps(data)
+    }
+    
     /// Recursively convert Firestore Timestamps to Int64 for JSON compatibility
     private func convertTimestamps(_ data: [String: Any]) -> [String: Any] {
         var result = data

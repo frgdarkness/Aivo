@@ -193,6 +193,24 @@ struct TestScreen: View {
     private var clearDataSection: some View {
         VStack(spacing: 16) {
             Button(action: {
+                clearRewardData()
+            }) {
+                HStack {
+                    Image(systemName: "trophy.fill")
+                        .font(.system(size: 18))
+                    Text("Clear All Reward Data")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.purple.opacity(0.7))
+                )
+            }
+            
+            Button(action: {
                 showClearDataAlert = true
             }) {
                 HStack {
@@ -308,6 +326,19 @@ struct TestScreen: View {
         KeychainManager.shared.clearAllKeychainData()
         
         showToast("All Keychain data cleared")
+    }
+    
+    private func clearRewardData() {
+        // Clear weeklyRewardChecked (local flag)
+        UserDefaults.standard.removeObject(forKey: "AIVO_WeeklyRewardChecked")
+        // Clear billboard intro shown flag
+        UserDefaults.standard.removeObject(forKey: "AIVO_BillboardIntroShown")
+        // Clear weeklyRewardTag from profile
+        LocalStorageManager.shared.updateWeeklyRewardTag("")
+        // Reset pending reward in manager
+        WeeklyRewardManager.shared.dismissReward()
+        
+        showToast("All reward data cleared")
     }
     
     private func showToast(_ message: String) {

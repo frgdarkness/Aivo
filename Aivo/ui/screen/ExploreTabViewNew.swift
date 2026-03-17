@@ -49,7 +49,6 @@ struct ExploreTabViewNew: View {
                     SongsForYouSection(
                         title: "AIVO BILLBOARD",
                         songs: Array(remoteConfig.bestAivoSongsList.prefix(4)),
-                        onTitleTap: { showBillboardIntro = true },
                         onPlay: { song in
                             if let index = remoteConfig.bestAivoSongsList.firstIndex(where: { $0.id == song.id }) {
                                 selectedSongForPlayback = SongPlaybackItem(songs: remoteConfig.bestAivoSongsList, initialIndex: index)
@@ -132,6 +131,19 @@ struct ExploreTabViewNew: View {
         .onAppear {
             loadSongStatus()
             fetchCommunitySongs()
+            checkBillboardIntroFirstTime()
+        }
+    }
+    
+    private static let billboardIntroShownKey = "AIVO_BillboardIntroShown"
+    
+    private func checkBillboardIntroFirstTime() {
+        let alreadyShown = UserDefaults.standard.bool(forKey: Self.billboardIntroShownKey)
+        if !alreadyShown {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                showBillboardIntro = true
+                UserDefaults.standard.set(true, forKey: Self.billboardIntroShownKey)
+            }
         }
     }
     

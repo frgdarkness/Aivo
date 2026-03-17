@@ -19,14 +19,12 @@ struct CreditUsageHistoryScreen: View {
         let now = Date()
         
         return [
-            RequestData(requestType: .generateSong, time: now),
-            RequestData(requestType: .generateLyric, time: calendar.date(byAdding: .hour, value: -2, to: now) ?? now),
-            RequestData(requestType: .coverSong, time: calendar.date(byAdding: .day, value: -1, to: now) ?? now),
-            RequestData(requestType: .generateSong, time: calendar.date(byAdding: .day, value: -2, to: now) ?? now),
-            RequestData(requestType: .generateLyric, time: calendar.date(byAdding: .day, value: -3, to: now) ?? now),
-            RequestData(requestType: .coverSong, time: calendar.date(byAdding: .day, value: -5, to: now) ?? now),
-            RequestData(requestType: .generateSong, time: calendar.date(byAdding: .day, value: -7, to: now) ?? now),
-            RequestData(requestType: .generateLyric, time: calendar.date(byAdding: .day, value: -10, to: now) ?? now),
+            RequestData(requestType: .generateSong, time: now, creditCost: 20),
+            RequestData(requestType: .generateLyric, time: calendar.date(byAdding: .hour, value: -2, to: now) ?? now, creditCost: 4),
+            RequestData(requestType: .coverSong, time: calendar.date(byAdding: .day, value: -1, to: now) ?? now, creditCost: 10),
+            RequestData(requestType: .bonusPremiumWeekly, time: calendar.date(byAdding: .day, value: -2, to: now) ?? now, creditCost: 1000),
+            RequestData(requestType: .weeklyReward, time: calendar.date(byAdding: .day, value: -3, to: now) ?? now, creditCost: 500),
+            RequestData(requestType: .buyCredits1000, time: calendar.date(byAdding: .day, value: -5, to: now) ?? now, creditCost: 1000),
         ]
     }
     #endif
@@ -84,9 +82,12 @@ struct CreditUsageHistoryScreen: View {
         let displayData = historyManager.history
         #endif
         
+        // Filter out shareSong entries (deprecated)
+        let filteredData = displayData.filter { $0.requestType != .shareSong }
+        
         return ScrollView {
             LazyVStack(spacing: 12) {
-                if displayData.isEmpty {
+                if filteredData.isEmpty {
                     // Empty State
                     VStack(spacing: 16) {
                         Image(systemName: "clock.arrow.circlepath")
@@ -103,7 +104,7 @@ struct CreditUsageHistoryScreen: View {
                             .foregroundColor(.white.opacity(0.7))
                     }
                 } else {
-                    ForEach(displayData) { request in
+                    ForEach(filteredData) { request in
                         historyItemView(request)
                     }
                 }
@@ -116,24 +117,30 @@ struct CreditUsageHistoryScreen: View {
     
     // MARK: - History Item View
     private func historyItemView(_ request: RequestData) -> some View {
-        HStack(spacing: 16) {
+        let isCredit = request.requestType.isCredit
+        let prefix = isCredit ? "+" : "-"
+        let creditColor = isCredit ? Color.green : Color(red: 1.0, green: 0.85, blue: 0.4)
+        
+        return HStack(spacing: 16) {
             // Left: Request Name
-            Text(request.requestType.displayName)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.white)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(request.requestType == .weeklyReward ? weeklyRewardDisplayName(request) : request.requestType.displayName)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                
+                Text(formatTime(request.time))
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.5))
+            }
             
             Spacer()
             
-            // Middle: Time
-            Text(formatTime(request.time))
-                .font(.system(size: 14))
-                .foregroundColor(.white.opacity(0.7))
-            
             // Right: Credit Cost with Icon
             HStack(spacing: 4) {
-                Text("\(request.creditCost)")
+                Text("\(prefix)\(request.creditCost)")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
+                    .foregroundColor(creditColor)
                 
                 Image("icon_coin")
                     .resizable()
@@ -145,6 +152,11 @@ struct CreditUsageHistoryScreen: View {
         .padding(.vertical, 14)
         .background(Color.white.opacity(0.1))
         .cornerRadius(12)
+    }
+    
+    private func weeklyRewardDisplayName(_ request: RequestData) -> String {
+        // Could be customized with week tag if stored, for now generic
+        return "Weekly Reward"
     }
     
     // MARK: - Helper Methods

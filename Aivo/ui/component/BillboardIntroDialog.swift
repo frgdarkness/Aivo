@@ -16,7 +16,7 @@ struct BillboardIntroDialog: View {
             VStack(spacing: 0) {
                 // Header with Title and Close Button
                 HStack {
-                    Text("What's new!!!")
+                    Text("New Feature!")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
                     
@@ -58,7 +58,7 @@ struct BillboardIntroDialog: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 8)
                 
-                Text("Rule: create your song and share it to climb the top 10 charts each week to earn big rewards!")
+                Text("The Weekly Billboard is officially live, celebrating the most listened-to tracks. Create your unique masterpiece and share it with the community to join the race now!")
                     .font(.system(size: 15))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.leading)
@@ -102,7 +102,7 @@ struct BillboardIntroDialog: View {
                 // Action Buttons
                 VStack(spacing: 0) {
                     Button(action: { isPresented = false }) {
-                        Text("Join the Competition")
+                        Text("Create a Track Now")
                             .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

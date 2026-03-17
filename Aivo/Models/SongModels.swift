@@ -5,6 +5,14 @@ enum RequestType: String, CaseIterable, Codable {
     case coverSong = "cover_song"
     case generateSong = "generate_song"
     case generateLyric = "generate_lyric"
+    case bonusPremiumWeekly = "bonus_premium_weekly"
+    case bonusPremiumYearly = "bonus_premium_yearly"
+    case weeklyReward = "weekly_reward"
+    case buyCredits500 = "buy_500_credits"
+    case buyCredits1000 = "buy_1000_credits"
+    case buyCredits5000 = "buy_5000_credits"
+    
+    // Legacy case for backward compatibility with old history data
     case shareSong = "share_song"
     
     var displayName: String {
@@ -15,8 +23,31 @@ enum RequestType: String, CaseIterable, Codable {
             return "Generate Song"
         case .generateLyric:
             return "Generate Lyric"
+        case .bonusPremiumWeekly:
+            return "Bonus Premium Weekly"
+        case .bonusPremiumYearly:
+            return "Bonus Premium Yearly"
+        case .weeklyReward:
+            return "Weekly Reward"
+        case .buyCredits500:
+            return "Buy 500 Credits"
+        case .buyCredits1000:
+            return "Buy 1000 Credits"
+        case .buyCredits5000:
+            return "Buy 5000 Credits"
         case .shareSong:
             return "Share to Community"
+        }
+    }
+    
+    /// Whether this type adds credits (true) or consumes them (false)
+    var isCredit: Bool {
+        switch self {
+        case .bonusPremiumWeekly, .bonusPremiumYearly, .weeklyReward,
+             .buyCredits500, .buyCredits1000, .buyCredits5000:
+            return true
+        default:
+            return false
         }
     }
     
@@ -28,8 +59,20 @@ enum RequestType: String, CaseIterable, Codable {
             return 4
         case .coverSong:
             return 10
+        case .bonusPremiumWeekly:
+            return 1000
+        case .bonusPremiumYearly:
+            return 1000
+        case .weeklyReward:
+            return 0 // Dynamic, set via addRequest cost param
+        case .buyCredits500:
+            return 500
+        case .buyCredits1000:
+            return 1000
+        case .buyCredits5000:
+            return 5000
         case .shareSong:
-            return 0 // Free or handled dynamically
+            return 0
         }
     }
 }
