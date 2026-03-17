@@ -244,38 +244,26 @@ final class FirestoreService: ObservableObject {
         return snapshot.documents.map { doc in
             var data = doc.data()
             data["id"] = doc.documentID
-            return data
+            // Recursively convert Timestamps to Double (TimeInterval)
+            return convertTimestamps(data)
         }
     }
     
-    /// Fetch specific songs for a weekly board
-    func fetchSongsForWeek(songIDs: [String]) async throws -> [SunoData] {
-        ensureFirebaseConfigured()
-        guard !songIDs.isEmpty else { return [] }
-        
-        Logger.d("🔥 Firestore: Fetching \(songIDs.count) songs for weekly board")
-        
-        var results: [SunoData] = []
-        
-        // Firestore 'in' query supports up to 10 elements. If more, we need to batch.
-        let chunks = songIDs.chunked(into: 10)
-        
-        for chunk in chunks {
-            let query = db.collection(songsCollection).whereField(FieldPath.documentID(), in: chunk)
-            let snapshot = try await query.getDocuments()
-            let songs = snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
-            results.append(contentsOf: songs)
+    /// Recursively convert Firestore Timestamps to Int64 for JSON compatibility
+    private func convertTimestamps(_ data: [String: Any]) -> [String: Any] {
+        var result = data
+        for (key, value) in result {
+            if let timestamp = value as? Timestamp {
+                result[key] = Int64(timestamp.dateValue().timeIntervalSince1970)
+            } else if let dict = value as? [String: Any] {
+                result[key] = convertTimestamps(dict)
+            } else if let array = value as? [[String: Any]] {
+                result[key] = array.map { convertTimestamps($0) }
+            }
         }
-        
-        // Sort results to match original songIDs order if needed
-        let sortedResults = results.sorted { (a, b) -> Bool in
-            guard let indexA = songIDs.firstIndex(of: a.id),
-                  let indexB = songIDs.firstIndex(of: b.id) else { return false }
-            return indexA < indexB
-        }
-        
-        return sortedResults
+        return result
     }
+    
     
     // MARK: - Purchase History
     

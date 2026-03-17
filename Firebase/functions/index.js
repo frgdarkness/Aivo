@@ -41,13 +41,18 @@ async function calculateLeaderboard(weekTag) {
         return { success: false, message: 'No songs found', week: weekTag };
     }
 
-    const songIDs = songsSnapshot.docs.map(doc => doc.id);
+    const songs = songsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        data.id = doc.id; // Ensure ID is included
+        return data;
+    });
+    
     const year = weekTag.split('-w')[0];
     const week = weekTag.split('-w')[1];
 
     const leaderboardData = {
         title: `${year} week ${week}`,
-        songIDs: songIDs,
+        songs: songs,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
         calculatedAt: new Date().toISOString()
     };
@@ -55,8 +60,8 @@ async function calculateLeaderboard(weekTag) {
     // Save to leaderboards collection
     await db.collection('leaderboards').doc(weekTag).set(leaderboardData);
     
-    console.log(`✅ Leaderboard saved for ${weekTag} with ${songIDs.length} songs.`);
-    return { success: true, week: weekTag, songs: songIDs.length };
+    console.log(`✅ Leaderboard saved for ${weekTag} with ${songs.length} songs.`);
+    return { success: true, week: weekTag, songsCount: songs.length };
 }
 
 /**
