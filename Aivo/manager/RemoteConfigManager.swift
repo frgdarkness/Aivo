@@ -13,6 +13,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var creditsPerCover = 20
     @Published var creditsPerLyric = 5
     @Published var enableOneTimeFreeTry = true // Added support for free try
+    @Published var playCountMinTime: Int = 30 // Minimum seconds to count a play
     
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
@@ -54,7 +55,8 @@ class RemoteConfigManager: ObservableObject {
             "TERMS_URL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula" as NSString,
             "CREDITS_PER_SONG": 30 as NSNumber,
             "CREDITS_PER_COVER": 20 as NSNumber,
-            "CREDITS_PER_LYRIC": 5 as NSNumber
+            "CREDITS_PER_LYRIC": 5 as NSNumber,
+            "PLAY_COUNT_MIN_TIME": 30 as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -114,6 +116,12 @@ class RemoteConfigManager: ObservableObject {
                 if creditsPerLyricValue.intValue > 0 {
                     creditsPerLyric = creditsPerLyricValue.intValue
                     Logger.d("### RemoteConfigManager: CREDITS_PER_LYRIC: \(creditsPerLyric)")
+                }
+                
+                let playCountMinTimeValue = remoteConfig.configValue(forKey: "PLAY_COUNT_MIN_TIME").numberValue
+                if playCountMinTimeValue.intValue > 0 {
+                    playCountMinTime = playCountMinTimeValue.intValue
+                    Logger.d("### RemoteConfigManager: PLAY_COUNT_MIN_TIME: \(playCountMinTime)")
                 }
             }
             

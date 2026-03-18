@@ -93,3 +93,135 @@ exports.weeklyLeaderboardForceV2 = onRequest({ invoker: "public" }, async (req, 
         return res.status(500).send(error.toString());
     }
 });
+
+// ============================================================
+// PLAY COUNT SYNC: RTDB → Firestore
+// ============================================================
+
+const rtdb = admin.database();
+const RTDB_PLAY_COUNTS_PATH = 'decoraIOS/play_counts';
+const FIRESTORE_SONGS_COLLECTION = 'shared_songs';
+
+/**
+ * Core logic: Read play_counts from RTDB, batch update Firestore,
+ * then use transactions to safely subtract synced counts (avoiding race conditions)
+ */
+async function syncPlayCounts() {
+    console.log('🚀 [PlayCount Sync] Starting RTDB → Firestore sync...');
+
+    // 1. Read all play counts from RTDB (snapshot at this moment)
+    const snapshot = await rtdb.ref(RTDB_PLAY_COUNTS_PATH).once('value');
+    const playCounts = snapshot.val();
+
+    if (!playCounts || Object.keys(playCounts).length === 0) {
+        console.log('✅ [PlayCount Sync] No pending play counts to sync.');
+        return { success: true, message: 'No pending play counts', synced: 0 };
+    }
+
+    const songIDs = Object.keys(playCounts);
+    console.log(`📊 [PlayCount Sync] Found ${songIDs.length} songs to sync`);
+
+    // 2. Batch update Firestore (max 500 per batch)
+    let totalSynced = 0;
+    let batchCount = 0;
+    const BATCH_SIZE = 450; // Leave some margin under 500 limit
+
+    for (let i = 0; i < songIDs.length; i += BATCH_SIZE) {
+        const batchSongIDs = songIDs.slice(i, i + BATCH_SIZE);
+        const batch = db.batch();
+
+        for (const songID of batchSongIDs) {
+            const count = playCounts[songID];
+            if (typeof count === 'number' && count > 0) {
+                const songRef = db.collection(FIRESTORE_SONGS_COLLECTION).doc(songID);
+                batch.update(songRef, {
+                    playCount: admin.firestore.FieldValue.increment(count)
+                });
+                totalSynced++;
+            }
+        }
+
+        try {
+            await batch.commit();
+            batchCount++;
+            console.log(`✅ [PlayCount Sync] Batch ${batchCount} committed (${batchSongIDs.length} songs)`);
+        } catch (error) {
+            // Some songs might not exist in Firestore (private/intro songs)
+            // Retry individually for this batch
+            console.warn(`⚠️ [PlayCount Sync] Batch ${batchCount + 1} failed, retrying individually...`);
+            for (const songID of batchSongIDs) {
+                const count = playCounts[songID];
+                if (typeof count === 'number' && count > 0) {
+                    try {
+                        await db.collection(FIRESTORE_SONGS_COLLECTION).doc(songID).update({
+                            playCount: admin.firestore.FieldValue.increment(count)
+                        });
+                    } catch (innerError) {
+                        // Song doesn't exist in Firestore - skip silently
+                        console.log(`⏭️ [PlayCount Sync] Skipping ${songID} (not in Firestore)`);
+                    }
+                }
+            }
+            batchCount++;
+        }
+    }
+
+    // 3. Safely subtract synced counts using RTDB transactions (avoids race conditions)
+    //    If new writes came in between read (step 1) and now, the difference is preserved
+    let cleanedCount = 0;
+    const cleanupPromises = songIDs.map(songID => {
+        const syncedCount = playCounts[songID];
+        if (typeof syncedCount !== 'number' || syncedCount <= 0) return Promise.resolve();
+
+        const songRef = rtdb.ref(`${RTDB_PLAY_COUNTS_PATH}/${songID}`);
+        return songRef.transaction(currentValue => {
+            if (currentValue === null) {
+                // Already deleted by another process
+                return null;
+            }
+            const remaining = currentValue - syncedCount;
+            if (remaining <= 0) {
+                // All counts synced, delete this key
+                cleanedCount++;
+                return null; // returning null deletes the node
+            }
+            // New writes came in during sync — keep the difference
+            console.log(`📝 [PlayCount Sync] ${songID}: keeping ${remaining} new plays (was ${currentValue}, synced ${syncedCount})`);
+            return remaining;
+        });
+    });
+
+    await Promise.all(cleanupPromises);
+    console.log(`🗑️ [PlayCount Sync] Cleaned ${cleanedCount}/${songIDs.length} entries from RTDB`);
+
+    const result = {
+        success: true,
+        message: `Synced ${totalSynced} songs in ${batchCount} batches, cleaned ${cleanedCount} RTDB entries`,
+        synced: totalSynced,
+        batches: batchCount,
+        cleaned: cleanedCount
+    };
+    console.log(`✅ [PlayCount Sync] Complete:`, result);
+    return result;
+}
+
+/**
+ * 3. Scheduled: Sync RTDB play counts to Firestore every 6 hours
+ */
+exports.syncPlayCountFromRTDB = onSchedule('0 */6 * * *', async (event) => {
+    return await syncPlayCounts();
+});
+
+/**
+ * 4. Force Trigger: Sync RTDB play counts immediately (for testing)
+ *    Usage: https://<region>-<project>.cloudfunctions.net/syncPlayCountFromRTDBForce
+ */
+exports.syncPlayCountFromRTDBForce = onRequest({ invoker: "public" }, async (req, res) => {
+    try {
+        const result = await syncPlayCounts();
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('❌ [PlayCount Sync] Force sync error:', error);
+        return res.status(500).send(error.toString());
+    }
+});

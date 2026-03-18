@@ -139,8 +139,8 @@ class MusicPlayer: NSObject, ObservableObject {
         setupAudio(with: audioURL, songRaw: song)
         updateNowPlayingInfo()
         
-        // Increment play count in Firestore for community songs
-        FirestoreService.shared.incrementPlayCount(songID: song.id)
+        // Track play count via RTDB (counted after minimum play time threshold)
+        PlayCountManager.shared.startTracking(songID: song.id, songName: song.title)
     }
     
     /// Play current song
@@ -174,6 +174,9 @@ class MusicPlayer: NSObject, ObservableObject {
     func stop() {
         playerNode.stop()
         engine.stop()
+        
+        // Stop play count tracking
+        PlayCountManager.shared.stopTracking()
         
         isPlaying = false
         currentTime = 0

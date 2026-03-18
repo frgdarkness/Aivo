@@ -81,6 +81,9 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
         // Auto-play
         play()
         updateNowPlayingInfo()
+        
+        // Track play count via RTDB (counted after minimum play time threshold)
+        PlayCountManager.shared.startTracking(songID: song.id, songName: song.title)
     }
     
     /// Play current song
@@ -110,6 +113,10 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
     /// Stop current song
     func stop() {
         cleanup()
+        
+        // Stop play count tracking
+        PlayCountManager.shared.stopTracking()
+        
         currentSong = nil
         songs = []
         currentIndex = 0
