@@ -180,18 +180,17 @@ struct ExploreTabViewNew: View {
         
         Task {
             do {
-                // Fetch 10 hottest and 50 newest songs
-                let hottest = try await FirestoreService.shared.fetchHottestSongs(limit: 10)
-                let newest = try await FirestoreService.shared.fetchNewSongs(limit: 50)
+                // Fetch from RTDB (0 Firestore reads) with Firestore fallback
+                let feed = try await CommunityFeedManager.shared.fetchCommunityFeed()
                 
                 await MainActor.run {
-                    self.communityHottestSongs = hottest
-                    self.communityNewestSongs = newest
+                    self.communityHottestSongs = feed.hottest
+                    self.communityNewestSongs = feed.newest
                     self.isFetchingCommunity = false
                     
                     // Save to cache
-                    LocalStorageManager.shared.saveCommunityCache(hottest: hottest, newest: newest)
-                    Logger.d("✅ [Explore] Fetched and cached community songs: \(hottest.count) hot, \(newest.count) new (Force: \(force))")
+                    LocalStorageManager.shared.saveCommunityCache(hottest: feed.hottest, newest: feed.newest)
+                    Logger.d("✅ [Explore] Fetched and cached community songs: \(feed.hottest.count) hot, \(feed.newest.count) new (Force: \(force))")
                 }
             } catch {
                 await MainActor.run {
@@ -1022,7 +1021,9 @@ struct CommunityHottestSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Button(action: { onTitleTap?() }) {
+                Button(action: {
+                    //onTitleTap?()
+                }) {
                     HStack(spacing: iPadScaleSmall(8)) {
                         Text("Weekly Billboard")
                             .font(.system(size: iPadScale(20), weight: .bold))
@@ -1225,18 +1226,18 @@ struct SongsForYouSection: View {
                     .aspectRatio(contentMode: .fill)
                     .frame(width: iPadScale(24), height: iPadScale(24))
                     .clipShape(Circle())
-                if let onTitleTap = onTitleTap {
-                    Button(action: onTitleTap) {
-                        Text(title)
-                            .font(.system(size: iPadScale(20), weight: .bold))
-                            .foregroundColor(Color.white)
-                    }
-                    .buttonStyle(.plain)
-                } else {
+//                if let onTitleTap = onTitleTap {
+//                    Button(action: onTitleTap) {
+//                        Text(title)
+//                            .font(.system(size: iPadScale(20), weight: .bold))
+//                            .foregroundColor(Color.white)
+//                    }
+//                    .buttonStyle(.plain)
+//                } else {
                     Text(title)
                         .font(.system(size: iPadScale(20), weight: .bold))
                         .foregroundColor(Color.white)
-                }
+//                }
                 Spacer()
                 Button(action: onSeeAll) {
                     Text("See All")

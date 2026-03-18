@@ -225,3 +225,99 @@ exports.syncPlayCountFromRTDBForce = onRequest({ invoker: "public" }, async (req
         return res.status(500).send(error.toString());
     }
 });
+
+// ============================================================
+// COMMUNITY FEED SYNC: Firestore → RTDB
+// Reduces client Firestore reads from 60 → 0 per fetch
+// ============================================================
+
+const RTDB_COMMUNITY_FEED_PATH = 'decoraIOS/community_feed';
+
+/**
+ * Core logic: Query hottest + newest from Firestore,
+ * then write combined feed to RTDB for client reads
+ */
+async function syncCommunityFeed() {
+    console.log('🚀 [CommunityFeed] Starting Firestore → RTDB sync...');
+
+    const currentWeek = getWeekTag();
+    console.log(`📅 [CommunityFeed] Current week: ${currentWeek}`);
+
+    // 1. Fetch hottest songs of this week (by playCount)
+    const hottestSnap = await db.collection(FIRESTORE_SONGS_COLLECTION)
+        .where('isPublic', '==', true)
+        .where('weekTag', '==', currentWeek)
+        .orderBy('playCount', 'desc')
+        .limit(10)
+        .get();
+
+    const hottest = hottestSnap.docs.map(doc => {
+        const data = doc.data();
+        // Convert Firestore Timestamps to epoch seconds
+        for (const key of Object.keys(data)) {
+            if (data[key] && typeof data[key] === 'object' && data[key]._seconds !== undefined) {
+                data[key] = data[key]._seconds;
+            }
+        }
+        return data;
+    });
+    console.log(`🔥 [CommunityFeed] Hottest: ${hottest.length} songs`);
+
+    // 2. Fetch newest songs (by createTime)
+    const newestSnap = await db.collection(FIRESTORE_SONGS_COLLECTION)
+        .where('isPublic', '==', true)
+        .orderBy('createTime', 'desc')
+        .limit(50)
+        .get();
+
+    const newest = newestSnap.docs.map(doc => {
+        const data = doc.data();
+        // Convert Firestore Timestamps to epoch seconds
+        for (const key of Object.keys(data)) {
+            if (data[key] && typeof data[key] === 'object' && data[key]._seconds !== undefined) {
+                data[key] = data[key]._seconds;
+            }
+        }
+        return data;
+    });
+    console.log(`🆕 [CommunityFeed] Newest: ${newest.length} songs`);
+
+    // 3. Write to RTDB (replaces entire node)
+    await rtdb.ref(RTDB_COMMUNITY_FEED_PATH).set({
+        lastUpdated: Math.floor(Date.now() / 1000),
+        weekTag: currentWeek,
+        hottest: hottest,
+        newest: newest
+    });
+
+    const result = {
+        success: true,
+        message: `Community feed synced: ${hottest.length} hot, ${newest.length} new`,
+        hottest: hottest.length,
+        newest: newest.length,
+        weekTag: currentWeek
+    };
+    console.log('✅ [CommunityFeed] Complete:', result);
+    return result;
+}
+
+/**
+ * 5. Scheduled: Sync community feed every 30 minutes
+ */
+exports.syncCommunityFeedToRTDB = onSchedule('*/30 * * * *', async (event) => {
+    return await syncCommunityFeed();
+});
+
+/**
+ * 6. Force Trigger: Sync community feed immediately (for testing)
+ *    Usage: https://<region>-<project>.cloudfunctions.net/syncCommunityFeedToRTDBForce
+ */
+exports.syncCommunityFeedToRTDBForce = onRequest({ invoker: "public" }, async (req, res) => {
+    try {
+        const result = await syncCommunityFeed();
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('❌ [CommunityFeed] Force sync error:', error);
+        return res.status(500).send(error.toString());
+    }
+});

@@ -1088,18 +1088,19 @@ struct SubscriptionScreenIntro: View {
         
         Logger.d("🎵 [SubscriptionScreenIntro] Loading random subscription song...")
         
-        // Load songs from JSON
-        guard let songs = loadSubscriptionSongsFromJSON() else {
-            Logger.e("❌ [SubscriptionScreenIntro] Failed to load subscription songs from JSON")
-            return
+        // Use bestAivoSongsList from RemoteConfig, fallback to JSON
+        var songs = remoteConfig.bestAivoSongsList
+        if songs.isEmpty {
+            Logger.d("🎵 [SubscriptionScreenIntro] bestAivoSongsList empty, falling back to JSON")
+            if let jsonSongs = loadSubscriptionSongsFromJSON() {
+                songs = jsonSongs
+            }
         }
         
         guard !songs.isEmpty else {
-            Logger.e("❌ [SubscriptionScreenIntro] No songs found in JSON")
+            Logger.e("❌ [SubscriptionScreenIntro] No songs found")
             return
         }
-        
-        songs.forEach { Logger.d("🎵 [SubscriptionScreenIntro] Found song: \($0.title)") }
         
         // Chọn random song
         let randomSong = songs.randomElement()!

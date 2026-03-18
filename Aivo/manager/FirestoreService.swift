@@ -203,14 +203,14 @@ final class FirestoreService: ObservableObject {
         Logger.d("🔥 Firestore: Hottest query returned \(snapshot.documents.count) docs")
         
         // Debug check
-        let allDocsS = try? await db.collection(songsCollection).limit(to: 5).getDocuments()
-        if let docs = allDocsS?.documents {
-            Logger.d("🔥 Firestore: Found \(docs.count) sample docs in total")
-            for doc in docs {
-                let d = doc.data()
-                Logger.d("📝 Sample Song \(doc.documentID): isPublic=\(d["isPublic"] ?? "nil"), weekTag=\(d["weekTag"] ?? "nil")")
-            }
-        }
+        // let allDocsS = try? await db.collection(songsCollection).limit(to: 5).getDocuments()
+        // if let docs = allDocsS?.documents {
+        //     Logger.d("🔥 Firestore: Found \(docs.count) sample docs in total")
+        //     for doc in docs {
+        //         let d = doc.data()
+        //         Logger.d("📝 Sample Song \(doc.documentID): isPublic=\(d["isPublic"] ?? "nil"), weekTag=\(d["weekTag"] ?? "nil")")
+        //     }
+        // }
 
         return snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
     }
@@ -239,6 +239,7 @@ final class FirestoreService: ObservableObject {
         
         let query = db.collection(leaderboardsCollection)
             .order(by: "timestamp", descending: true)
+            .limit(to: 12) // Only fetch 12 most recent weeks
         
         let snapshot = try await query.getDocuments()
         return snapshot.documents.map { doc in

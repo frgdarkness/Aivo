@@ -197,8 +197,8 @@ struct LibraryTabView: View {
     }
     
     private func startCreating() {
-         // Switch to Home for creation
-         NotificationCenter.default.post(name: NSNotification.Name("SwitchMainTab"), object: 0)
+         // Switch to Generate Song tab (index 1: explore=0, home=1, cover=2, library=3)
+         NotificationCenter.default.post(name: NSNotification.Name("SwitchMainTab"), object: 1)
     }
     
     private func loadDownloadedSongs() {

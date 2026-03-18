@@ -94,7 +94,7 @@ struct InputUsernameScreen: View {
             
             Text("This name will be shown as the author when your songs are shared with the community.")
                 .font(.system(size: iPadScale(14)))
-                .foregroundColor(.white.opacity(0.6))
+                .foregroundColor(.white.opacity(0.75))
             
             // Username input field
             HStack {
@@ -162,7 +162,7 @@ struct InputUsernameScreen: View {
                 } else {
                     Text("Require: Use 4–24 characters (letters, numbers, spaces, or hyphens).")
                         .font(.system(size: iPadScale(12)))
-                        .foregroundColor(.white.opacity(0.4))
+                        .foregroundColor(.white.opacity(0.6))
                 }
                 
                 Spacer()
