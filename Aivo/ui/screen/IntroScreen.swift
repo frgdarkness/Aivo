@@ -2,7 +2,8 @@ import SwiftUI
 
 // MARK: - Intro Screen Controller
 struct IntroScreen: View {
-    let onIntroCompleted: () -> Void // Callback to SplashScreenView
+    let onIntroCompleted: () -> Void // Callback when song creation is done
+    let onSkip: () -> Void // Callback to skip intro
     
     @State private var currentStep = 1
     @State private var selectedMood: SongMood?
@@ -31,6 +32,27 @@ struct IntroScreen: View {
             }
             .padding(.horizontal, iPadScaleSmall(20))
             .padding(.top, iPadScaleSmall(50))
+            
+            // Skip button - top right
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        onSkip()
+                    }) {
+                        Text("Skip")
+                            .font(.system(size: iPadScale(15), weight: .medium))
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.horizontal, iPadScaleSmall(16))
+                            .padding(.vertical, iPadScaleSmall(8))
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(iPadScale(20))
+                    }
+                    .padding(.trailing, iPadScaleSmall(20))
+                    .padding(.top, iPadScaleSmall(16))
+                }
+                Spacer()
+            }
         }
         .onAppear {
             // Log screen view to both Firebase and AppsFlyer
@@ -462,6 +484,6 @@ struct ThemeOptionButton: View {
 // MARK: - Preview
 struct IntroScreen_Previews: PreviewProvider {
     static var previews: some View {
-        IntroScreen(onIntroCompleted: {})
+        IntroScreen(onIntroCompleted: {}, onSkip: {})
     }
 }

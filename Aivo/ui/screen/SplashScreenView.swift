@@ -19,7 +19,9 @@ struct RootView: View {
         case splash
         case selectLanguage
         case interview
+        case introSample
         case intro
+        case inputUsername
         case subscription
         case home
     }
@@ -48,7 +50,16 @@ struct RootView: View {
                 
             case .interview:
                 InterviewScreen {
-                    // Navigate to intro after interview
+                    // Navigate to intro sample after interview
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        currentScreen = .introSample
+                    }
+                }
+                .transition(.pushFromRight)
+                
+            case .introSample:
+                IntroSampleScreen {
+                    // Navigate to intro after sample screen
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentScreen = .intro
                     }
@@ -56,8 +67,25 @@ struct RootView: View {
                 .transition(.pushFromRight)
                 
             case .intro:
-                IntroScreen { 
-                    // Callback when intro is completed - navigate to subscription
+                IntroScreen(
+                    onIntroCompleted: {
+                        // Song creation completed - go to input username
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .inputUsername
+                        }
+                    },
+                    onSkip: {
+                        // Skip intro - go directly to input username
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .inputUsername
+                        }
+                    }
+                )
+                .transition(.pushFromRight)
+                
+            case .inputUsername:
+                InputUsernameScreen {
+                    // After username input, go to subscription
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentScreen = .subscription
                     }
