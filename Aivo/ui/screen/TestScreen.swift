@@ -211,6 +211,25 @@ struct TestScreen: View {
             }
             
             Button(action: {
+                UserDefaults.standard.removeObject(forKey: "CommunityLastReloadTime")
+                showToast("Reload timer reset ✅")
+            }) {
+                HStack {
+                    Image(systemName: "clock.arrow.counterclockwise")
+                        .font(.system(size: 18))
+                    Text("Reset Reload Timer")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.teal.opacity(0.7))
+                )
+            }
+            
+            Button(action: {
                 clearRewardData()
             }) {
                 HStack {

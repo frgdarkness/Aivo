@@ -181,7 +181,7 @@ struct InputUsernameScreen: View {
                         if isVerifying {
                             ProgressView()
                                 .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                .scaleEffect(0.7)
+                                .scaleEffect(DeviceScale.isIPad ? 1.2 : 0.7)
                         }
                     }
                     .foregroundColor(.black)

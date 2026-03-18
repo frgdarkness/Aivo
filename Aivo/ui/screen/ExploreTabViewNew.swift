@@ -37,6 +37,10 @@ struct ExploreTabViewNew: View {
     @State private var communityHottestSongs: [SunoData] = []
     @State private var communityNewestSongs: [SunoData] = []
     @State private var isFetchingCommunity = false
+    @State private var showReloadCooldownDialog = false
+    
+    // Reload cooldown key
+    private static let lastReloadTimeKey = "CommunityLastReloadTime"
     
     var body: some View {
         ScrollView {
@@ -97,7 +101,7 @@ struct ExploreTabViewNew: View {
                 trendingSection
                 
                 // Popular Section
-                popularSection
+                //popularSection
                 
                 
                 
@@ -127,6 +131,12 @@ struct ExploreTabViewNew: View {
             }
             if showBillboardCongrats {
                 BillboardCongratsDialog(isPresented: $showBillboardCongrats, rank: 3, song: communityHottestSongs.first, rewardAmount: WeeklyRewardManager.rewardForRank(3))
+            }
+            if showReloadCooldownDialog {
+                ReloadCooldownDialog(
+                    isPresented: $showReloadCooldownDialog,
+                    remainingSeconds: getReloadCooldownRemaining()
+                )
             }
         }
         .onAppear {
@@ -349,7 +359,7 @@ struct ExploreTabViewNew: View {
                     .foregroundColor(.white)
                 
                 Button(action: {
-                    fetchCommunitySongs(force: true)
+                    handleReloadCommunity()
                 }) {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: iPadScale(14), weight: .bold))
@@ -432,19 +442,179 @@ struct ExploreTabViewNew: View {
     // MARK: - Filter Songs by Genre
     private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
         let keywords = genre.searchKeywords
-        var filteredSongs = remoteConfig.allSongsList.filter { song in
+        
+        // 1. Filter from community newest songs first (always at the top)
+        let communityFiltered = communityNewestSongs.filter { song in
             let songTags = song.tags.lowercased()
-            // Check if ANY keyword is contained in song tags
             return keywords.contains { keyword in
                 songTags.contains(keyword)
             }
         }
         
-        // Shuffle the filtered list to randomize
-        filteredSongs.shuffle()
+        // 2. Collect IDs of community songs to avoid duplicates
+        let communityIDs = Set(communityFiltered.map { $0.id })
         
-        // Return FULL list (unlimited)
-        return filteredSongs
+        // 3. Filter from allSongsList, excluding songs already in community list
+        var allFiltered = remoteConfig.allSongsList.filter { song in
+            guard !communityIDs.contains(song.id) else { return false }
+            let songTags = song.tags.lowercased()
+            return keywords.contains { keyword in
+                songTags.contains(keyword)
+            }
+        }
+        
+        // Shuffle only the allSongsList portion
+        allFiltered.shuffle()
+        
+        // 4. Community songs first, then shuffled allSongsList songs
+        return communityFiltered + allFiltered
+    }
+    
+    // MARK: - Reload Cooldown Logic
+    
+    /// Get cooldown duration based on premium status
+    private func getReloadCooldownDuration() -> TimeInterval {
+        if SubscriptionManager.shared.isPremium {
+            return 30 * 60 // 30 minutes for premium
+        } else {
+            return 8 * 60 * 60 // 8 hours for free users
+        }
+    }
+    
+    /// Get remaining cooldown seconds (0 if expired)
+    private func getReloadCooldownRemaining() -> TimeInterval {
+        let lastReloadTime = UserDefaults.standard.double(forKey: Self.lastReloadTimeKey)
+        guard lastReloadTime > 0 else { return 0 }
+        
+        let elapsed = Date().timeIntervalSince1970 - lastReloadTime
+        let cooldown = getReloadCooldownDuration()
+        let remaining = cooldown - elapsed
+        
+        return max(0, remaining)
+    }
+    
+    /// Handle reload button tap — check cooldown then reload or show dialog
+    private func handleReloadCommunity() {
+        let remaining = getReloadCooldownRemaining()
+        
+        if remaining > 0 {
+            // Cooldown active — show dialog with countdown
+            showReloadCooldownDialog = true
+        } else {
+            // Cooldown expired — reload and save timestamp
+            fetchCommunitySongs(force: true)
+            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastReloadTimeKey)
+            Logger.d("🔄 [Explore] Community reload triggered, cooldown started")
+        }
+    }
+}
+
+// MARK: - Reload Cooldown Dialog
+struct ReloadCooldownDialog: View {
+    @Binding var isPresented: Bool
+    let remainingSeconds: TimeInterval
+    
+    @State private var currentRemaining: TimeInterval = 0
+    @State private var timer: Timer?
+    
+    var body: some View {
+        ZStack {
+            // Dimmed background
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    dismissDialog()
+                }
+            
+            // Dialog card
+            VStack(spacing: iPadScaleSmall(20)) {
+                // Icon
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: iPadScale(40)))
+                    .foregroundColor(AivoTheme.Primary.orange)
+                
+                // Title
+                Text("Please Wait")
+                    .font(.system(size: iPadScale(20), weight: .bold))
+                    .foregroundColor(.white)
+                
+                // Description
+                Text(SubscriptionManager.shared.isPremium
+                     ? "Premium members can reload every 30 minutes."
+                     : "Free users can reload every 8 hours.\nUpgrade to Premium for faster refresh!")
+                    .font(.system(size: iPadScale(14)))
+                    .foregroundColor(.white.opacity(0.7))
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                
+                // Countdown timer
+                Text(formatCountdown(currentRemaining))
+                    .font(.system(size: iPadScale(36), weight: .bold, design: .monospaced))
+                    .foregroundColor(AivoTheme.Primary.orange)
+                    .padding(.vertical, iPadScaleSmall(8))
+                
+                // Close button
+                Button(action: {
+                    dismissDialog()
+                }) {
+                    Text("Got it")
+                        .font(.system(size: iPadScale(16), weight: .semibold))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: iPadScale(44))
+                        .background(AivoTheme.Primary.orange)
+                        .cornerRadius(iPadScale(12))
+                }
+            }
+            .padding(iPadScaleSmall(24))
+            .background(
+                RoundedRectangle(cornerRadius: iPadScale(20))
+                    .fill(Color(white: 0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: iPadScale(20))
+                            .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
+                    )
+            )
+            .padding(.horizontal, 40)
+        }
+        .onAppear {
+            currentRemaining = remainingSeconds
+            startTimer()
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
+        }
+    }
+    
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if currentRemaining > 0 {
+                currentRemaining -= 1
+            } else {
+                dismissDialog()
+            }
+        }
+    }
+    
+    private func dismissDialog() {
+        timer?.invalidate()
+        timer = nil
+        isPresented = false
+    }
+    
+    private func formatCountdown(_ seconds: TimeInterval) -> String {
+        let totalSeconds = Int(max(0, seconds))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let secs = totalSeconds % 60
+        
+        if hours > 0 {
+            return String(format: "%d:%02d:%02d", hours, minutes, secs)
+        } else {
+            return String(format: "%02d:%02d", minutes, secs)
+        }
     }
 }
 
@@ -549,10 +719,7 @@ struct GenreSongCardView: View {
                     .frame(width: coverSize, alignment: .leading)
                 
                 HStack(spacing: 4) {
-                    Image(systemName: "person.circle.fill")
-                        .font(.system(size: iPadScale(10)))
-                        .foregroundColor(.white.opacity(0.6))
-                    Text(song.modelName)
+                    Text(song.username ?? (song.modelName.isEmpty ? "Aivo Music" : song.modelName))
                         .font(.system(size: iPadScale(12), weight: .regular))
                         .foregroundColor(.white.opacity(0.7))
                         .lineLimit(1)
@@ -783,10 +950,6 @@ struct NewsCardView: View {
                         .truncationMode(.tail)
                     
                     HStack(spacing: 4) {
-                        Image(systemName: "person.fill")
-                            .font(.system(size: iPadScale(10)))
-                            .foregroundColor(.white.opacity(0.6))
-                        
                         Text(song.username ?? "Aivo Music")
                             .font(.system(size: iPadScale(11), weight: .regular))
                             .foregroundColor(.white.opacity(0.7))
@@ -860,9 +1023,28 @@ struct CommunityHottestSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Button(action: { onTitleTap?() }) {
-                    Text("Weekly Billboard")
-                        .font(.system(size: iPadScale(20), weight: .bold))
-                        .foregroundColor(.white)
+                    HStack(spacing: iPadScaleSmall(8)) {
+                        Text("Weekly Billboard")
+                            .font(.system(size: iPadScale(20), weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        // Trophy with orange glow
+                        ZStack {
+                            Circle()
+                                .fill(RadialGradient(
+                                    gradient: Gradient(colors: [AivoTheme.Primary.orange.opacity(0.5), .clear]),
+                                    center: .center,
+                                    startRadius: 0,
+                                    endRadius: iPadScale(16)
+                                ))
+                                .frame(width: iPadScale(32), height: iPadScale(32))
+                            
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: iPadScale(16)))
+                                .foregroundColor(.yellow)
+                                .shadow(color: .orange.opacity(0.6), radius: 4, x: 0, y: 2)
+                        }
+                    }
                 }
                 .buttonStyle(.plain)
                 .disabled(onTitleTap == nil)

@@ -47,13 +47,13 @@ struct SubscriptionScreen: View {
                             purchaseView
                         }
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, iPadScaleSmall(20))
                 }
                 
                 // Footer
                 footer
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
+                    .padding(.horizontal, iPadScaleSmall(20))
+                    .padding(.bottom, iPadScaleSmall(24))
             }
         }
         .ignoresSafeArea()
@@ -163,11 +163,13 @@ struct SubscriptionScreen: View {
 
     // MARK: - Cover Image
     private var coverImage: some View {
-        ZStack {
+        let circleSize: CGFloat = iPadScaleLarge(200)
+        let coverSize: CGFloat = iPadScaleLarge(190)
+        return ZStack {
             // Background circle (mờ)
             Circle()
                 .stroke(Color.white.opacity(0.2), lineWidth: 4)
-                .frame(width: 200, height: 200)
+                .frame(width: circleSize, height: circleSize)
             
             // Progress circle (màu cam) - full circle for visual
             Circle()
@@ -182,14 +184,14 @@ struct SubscriptionScreen: View {
                     ),
                     style: StrokeStyle(lineWidth: 4, lineCap: .round)
                 )
-                .frame(width: 200, height: 200)
+                .frame(width: circleSize, height: circleSize)
                 .rotationEffect(.degrees(-90))
             
             // Cover tròn
             Image("cover_default_resize")
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .frame(width: 190, height: 190)
+                .frame(width: coverSize, height: coverSize)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 10)
         }
@@ -203,24 +205,24 @@ struct SubscriptionScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: iPadScale(20), weight: .bold))
                     .foregroundColor(.white.opacity(0.3))
-                    .frame(width: 42, height: 42)
+                    .frame(width: iPadScale(42), height: iPadScale(42))
                     .clipShape(Circle())
             }
             Spacer()
         }
-        .padding(.top, 50)
+        .padding(.top, iPadScaleSmall(50))
     }
 
     // MARK: - Active Subscription View
     private func activeSubscriptionView(subscription: SubscriptionManager.ActiveSubscription) -> some View {
         VStack(spacing: 0) {
             // Title showing subscription plan
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: iPadScaleSmall(8)) {
                 HStack {
                     Text("\(subscription.period.displayName) Premium")
-                        .font(.system(size: 28, weight: .heavy))
+                        .font(.system(size: iPadScale(28), weight: .heavy))
                         .foregroundColor(.white)
                         .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
                     Spacer()
@@ -230,7 +232,7 @@ struct SubscriptionScreen: View {
                 if let expiryDate = subscription.expiresDate {
                     HStack {
                         Text("Expires on \(formatDate(expiryDate))")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.system(size: iPadScale(15), weight: .medium))
                             .foregroundColor(.white.opacity(0.75))
                         Spacer()
                     }
@@ -240,22 +242,22 @@ struct SubscriptionScreen: View {
                 if let nextBonus = subscriptionManager.getNextBonusDate() {
                     HStack {
                         Text("Next bonus date: \(formatDate(nextBonus))")
-                            .font(.system(size: 15, weight: .medium))
+                            .font(.system(size: iPadScale(15), weight: .medium))
                             .foregroundColor(AivoTheme.Secondary.goldenSun)
                         Spacer()
                     }
                     .padding(.top, 2)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, iPadScaleSmall(8))
             
             // Keep features list
             features
             
             // Credit display (similar to CreditDialogModifier)
             creditInfoView
-                .padding(.top, 18)
-                .padding(.bottom, 12)
+                .padding(.top, iPadScaleSmall(18))
+                .padding(.bottom, iPadScaleSmall(12))
             
             //Spacer()
         }
@@ -277,44 +279,44 @@ struct SubscriptionScreen: View {
         HStack {
             Spacer()
             Text("Upgrade to Premium")
-                .font(.system(size: 28, weight: .heavy))
+                .font(.system(size: iPadScale(28), weight: .heavy))
                 .foregroundColor(.white)
                 .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
             Spacer()
         }
-        .padding(.top, 8)
+        .padding(.top, iPadScaleSmall(8))
     }
     
     // MARK: - Credit Info View (from CreditDialogModifier)
     private var creditInfoView: some View {
         ZStack(alignment: .topTrailing) {
-            VStack(spacing: 16) {
+            VStack(spacing: iPadScaleSmall(16)) {
                 // Coin icon + Credits count
-                VStack(spacing: 12) {
+                VStack(spacing: iPadScaleSmall(12)) {
                     Image("icon_coin_512")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 80, height: 80)
+                        .frame(width: iPadScale(80), height: iPadScale(80))
                         .shadow(radius: 8, y: 4)
                     
                     HStack(spacing: 8) {
                         Text("\(creditManager.credits)")
-                            .font(.system(size: 42, weight: .bold))
+                            .font(.system(size: iPadScale(42), weight: .bold))
                             .foregroundColor(.white)
                         Text("Credits")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: iPadScale(20), weight: .semibold))
                             .foregroundColor(.white.opacity(0.9))
                     }
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 28)
-            .padding(.top, 28)
+            .padding(.bottom, iPadScaleSmall(28))
+            .padding(.top, iPadScaleSmall(28))
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: iPadScale(20))
                     .fill(Color.white.opacity(0.06))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: iPadScale(20))
                             .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
             )
@@ -324,17 +326,17 @@ struct SubscriptionScreen: View {
                 showBuyCreditDialog = true
             }) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: iPadScale(24), weight: .semibold))
                     .foregroundColor(AivoTheme.Primary.orange)
                     .background(
                         Circle()
                             .fill(Color.white)
-                            .frame(width: 28, height: 28)
+                            .frame(width: iPadScale(28), height: iPadScale(28))
                     )
                     .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 4, x: 0, y: 2)
             }
-            .padding(.top, 12)
-            .padding(.trailing, 12)
+            .padding(.top, iPadScaleSmall(12))
+            .padding(.trailing, iPadScaleSmall(12))
         }
     }
     
@@ -380,24 +382,24 @@ struct SubscriptionScreen: View {
             }
         }
         
-        return VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: iPadScaleSmall(16)) {
             featureRowWithHighlightedCredits(creditsAmount: creditsAmount, period: perString)
             featureRow("Access to All Features")
             featureRow("Ad-Free experience")
             featureRow("Premium quality AI Song")
             //featureRow("Unlimited downloads")
         }
-        .padding(.top, 20)
+        .padding(.top, iPadScaleSmall(20))
     }
 
     private func featureRowWithHighlightedCredits(creditsAmount: Int, period: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: iPadScaleSmall(12)) {
             ZStack {
                 Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
-                    .frame(width: 28, height: 28)
+                    .frame(width: iPadScale(28), height: iPadScale(28))
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(AivoTheme.Primary.orange)
-                    .font(.system(size: 20))
+                    .font(.system(size: iPadScale(20)))
             }
             
             // Credits amount with highlight
@@ -413,12 +415,12 @@ struct SubscriptionScreen: View {
                             endPoint: .trailing
                         )
                     )
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: iPadScale(28), weight: .bold))
                     .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 4, x: 0, y: 2)
                 VStack {
                     Text("credits per \(period)")
                         .foregroundColor(.white.opacity(0.85))
-                        .font(.system(size: 17, weight: .medium))
+                        .font(.system(size: iPadScale(17), weight: .medium))
                         .padding(.top, 6)
                 }
                 
@@ -429,17 +431,17 @@ struct SubscriptionScreen: View {
     }
 
     private func featureRow(_ text: String) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: iPadScaleSmall(12)) {
             ZStack {
                 Circle().fill(AivoTheme.Primary.orange.opacity(0.15))
-                    .frame(width: 28, height: 28)
+                    .frame(width: iPadScale(28), height: iPadScale(28))
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundColor(AivoTheme.Primary.orange)
-                    .font(.system(size: 20))
+                    .font(.system(size: iPadScale(20)))
             }
             Text(text)
                 .foregroundColor(.white.opacity(0.85))
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: iPadScale(17), weight: .medium))
             Spacer()
         }
     }
@@ -531,7 +533,7 @@ struct SubscriptionScreen: View {
                     .opacity(0.6)
             }
         }
-        .padding(.top, 28)
+        .padding(.top, iPadScaleSmall(28))
     }
 
     private func planCard(title: String, subtitle: String, price: String, originalPrice: String?, introPrice: String?, regularPrice: String?, per: String, equivalentWeeklyPrice: String?, isSelected: Bool, tagText: String?, onTap: @escaping () -> Void) -> some View {
@@ -547,12 +549,12 @@ struct SubscriptionScreen: View {
                                 .frame(width: 14, height: 14)
                         }
                     }
-                    .padding(.leading, 18)
+                    .padding(.leading, iPadScaleSmall(18))
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(title)
                             .foregroundColor(.white)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: iPadScale(18), weight: .semibold))
                     }
                     Spacer()
                     
@@ -603,7 +605,7 @@ struct SubscriptionScreen: View {
                         .padding(.trailing, 16)
                     }
                 }
-                .frame(height: equivalentWeeklyPrice != nil ? 76 : 64)
+                .frame(height: equivalentWeeklyPrice != nil ? iPadScale(76) : iPadScale(64))
                 .background(
                     RoundedRectangle(cornerRadius: 16)
                         .fill(Color.white.opacity(0.06))
@@ -659,7 +661,7 @@ struct SubscriptionScreen: View {
                     .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 58)
+            .frame(height: iPadScale(58))
             .background(
                 ZStack {
                     // Base gradient
@@ -723,7 +725,7 @@ struct SubscriptionScreen: View {
             )
         }
         .disabled(isPurchasing || subscriptionManager.isLoading)
-        .padding(.top, 18)
+        .padding(.top, iPadScaleSmall(18))
         .onAppear {
             startPulseAnimation()
         }

@@ -33,23 +33,23 @@ struct BillboardCongratsDialog: View {
                             gradient: Gradient(colors: [AivoTheme.Primary.orange.opacity(0.6), .clear]),
                             center: .center,
                             startRadius: 0,
-                            endRadius: 60
+                            endRadius: iPadScale(60)
                         ))
-                        .frame(width: 120, height: 120)
+                        .frame(width: iPadScale(120), height: iPadScale(120))
                     
                     Image("icon_trophy")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 80, height: 80)
+                        .frame(width: iPadScale(80), height: iPadScale(80))
                         .shadow(color: .orange.opacity(0.5), radius: 10, x: 0, y: 5)
                 }
-                .padding(.bottom, 12)
+                .padding(.bottom, iPadScaleSmall(12))
                 
                 // Title
                 HStack(spacing: 8) {
                     Text("🎉")
                     Text("CONGRATULATIONS!")
-                        .font(.system(size: 22, weight: .black))
+                        .font(.system(size: iPadScale(22), weight: .black))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: [.yellow, .white, .yellow],
@@ -59,33 +59,33 @@ struct BillboardCongratsDialog: View {
                         )
                 }
                 .shadow(color: .orange.opacity(0.4), radius: 6)
-                .padding(.bottom, 6)
+                .padding(.bottom, iPadScaleSmall(6))
                 
                 Text("You made the Weekly Billboard")
-                    .font(.system(size: 15))
+                    .font(.system(size: iPadScale(15)))
                     .foregroundColor(.white.opacity(0.8))
-                    .padding(.bottom, 20)
+                    .padding(.bottom, iPadScaleSmall(20))
                 
                 // Song Card with Rank
                 if let song = song {
-                    HStack(spacing: 16) {
+                    HStack(spacing: iPadScaleSmall(16)) {
                         // Song Cover
                         AsyncImage(url: URL(string: song.imageUrl)) { image in
                             image.resizable().aspectRatio(contentMode: .fill)
                         } placeholder: {
                             Image("demo_cover").resizable().aspectRatio(contentMode: .fill)
                         }
-                        .frame(width: 80, height: 80)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .frame(width: iPadScale(80), height: iPadScale(80))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .stroke(Color.orange.opacity(0.3), lineWidth: 1)
                         )
                         
                         // Song Info
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: iPadScaleSmall(4)) {
                             Text("#\(rank)")
-                                .font(.system(size: 36, weight: .black))
+                                .font(.system(size: iPadScale(36), weight: .black))
                                 .foregroundStyle(
                                     LinearGradient(
                                         colors: [.yellow, .orange],
@@ -96,67 +96,67 @@ struct BillboardCongratsDialog: View {
                                 .shadow(color: .orange.opacity(0.6), radius: 6)
                             
                             Text(song.title)
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: iPadScale(16), weight: .bold))
                                 .foregroundColor(.white)
                                 .lineLimit(1)
                             
                             Text("by \(song.username ?? "Aivo Music")")
-                                .font(.system(size: 13))
+                                .font(.system(size: iPadScale(13)))
                                 .foregroundColor(.white.opacity(0.6))
                                 .lineLimit(1)
                         }
                         
                         Spacer()
                     }
-                    .padding(16)
+                    .padding(iPadScaleSmall(16))
                     .background(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: iPadScale(20))
                             .fill(Color.black.opacity(0.4))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20)
+                                RoundedRectangle(cornerRadius: iPadScale(20))
                                     .stroke(LinearGradient(colors: [.orange.opacity(0.5), .clear, .orange.opacity(0.3)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
                             )
                     )
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, iPadScaleSmall(4))
+                    .padding(.bottom, iPadScaleSmall(20))
                 }
                 
                 // Divider
                 Rectangle()
                     .fill(Color.white.opacity(0.1))
                     .frame(height: 1)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 16)
+                    .padding(.horizontal, iPadScaleSmall(10))
+                    .padding(.bottom, iPadScaleSmall(16))
                 
                 // Earned Credits
                 Text("You earned")
-                    .font(.system(size: 15))
+                    .font(.system(size: iPadScale(15)))
                     .foregroundColor(.white.opacity(0.7))
-                    .padding(.bottom, 6)
+                    .padding(.bottom, iPadScaleSmall(6))
                 
                 HStack(spacing: 8) {
                     Image("icon_coin")
                         .resizable()
-                        .frame(width: 32, height: 32)
+                        .frame(width: iPadScale(32), height: iPadScale(32))
                     
                     Text("\(rewardAmount)")
-                        .font(.system(size: 36, weight: .black))
+                        .font(.system(size: iPadScale(36), weight: .black))
                         .foregroundColor(.white)
                     
                     Text("Credits")
-                        .font(.system(size: 20, weight: .medium))
+                        .font(.system(size: iPadScale(20), weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, iPadScaleSmall(24))
                 
                 // Buttons
-                VStack(spacing: 12) {
+                VStack(spacing: iPadScaleSmall(12)) {
                     Button(action: { isPresented = false }) {
                         Text("Claim Reward")
-                            .font(.system(size: 18, weight: .bold))
+                            .font(.system(size: iPadScale(18), weight: .bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .padding(.vertical, iPadScaleSmall(14))
                             .background(
                                 LinearGradient(
                                     colors: [AivoTheme.Primary.orange, AivoTheme.Primary.orangeDark],
@@ -164,32 +164,32 @@ struct BillboardCongratsDialog: View {
                                     endPoint: .bottom
                                 )
                             )
-                            .cornerRadius(30)
+                            .cornerRadius(iPadScale(30))
                             .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 10, x: 0, y: 5)
-                    }
+                    }.padding(.bottom, iPadScaleSmall(12))
                     
-                    Button(action: { /* Share action */ }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "square.and.arrow.up")
-                                .font(.system(size: 14))
-                            Text("Share Achievement")
-                                .font(.system(size: 15, weight: .medium))
-                        }
-                        .foregroundColor(.white.opacity(0.7))
-                    }
+//                    Button(action: { /* Share action */ }) {
+//                        HStack(spacing: 6) {
+//                            Image(systemName: "square.and.arrow.up")
+//                                .font(.system(size: iPadScale(14)))
+//                            Text("Share Achievement")
+//                                .font(.system(size: iPadScale(15), weight: .medium))
+//                        }
+//                        .foregroundColor(.white.opacity(0.7))
+//                    }
                 }
             }
-            .padding(20)
+            .padding(iPadScaleSmall(20))
             .background(
                 ZStack {
-                    RoundedRectangle(cornerRadius: 32)
+                    RoundedRectangle(cornerRadius: iPadScale(32))
                         .fill(AivoTheme.Primary.blackOrangeDark)
                     
-                    RoundedRectangle(cornerRadius: 32)
+                    RoundedRectangle(cornerRadius: iPadScale(32))
                         .stroke(LinearGradient(colors: [.orange.opacity(0.6), .clear, .orange.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
                 }
             )
-            .padding(.horizontal, 20)
+            .padding(.horizontal, DeviceScale.isIPad ? 100 : 20)
             .shadow(color: .black.opacity(0.5), radius: 40)
         }
     }
