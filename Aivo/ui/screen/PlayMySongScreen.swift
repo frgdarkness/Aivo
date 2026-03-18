@@ -290,26 +290,26 @@ struct PlayMySongScreen: View {
             // Back Button
             Button(action: { dismiss() }) {
                 Image(systemName: "chevron.left")
-                    .font(.title2).foregroundColor(.white)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: iPadScale(22))).foregroundColor(.white)
+                    .frame(width: iPadScale(44), height: iPadScale(44))
                     .background(Color.white.opacity(0.2))
                     .clipShape(Circle())
             }
 
             Text("Now Playing")
-                .font(.system(size: 22))
+                .font(.system(size: iPadScale(22)))
                 .fontWeight(.semibold)
                 .foregroundColor(.white)
                 .padding(.leading, 6)
 
             Spacer()
 
-            HStack(spacing: 12) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 Button(action: { toggleFavorite() }) {
                     Image(systemName: isFavorite ? "heart.fill" : "heart")
-                        .font(.title2)
+                        .font(.system(size: iPadScale(22)))
                         .foregroundColor(isFavorite ? .red : .white)
-                        .frame(width: 44, height: 44)
+                        .frame(width: iPadScale(44), height: iPadScale(44))
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
                 }
@@ -320,8 +320,8 @@ struct PlayMySongScreen: View {
                     } 
                 }) {
                     Image(systemName: "ellipsis")
-                        .font(.title2).foregroundColor(.white)
-                        .frame(width: 44, height: 44)
+                        .font(.system(size: iPadScale(22))).foregroundColor(.white)
+                        .frame(width: iPadScale(44), height: iPadScale(44))
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
                 }
@@ -350,15 +350,15 @@ struct PlayMySongScreen: View {
                     showEditSheet = true
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "pencil").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "pencil").font(.system(size: iPadScale(16)))
                     Text("Edit Song Info")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
 
             Divider().background(Color.white.opacity(0.2))
@@ -371,15 +371,15 @@ struct PlayMySongScreen: View {
                     showSleepTimer = true
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "moon.zzz").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "moon.zzz").font(.system(size: iPadScale(16)))
                     Text("Sleep Timer")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
 
             Divider().background(Color.white.opacity(0.2))
@@ -392,15 +392,15 @@ struct PlayMySongScreen: View {
                     showEqualizer = true
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "slider.vertical.3").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "slider.vertical.3").font(.system(size: iPadScale(16)))
                     Text("Equalizer")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
 
             Divider().background(Color.white.opacity(0.2))
@@ -413,15 +413,15 @@ struct PlayMySongScreen: View {
                     showAddToPlaylistSheet = true
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus.square.on.square").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "plus.square.on.square").font(.system(size: iPadScale(16)))
                     Text("Add to Playlist")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
             
             Divider().background(Color.white.opacity(0.2))
@@ -432,15 +432,15 @@ struct PlayMySongScreen: View {
                     showMenu = false
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.and.arrow.up").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "square.and.arrow.up").font(.system(size: iPadScale(16)))
                     Text("Export to Device")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
 
             Divider().background(Color.white.opacity(0.2))
@@ -456,14 +456,12 @@ struct PlayMySongScreen: View {
                 if isAlreadyShared {
                     Logger.d("🚫 [ShareDebug] Restricted: Song is already shared")
                     shareError = "You have already shared this song"
-                    // Hide message after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         shareError = nil
                     }
                 } else if !isOwnSong {
                     Logger.d("🚫 [ShareDebug] Restricted: Not own song")
                     shareError = "You cannot share this song"
-                    // Hide message after 3 seconds
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         shareError = nil
                     }
@@ -476,19 +474,19 @@ struct PlayMySongScreen: View {
                     showMenu = false
                 }
             } label: {
-                HStack(spacing: 8) {
+                HStack(spacing: iPadScaleSmall(8)) {
                     if isSharing {
                         ProgressView().tint(.white).scaleEffect(0.8)
                     } else {
-                        Image(systemName: "globe").font(.system(size: 16))
+                        Image(systemName: "globe").font(.system(size: iPadScale(16)))
                     }
                     Text("Share to Community")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor((!isOwnSong || isAlreadyShared) ? .gray.opacity(0.6) : AivoTheme.Primary.orange)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
             .disabled(isSharing)
 
@@ -502,26 +500,26 @@ struct PlayMySongScreen: View {
                     showDeleteAlert = true
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "trash").font(.system(size: 16))
+                HStack(spacing: iPadScaleSmall(8)) {
+                    Image(systemName: "trash").font(.system(size: iPadScale(16)))
                     Text("Delete Song")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
                 .foregroundColor(.red)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(12))
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: iPadScale(12))
                 .fill(Color.black.opacity(0.8))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: iPadScale(12))
                         .stroke(Color.white.opacity(0.3), lineWidth: 1)
                 )
         )
-        .fixedSize(horizontal: true, vertical: false)      // <- ôm theo item dài nhất
+        .fixedSize(horizontal: true, vertical: false)
         .shadow(color: .black.opacity(0.35), radius: 16, x: 0, y: 6)
         .transition(.opacity)
     }
@@ -550,7 +548,7 @@ struct PlayMySongScreen: View {
                 }
             }
         }
-        .frame(width: 280, height: 280)
+        .frame(width: DeviceScale.isIPad ? 420 : 280, height: DeviceScale.isIPad ? 420 : 280)
         .clipShape(Circle())
         //.shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
         // Use rotation3DEffect instead of rotationEffect for better GPU performance
@@ -567,19 +565,9 @@ struct PlayMySongScreen: View {
     private var songInfoView: some View {
         VStack(spacing: 8) {
             Text(currentSong?.title ?? "Unknown Title")
-                .font(.title2).fontWeight(.bold)
+                .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white).multilineTextAlignment(.center).lineLimit(2)
-                .padding(.top, 12)
-
-//            Text(currentSong?.modelName ?? "Unknown Artist")
-//                .font(.subheadline).foregroundColor(.white.opacity(0.8))
-//                .multilineTextAlignment(.center)
-//            
-//            // Duration display
-//            Text(formatDuration(currentSong?.duration ?? 0))
-//                .font(.caption)
-//                .foregroundColor(.white.opacity(0.6))
-//                .multilineTextAlignment(.center)
+                .padding(.top, iPadScaleSmall(12))
         }
         .padding(.horizontal, 40)
     }
@@ -598,37 +586,37 @@ struct PlayMySongScreen: View {
         VStack {
             lyricView
         }
-        .frame(maxHeight: 200) // Container height để đẩy các view khác
+        .frame(maxHeight: DeviceScale.isIPad ? 280 : 200) // Container height
     }
     
     // MARK: - Lyric View
     private var lyricView: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(spacing: 8) {
+                VStack(spacing: iPadScaleSmall(8)) {
                     if !lyricSentences.isEmpty {
                         // Display sentences from timestamped lyrics
                         ForEach(Array(lyricSentences.enumerated()), id: \.offset) { index, sentence in
                             Text(sentence.text)
-                                .font(.body)
+                                .font(.system(size: iPadScale(16)))
                                 .foregroundColor(.white)
                                 .opacity(index == currentSentenceIndex ? 1.0 : 0.55)
                                 .multilineTextAlignment(.center)
-                                .lineSpacing(6)
+                                .lineSpacing(iPadScaleSmall(6))
                                 .padding(.horizontal, 20)
                                 .id(index) // ID for scroll proxy
                         }
                     } else if let lyric = parseLyric(from: currentSong?.prompt) {
                         // Fallback to prompt lyrics if no timestamped lyrics
                         Text(lyric)
-                            .font(.body)
+                            .font(.system(size: iPadScale(16)))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
-                            .lineSpacing(6)
+                            .lineSpacing(iPadScaleSmall(6))
                             .padding(.horizontal, 20)
                     } else {
                         Text("Lyric not available")
-                            .font(.body)
+                            .font(.system(size: iPadScale(16)))
                             .foregroundColor(.white.opacity(0.6))
                             .italic()
                             .multilineTextAlignment(.center)
@@ -637,7 +625,7 @@ struct PlayMySongScreen: View {
                 }
                 .padding(.vertical, 16)
             }
-            .frame(maxHeight: 150) // Lyric view max height 150pt
+            .frame(maxHeight: DeviceScale.isIPad ? 260 : 150) // Lyric view max height
             .mask(
                 // Gradient mask: trên/dưới nhạt, giữa đậm
                 LinearGradient(
@@ -667,7 +655,7 @@ struct PlayMySongScreen: View {
             controlButtonsView
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 40)
+        .padding(.bottom, DeviceScale.isIPad ? 60 : 40)
     }
 
     private var seekBarView: some View {
@@ -702,39 +690,39 @@ struct PlayMySongScreen: View {
 
             HStack {
                 Text(formatTime(isScrubbing ? scrubTime : musicPlayer.currentTime))
-                    .font(.caption).foregroundColor(.white)
+                    .font(.system(size: iPadScale(14))).foregroundColor(.white)
                 Spacer()
                 Text(formatTime(musicPlayer.duration))
-                    .font(.caption).foregroundColor(.white)
+                    .font(.system(size: iPadScale(14))).foregroundColor(.white)
             }
         }
     }
 
     private var controlButtonsView: some View {
-        HStack(spacing: 30) {
+        HStack(spacing: iPadScale(30)) {
             Button(action: { musicPlayer.changePlayMode() }) {
                 Image(systemName: musicPlayer.playMode.icon)
-                    .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
+                    .font(.system(size: iPadScale(22))).foregroundColor(.white).frame(width: iPadScale(44), height: iPadScale(44))
             }
             Button(action: { musicPlayer.previousSong() }) {
                 Image(systemName: "backward.end.fill")
-                    .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
+                    .font(.system(size: iPadScale(22))).foregroundColor(.white).frame(width: iPadScale(44), height: iPadScale(44))
             }
             Button(action: { musicPlayer.togglePlayPause() }) {
                 Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 32)).foregroundColor(.black)
-                    .frame(width: 70, height: 70)
+                    .font(.system(size: iPadScale(32))).foregroundColor(.black)
+                    .frame(width: iPadScale(70), height: iPadScale(70))
                     .background(AivoTheme.Primary.orange)
                     .clipShape(Circle())
                     .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 5)
             }
             Button(action: { musicPlayer.nextSong() }) {
                 Image(systemName: "forward.end.fill")
-                    .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
+                    .font(.system(size: iPadScale(22))).foregroundColor(.white).frame(width: iPadScale(44), height: iPadScale(44))
             }
             Button(action: { showPlaylist = true }) {
                 Image(systemName: "list.bullet")
-                    .font(.title2).foregroundColor(.white).frame(width: 44, height: 44)
+                    .font(.system(size: iPadScale(22))).foregroundColor(.white).frame(width: iPadScale(44), height: iPadScale(44))
             }
         }
     }
@@ -752,8 +740,7 @@ struct PlayMySongScreen: View {
                 // Header
                 HStack {
                     Text("Playlist")
-                        .font(.title2)
-                        .fontWeight(.bold)
+                        .font(.system(size: iPadScale(22), weight: .bold))
                         .foregroundColor(.white)
                     
                     Spacer()
@@ -761,6 +748,7 @@ struct PlayMySongScreen: View {
                     Button("Done") {
                         showPlaylist = false
                     }
+                    .font(.system(size: iPadScale(16)))
                     .foregroundColor(.white)
                 }
                 .padding(.horizontal, 20)
@@ -771,7 +759,7 @@ struct PlayMySongScreen: View {
                 HStack {
                     if !displaySongs.isEmpty {
                         Text("Next • \(displaySongs.count) songs")
-                            .font(.subheadline)
+                            .font(.system(size: iPadScale(15)))
                             .foregroundColor(.white.opacity(0.6))
                     }
                     Spacer()
@@ -1761,16 +1749,16 @@ struct LocalPlaylistRowView: View {
         let isCurrent = (index == musicPlayer.currentIndex)
         
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 // Song info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(song.title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: iPadScale(16), weight: .semibold))
                         .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
                         .lineLimit(1)
                     
                     Text(song.username ?? "Aivo Music")
-                        .font(.system(size: 14))
+                        .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)
                 }
@@ -1783,9 +1771,9 @@ struct LocalPlaylistRowView: View {
                         musicPlayer.togglePlayPause()
                     }) {
                         Image(systemName: musicPlayer.isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: iPadScale(18)))
                             .foregroundColor(AivoTheme.Primary.orange)
-                            .frame(width: 32, height: 32)
+                            .frame(width: iPadScale(32), height: iPadScale(32))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -1793,13 +1781,13 @@ struct LocalPlaylistRowView: View {
                 // Delete button (X icon)
                 Button(action: onDelete) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: iPadScale(18), weight: .semibold))
                         .foregroundColor(.white.opacity(0.6))
-                        .frame(width: 32, height: 32)
+                        .frame(width: iPadScale(32), height: iPadScale(32))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, iPadScaleSmall(12))
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())

@@ -41,10 +41,10 @@ struct SelectMultiMoodScreen: View {
                 // Content
                 ScrollView {
                     LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 18) {
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12)),
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12)),
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12))
+                    ], spacing: iPadScaleSmall(18)) {
                         ForEach(filteredMoods, id: \.self) { mood in
                             moodChipView(mood: mood)
                         }
@@ -70,21 +70,21 @@ struct SelectMultiMoodScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(.white)
             }
             
             Spacer()
             
             Text("Select Mood")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
             
             // Placeholder for symmetry
             Color.clear
-                .frame(width: 24, height: 24)
+                .frame(width: iPadScale(24), height: iPadScale(24))
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -95,19 +95,22 @@ struct SelectMultiMoodScreen: View {
     private var searchBar: some View {
         HStack {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.gray)
                 .padding(.leading, 12)
             
             TextField("Search Mood", text: $searchText)
                 .textFieldStyle(PlainTextFieldStyle())
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.white)
-                .padding(.vertical, 12)
+                .padding(.vertical, iPadScaleSmall(12))
             
             if !searchText.isEmpty {
                 Button(action: {
                     searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.gray)
                 }
                 .padding(.trailing, 12)
@@ -128,10 +131,10 @@ struct SelectMultiMoodScreen: View {
             toggleMoodSelection(mood)
         }) {
             Text(mood.displayName)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: iPadScale(14), weight: .medium))
                 .foregroundColor(.white)
-                .frame(maxWidth: .infinity) // ✅ chiếm toàn bộ chiều rộng cột
-                .padding(.vertical, 14)     // chỉ padding theo chiều dọc
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, iPadScaleSmall(14))
                 .background(
                     Capsule()
                         .fill(Color.clear)
@@ -148,22 +151,17 @@ struct SelectMultiMoodScreen: View {
     // MARK: - Bottom Buttons View
     private var bottomButtonsView: some View {
         VStack(spacing: 12) {
-//            Text("maxium 3")
-//                .font(.system(size: 14, weight: .medium))
-//                .foregroundColor(.white.opacity(0.8))
-//                .padding(.top, 8)
-            
             Button(action: {
                 onDone(selectedMoods)
                 dismiss()
             }) {
                 Text("Done")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: iPadScale(16), weight: .semibold))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: iPadScale(50))
                     .background(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: iPadScale(12))
                             .fill(AivoTheme.Primary.orange)
                     )
             }
@@ -171,7 +169,7 @@ struct SelectMultiMoodScreen: View {
             .opacity(selectedMoods.isEmpty ? 0.5 : 1.0)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, iPadScaleSmall(14))
         .background(
             Rectangle()
                 .fill(AivoTheme.Background.primary)

@@ -206,21 +206,21 @@ struct ProfileScreen: View {
                 }
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(.white)
             }
             
             Spacer()
             
             Text("Profile")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
             
             // Spacer để cân bằng với back button
             Spacer()
-                .frame(width: 32, height: 32)
+                .frame(width: iPadScale(32), height: iPadScale(32))
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -229,13 +229,13 @@ struct ProfileScreen: View {
     
     // MARK: - Profile Header Section
     private var profileHeaderSection: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: iPadScaleSmall(16)) {
             // Left side: User Name and ID
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: iPadScaleSmall(12)) {
                 // User Name Row
                 HStack(spacing: 8) {
                     Text(userName)
-                        .font(.system(size: 20, weight: .bold))
+                        .font(.system(size: iPadScale(20), weight: .bold))
                         .foregroundColor(.white)
                     
                     Button(action: {
@@ -243,39 +243,36 @@ struct ProfileScreen: View {
                         showEditNameDialog = true
                     }) {
                         Image(systemName: "pencil")
-                            .font(.system(size: 14))
+                            .font(.system(size: iPadScale(14)))
                             .foregroundColor(.gray)
                     }
                 }
                 
-                // ID Badge - giống design: label trắng, giá trị xám nhạt
+                // ID Badge
                 HStack(spacing: 0) {
-                    // "ID" label với background trắng
                     Text("ID")
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, iPadScaleSmall(8))
+                        .padding(.vertical, iPadScaleSmall(6))
                         .background(Color.white)
                         .clipShape(RoundedCorner(radius: 6, corners: [.topLeft, .bottomLeft]))
                     
-                    // ID value với background xám nhạt
                     Text(profileID.prefix(20))
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
+                        .padding(.horizontal, iPadScaleSmall(8))
+                        .padding(.vertical, iPadScaleSmall(6))
                         .background(Color(white: 0.4))
                         .clipShape(RoundedCorner(radius: 6, corners: [.topRight, .bottomRight]))
                     
-                    // Copy button
                     Button(action: {
                         copyIDToClipboard()
                     }) {
                         Image(systemName: "doc.on.doc")
-                            .font(.system(size: 12))
+                            .font(.system(size: iPadScale(12)))
                             .foregroundColor(.gray)
-                            .padding(6)
+                            .padding(iPadScaleSmall(6))
                     }
                     .padding(.leading, 4)
                 }
@@ -285,10 +282,8 @@ struct ProfileScreen: View {
             
             // Avatar with edit icon
             ZStack(alignment: .bottomTrailing) {
-                // Avatar image
                 Group {
                     if avatarUrl.hasPrefix("avatar_") {
-                        // Load from Documents directory
                         if let image = loadAvatarFromDocuments(imageName: avatarUrl) {
                             Image(uiImage: image)
                                 .resizable()
@@ -299,7 +294,6 @@ struct ProfileScreen: View {
                                 .aspectRatio(contentMode: .fill)
                         }
                     } else if let url = URL(string: avatarUrl), avatarUrl.hasPrefix("http") {
-                        // Load from Web
                         AsyncImage(url: url) { phase in
                             switch phase {
                             case .success(let image):
@@ -309,28 +303,26 @@ struct ProfileScreen: View {
                             }
                         }
                     } else {
-                        // Load from Assets (legacy or default)
                         let imageName = avatarUrl.isEmpty ? "demo_cover" : avatarUrl
                         Image(imageName)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     }
                 }
-                .frame(width: 80, height: 80)
+                .frame(width: iPadScale(80), height: iPadScale(80))
                 .clipShape(Circle())
                 .overlay(
                     Circle()
                         .stroke(Color.white.opacity(0.3), lineWidth: 2)
                 )
                 
-                // Edit icon
                 Button(action: {
                     showImagePicker = true
                 }) {
                     Image(systemName: "pencil")
-                        .font(.system(size: 10))
+                        .font(.system(size: iPadScale(10)))
                         .foregroundColor(.gray)
-                        .frame(width: 24, height: 24)
+                        .frame(width: iPadScale(24), height: iPadScale(24))
                         .background(Color.gray.opacity(0.3))
                         .clipShape(Circle())
                 }
@@ -343,8 +335,8 @@ struct ProfileScreen: View {
     
     // MARK: - Membership Card
     private var membershipCard: some View {
-        VStack(spacing: 12) {
-            // Membership Row - VIP icon và tên gói bên phải
+        VStack(spacing: iPadScaleSmall(12)) {
+            // Membership Row
             Button(action: {
                 showSubscriptionScreen = true
             }) {
@@ -352,24 +344,23 @@ struct ProfileScreen: View {
             }
             .buttonStyle(PlainButtonStyle())
             
-            // Credit Row - Layer riêng mờ hơn
-            VStack(spacing: 8) {
+            // Credit Row
+            VStack(spacing: iPadScaleSmall(8)) {
                 // Credit count row
                 HStack {
-                    // Icon credit trước chữ "Credit"
                     Image("icon_coin")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 18, height: 18)
+                        .frame(width: iPadScale(18), height: iPadScale(18))
                     
                     Text("Credit")
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .foregroundColor(.white)
                     
                     Spacer()
                     
                     Text("\(creditManager.credits)")
-                        .font(.system(size: 20, weight: .semibold))
+                        .font(.system(size: iPadScale(20), weight: .semibold))
                         .foregroundColor(Color(red: 1.0, green: 0.85, blue: 0.4))
                     
                     // Add credit button
@@ -381,7 +372,7 @@ struct ProfileScreen: View {
                         }
                     }) {
                         Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 20, weight: .semibold))
+                            .font(.system(size: iPadScale(20), weight: .semibold))
                             .foregroundColor(AivoTheme.Primary.orange)
                     }
                     .padding(.leading, 0)
@@ -396,38 +387,36 @@ struct ProfileScreen: View {
                         
                     HStack {
                         Text("Next bonus date")
-                            .font(.system(size: 14, weight: .regular))
+                            .font(.system(size: iPadScale(14), weight: .regular))
                             .foregroundColor(.white.opacity(0.7))
                         Spacer()
                         Text(formatDate(nextBonus))
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: iPadScale(14), weight: .medium))
                             .foregroundColor(AivoTheme.Secondary.goldenSun)
                     }
                 }
             }
-            .padding(12)
+            .padding(iPadScaleSmall(12))
             .background(Color.gray.opacity(0.25))
-            .cornerRadius(12)
+            .cornerRadius(iPadScale(12))
             .opacity(subscriptionManager.isPremium ? 1.0 : 0.8)
         }
-        .padding(16)
+        .padding(iPadScaleSmall(16))
         .background(Color.gray.opacity(0.15))
-        .cornerRadius(12)
+        .cornerRadius(iPadScale(12))
     }
     
     // MARK: - Premium Badge Row
     private var premiumBadgeRow: some View {
         HStack {
-            // VIP Button icon giống HomeView
             Button(action: {
                 showSubscriptionScreen = true
             }) {
-                HStack(spacing: 8) {
+                HStack(spacing: iPadScaleSmall(8)) {
                     Image(systemName: "crown.fill")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: iPadScale(14), weight: .semibold))
                         .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
-                        .frame(width: 32, height: 32)
-                        // NỀN: chỉ có khi VIP
+                        .frame(width: iPadScale(32), height: iPadScale(32))
                         .background(
                             Group {
                                 if subscriptionManager.isPremium {
@@ -446,7 +435,6 @@ struct ProfileScreen: View {
                             }
                         )
                         .clipShape(Circle())
-                        // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
                         .overlay(
                             Circle().stroke(
                                 subscriptionManager.isPremium
@@ -455,12 +443,11 @@ struct ProfileScreen: View {
                                 lineWidth: 1
                             )
                         )
-                        // Bóng nhẹ chỉ khi VIP để nổi bật
                         .shadow(color: subscriptionManager.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
                                 radius: 8, x: 0, y: 3)
                     
                     Text(memberName)
-                        .font(.system(size: 16, weight: .bold))
+                        .font(.system(size: iPadScale(16), weight: .bold))
                         .foregroundColor(subscriptionManager.isPremium ? Color(red: 1.0, green: 0.4, blue: 0.1) : .white)
                 }
             }
@@ -490,8 +477,8 @@ struct ProfileScreen: View {
                 )
             }
             .background(Color.white.opacity(0.06))
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .cornerRadius(iPadScale(16))
+            .overlay(RoundedRectangle(cornerRadius: iPadScale(16)).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
             // Card 2: Notifications & Auto Share
             VStack(spacing: 0) {
@@ -513,8 +500,8 @@ struct ProfileScreen: View {
                 )
             }
             .background(Color.white.opacity(0.06))
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .cornerRadius(iPadScale(16))
+            .overlay(RoundedRectangle(cornerRadius: iPadScale(16)).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
             // Card 3: Support & Feedback
             VStack(spacing: 0) {
@@ -541,8 +528,8 @@ struct ProfileScreen: View {
                 )
             }
             .background(Color.white.opacity(0.06))
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .cornerRadius(iPadScale(16))
+            .overlay(RoundedRectangle(cornerRadius: iPadScale(16)).stroke(Color.white.opacity(0.1), lineWidth: 1))
             
             #if DEBUG
             // Debug card
@@ -555,8 +542,8 @@ struct ProfileScreen: View {
                 )
             }
             .background(Color.white.opacity(0.06))
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .cornerRadius(iPadScale(16))
+            .overlay(RoundedRectangle(cornerRadius: iPadScale(16)).stroke(Color.white.opacity(0.1), lineWidth: 1))
             #endif
             
             // Card 4: App Info
@@ -569,8 +556,8 @@ struct ProfileScreen: View {
                 )
             }
             .background(Color.white.opacity(0.06))
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            .cornerRadius(iPadScale(16))
+            .overlay(RoundedRectangle(cornerRadius: iPadScale(16)).stroke(Color.white.opacity(0.1), lineWidth: 1))
         }
     }
     
@@ -586,32 +573,32 @@ struct ProfileScreen: View {
         Button(action: {
             action?()
         }) {
-            HStack(spacing: 16) {
+            HStack(spacing: iPadScaleSmall(16)) {
                 Image(systemName: icon)
-                    .font(.system(size: 20))
+                    .font(.system(size: iPadScale(20)))
                     .foregroundColor(.white)
-                    .frame(width: 24, height: 24)
+                    .frame(width: iPadScale(24), height: iPadScale(24))
                 
                 Text(title)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: iPadScale(16), weight: .medium))
                     .foregroundColor(.white)
                 
                 Spacer()
                 
                 if let value = value {
                     Text(value)
-                        .font(.system(size: 16))
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.gray)
                 }
                 
                 if showArrow {
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12))
+                        .font(.system(size: iPadScale(12)))
                         .foregroundColor(.gray)
                 }
             }
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
+            .padding(.vertical, iPadScaleSmall(14))
+            .padding(.horizontal, iPadScaleSmall(16))
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())
@@ -623,14 +610,14 @@ struct ProfileScreen: View {
         title: String,
         isOn: Binding<Bool>
     ) -> some View {
-        HStack(spacing: 16) {
+        HStack(spacing: iPadScaleSmall(16)) {
             Image(systemName: icon)
-                .font(.system(size: 20))
+                .font(.system(size: iPadScale(20)))
                 .foregroundColor(.white)
-                .frame(width: 24, height: 24)
+                .frame(width: iPadScale(24), height: iPadScale(24))
             
             Text(title)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
             
             Spacer()
@@ -638,8 +625,8 @@ struct ProfileScreen: View {
             Toggle("", isOn: isOn)
                 .tint(AivoTheme.Primary.orange)
         }
-        .padding(.vertical, 14)
-        .padding(.horizontal, 16)
+        .padding(.vertical, iPadScaleSmall(14))
+        .padding(.horizontal, iPadScaleSmall(16))
     }
     
     // MARK: - Helper Methods
@@ -924,7 +911,7 @@ struct EditNameDialog: View {
                     
                     // Reserved space for message to avoid jumping
                     Text(verificationResult.message ?? "")
-                        .font(.system(size: 12))
+                        .font(.system(size: iPadScale(12)))
                         .foregroundColor(verificationResult.color)
                         .padding(.leading, 4)
                         .frame(height: 18) // Fixed height

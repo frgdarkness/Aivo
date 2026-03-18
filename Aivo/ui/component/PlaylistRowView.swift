@@ -11,16 +11,16 @@ struct PlaylistRowView: View {
     
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 // Song info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(song.title)
-                        .font(.system(size: 16, weight: .semibold))
+                        .font(.system(size: iPadScale(16), weight: .semibold))
                         .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
                         .lineLimit(1)
                     
                     Text(song.username ?? "Aivo Music")
-                        .font(.system(size: 14))
+                        .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)
                 }
@@ -31,9 +31,9 @@ struct PlaylistRowView: View {
                 if isCurrent {
                     Button(action: onTogglePlayPause) {
                         Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                            .font(.system(size: 18))
+                            .font(.system(size: iPadScale(18)))
                             .foregroundColor(AivoTheme.Primary.orange)
-                            .frame(width: 32, height: 32)
+                            .frame(width: iPadScale(32), height: iPadScale(32))
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
@@ -41,13 +41,13 @@ struct PlaylistRowView: View {
                 // Delete button (X icon)
                 Button(action: onDelete) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: iPadScale(18), weight: .semibold))
                         .foregroundColor(.white.opacity(0.6))
-                        .frame(width: 32, height: 32)
+                        .frame(width: iPadScale(32), height: iPadScale(32))
                 }
                 .buttonStyle(PlainButtonStyle())
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, iPadScaleSmall(12))
             .contentShape(Rectangle())
         }
         .buttonStyle(PlainButtonStyle())

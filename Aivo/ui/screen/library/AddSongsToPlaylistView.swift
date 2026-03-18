@@ -33,7 +33,7 @@ struct AddSongsToPlaylistView: View {
                     searchBar
                     
                     ScrollView {
-                        LazyVStack(spacing: 12) {
+                        LazyVStack(spacing: iPadScaleSmall(12)) {
                             selectAllButton
                             
                             ForEach(displayedSongs) { song in
@@ -51,12 +51,12 @@ struct AddSongsToPlaylistView: View {
                     if !selectedSongIds.isEmpty {
                         Button(action: addSelectedSongs) {
                             Text("Add \(selectedSongIds.count) songs")
-                                .font(.headline)
+                                .font(.system(size: iPadScale(17), weight: .semibold))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 50)
+                                .frame(height: iPadScale(50))
                                 .background(AivoTheme.Primary.orange)
-                                .cornerRadius(12)
+                                .cornerRadius(iPadScale(12))
                         }
                         .padding()
                         .background(AivoTheme.Background.primary.opacity(0.9))
@@ -76,12 +76,12 @@ struct AddSongsToPlaylistView: View {
         HStack {
             Button(action: { dismiss() }) {
                 Image(systemName: "arrow.left")
-                    .font(.system(size: 20))
+                    .font(.system(size: iPadScale(20)))
                     .foregroundColor(.white)
             }
             
             Text("Add songs")
-                .font(.headline)
+                .font(.system(size: iPadScale(17), weight: .semibold))
                 .foregroundColor(.white)
                 .padding(.leading, 8)
             
@@ -103,10 +103,10 @@ struct AddSongsToPlaylistView: View {
             } label: {
                 HStack(spacing: 4) {
                     Text(filter.rawValue)
-                        .font(.subheadline)
+                        .font(.system(size: iPadScale(15)))
                         .foregroundColor(.white)
                     Image(systemName: "chevron.down")
-                        .font(.caption)
+                        .font(.system(size: iPadScale(12)))
                         .foregroundColor(.gray)
                 }
             }
@@ -118,16 +118,18 @@ struct AddSongsToPlaylistView: View {
     private var searchBar: some View {
         HStack {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.gray)
             TextField("Search songs", text: $searchText)
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.white)
                 .onChange(of: searchText) { _ in
                     filterSongs()
                 }
         }
-        .padding(10)
+        .padding(iPadScaleSmall(10))
         .background(Color.white.opacity(0.1))
-        .cornerRadius(10)
+        .cornerRadius(iPadScale(10))
         .padding()
     }
     
@@ -135,19 +137,22 @@ struct AddSongsToPlaylistView: View {
         Button(action: toggleSelectAll) {
             HStack {
                 Text("Select all")
+                    .font(.system(size: iPadScale(16)))
                     .foregroundColor(.white)
                 Spacer()
                 Image(systemName: isAllSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(isAllSelected ? AivoTheme.Primary.orange : .gray)
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, iPadScaleSmall(8))
         }
     }
     
     private func songRow(for song: SunoData) -> some View {
-        Button(action: { toggleSelection(for: song.id) }) {
-            HStack(spacing: 12) {
+        let coverSize: CGFloat = iPadScale(48)
+        
+        return Button(action: { toggleSelection(for: song.id) }) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 // Artwork
                 ZStack {
                      if let localPath = song.coverImageLocalPath,
@@ -165,21 +170,22 @@ struct AddSongsToPlaylistView: View {
                          }
                      } else {
                          Image(systemName: "music.note")
+                             .font(.system(size: iPadScale(20)))
                              .foregroundColor(.gray)
                      }
                 }
-                .frame(width: 48, height: 48)
-                .cornerRadius(8)
+                .frame(width: coverSize, height: coverSize)
+                .cornerRadius(iPadScale(8))
                 .clipped()
                 
                 // Info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(song.title)
-                        .font(.body)
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.white)
                         .lineLimit(1)
-                    Text(song.modelName) // Using modelName as artist/subtitle equivalent
-                        .font(.caption)
+                    Text((song.username?.isEmpty == false ? song.username! : song.modelName))
+                        .font(.system(size: iPadScale(13)))
                         .foregroundColor(.gray)
                 }
                 
@@ -187,12 +193,12 @@ struct AddSongsToPlaylistView: View {
                 
                 // Checkbox
                 Image(systemName: selectedSongIds.contains(song.id) ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(selectedSongIds.contains(song.id) ? AivoTheme.Primary.orange : .gray)
             }
-            .padding(12)
+            .padding(iPadScaleSmall(12))
             .background(Color.white.opacity(0.05))
-            .cornerRadius(12)
+            .cornerRadius(iPadScale(12))
         }
     }
     

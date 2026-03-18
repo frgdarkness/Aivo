@@ -56,15 +56,15 @@ struct CreditUsageHistoryScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: iPadScale(18), weight: .semibold))
                     .foregroundColor(.white)
-                    .padding(12)
+                    .padding(iPadScaleSmall(12))
                     .background(Color.white.opacity(0.1))
                     .clipShape(Circle())
             }
             
             Text("Credit Usage History")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
@@ -86,21 +86,21 @@ struct CreditUsageHistoryScreen: View {
         let filteredData = displayData.filter { $0.requestType != .shareSong }
         
         return ScrollView {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: iPadScaleSmall(12)) {
                 if filteredData.isEmpty {
                     // Empty State
-                    VStack(spacing: 16) {
+                    VStack(spacing: iPadScaleSmall(16)) {
                         Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 48))
+                            .font(.system(size: iPadScale(48)))
                             .foregroundColor(.white.opacity(0.5))
                             .padding(.top, 100)
                         
                         Text("No History Yet")
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: iPadScale(18), weight: .semibold))
                             .foregroundColor(.white)
                         
                         Text("Your credit usage history will appear here")
-                            .font(.system(size: 14))
+                            .font(.system(size: iPadScale(14)))
                             .foregroundColor(.white.opacity(0.7))
                     }
                 } else {
@@ -121,16 +121,16 @@ struct CreditUsageHistoryScreen: View {
         let prefix = isCredit ? "+" : "-"
         let creditColor = isCredit ? Color.green : Color(red: 1.0, green: 0.85, blue: 0.4)
         
-        return HStack(spacing: 16) {
+        return HStack(spacing: iPadScaleSmall(16)) {
             // Left: Request Name
             VStack(alignment: .leading, spacing: 2) {
                 Text(request.requestType == .weeklyReward ? weeklyRewardDisplayName(request) : request.requestType.displayName)
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.system(size: iPadScale(16), weight: .medium))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 Text(formatTime(request.time))
-                    .font(.system(size: 12))
+                    .font(.system(size: iPadScale(12)))
                     .foregroundColor(.white.opacity(0.5))
             }
             
@@ -139,19 +139,19 @@ struct CreditUsageHistoryScreen: View {
             // Right: Credit Cost with Icon
             HStack(spacing: 4) {
                 Text("\(prefix)\(request.creditCost)")
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: iPadScale(16), weight: .semibold))
                     .foregroundColor(creditColor)
                 
                 Image("icon_coin")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 16, height: 16)
+                    .frame(width: iPadScale(16), height: iPadScale(16))
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, iPadScaleSmall(16))
+        .padding(.vertical, iPadScaleSmall(14))
         .background(Color.white.opacity(0.1))
-        .cornerRadius(12)
+        .cornerRadius(iPadScale(12))
     }
     
     private func weeklyRewardDisplayName(_ request: RequestData) -> String {

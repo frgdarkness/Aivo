@@ -32,35 +32,35 @@ struct GenerationSuccessDialog: View {
                     Spacer()
                     Button(action: onClose) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .bold))
+                            .font(.system(size: iPadScale(16), weight: .bold))
                             .foregroundColor(.white.opacity(0.7))
-                            .padding(12)
+                            .padding(iPadScaleSmall(12))
                     }
                 }
                 
                 // Content
-                VStack(spacing: 16) {
+                VStack(spacing: iPadScaleSmall(16)) {
                     // Success Icon/Title
-                    VStack(spacing: 12) {
+                    VStack(spacing: iPadScaleSmall(12)) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 48))
+                            .font(.system(size: iPadScale(48)))
                             .foregroundColor(AivoTheme.Primary.orange)
                             .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 10)
                         
                         Text("Song Generation Complete!")
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.system(size: iPadScale(20), weight: .bold))
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                     }
                     .padding(.bottom, 8)
                     
                     // Song List
-                    VStack(spacing: 12) {
+                    VStack(spacing: iPadScaleSmall(12)) {
                         ForEach(sunoDataList) { song in
                             songItemView(song)
                         }
                     }
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, iPadScaleSmall(16))
                     
                     // Auto Share Toggle
                     autoShareRow
@@ -79,8 +79,6 @@ struct GenerationSuccessDialog: View {
                         Logger.d("Posting PlayLatestGeneratedSongs for IDs: \(songIds)", file: "GenerationSuccessDialog.swift")
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                             NotificationCenter.default.post(name: NSNotification.Name("SwitchLibraryCategory"), object: "AI Generate")
-                            // User requested View Result to ONLY open Library, not auto-play
-                            // NotificationCenter.default.post(name: NSNotification.Name("PlayLatestGeneratedSongs"), object: songIds)
                         }
                         
                         // Show rating after 3s delay
@@ -89,12 +87,12 @@ struct GenerationSuccessDialog: View {
                         }
                     }) {
                         Text("View Result")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: iPadScale(16), weight: .semibold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: iPadScale(50))
                             .background(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: iPadScale(12))
                                     .fill(Color.white.opacity(0.15))
                             )
                     }
@@ -110,15 +108,15 @@ struct GenerationSuccessDialog: View {
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "play.fill")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: iPadScale(16), weight: .bold))
                             Text("Play Now")
-                                .font(.system(size: 16, weight: .bold))
+                                .font(.system(size: iPadScale(16), weight: .bold))
                         }
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: iPadScale(50))
                         .background(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: iPadScale(12))
                                 .fill(AivoTheme.Primary.orange)
                         )
                     }
@@ -126,12 +124,12 @@ struct GenerationSuccessDialog: View {
                     .padding(.bottom, 24)
                 }
             }
-            .frame(maxWidth: 340)
+            .frame(maxWidth: DeviceScale.isIPad ? 480 : 340)
             .background(
-                RoundedRectangle(cornerRadius: 20)
+                RoundedRectangle(cornerRadius: iPadScale(20))
                     .fill(Color(hex: 0x1C1C1E)) // Dark gray background
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: iPadScale(20))
                             .stroke(AivoTheme.Primary.orange.opacity(0.3), lineWidth: 1)
                     )
                     .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
@@ -148,17 +146,17 @@ struct GenerationSuccessDialog: View {
     
     // MARK: - Auto Share Row
     private var autoShareRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: iPadScaleSmall(8)) {
             Button(action: {
                 showInfoAlert = true
             }) {
                 Image(systemName: "info.circle")
                     .foregroundColor(AivoTheme.Primary.orange)
-                    .font(.system(size: 18))
+                    .font(.system(size: iPadScale(18)))
             }
             
             Text("Auto Share Song")
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: iPadScale(15), weight: .medium))
                 .foregroundColor(.white.opacity(0.85))
             
             Spacer()
@@ -171,13 +169,15 @@ struct GenerationSuccessDialog: View {
             .tint(AivoTheme.Primary.orange)
             .scaleEffect(0.85)
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, iPadScaleSmall(24))
         .padding(.vertical, 4)
     }
     
     // MARK: - Song Item View
     private func songItemView(_ song: SunoData) -> some View {
-        HStack(spacing: 12) {
+        let coverSize = iPadScale(50)
+        
+        return HStack(spacing: iPadScaleSmall(12)) {
             // Cover Image
             if let url = URL(string: song.imageUrl), !song.imageUrl.isEmpty {
                 KFImage(url)
@@ -188,34 +188,34 @@ struct GenerationSuccessDialog: View {
                     }
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: coverSize, height: coverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(8)))
             } else {
                 Image("cover_default_resize")
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-                    .frame(width: 50, height: 50)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: coverSize, height: coverSize)
+                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(8)))
             }
             
             // Info
             VStack(alignment: .leading, spacing: 4) {
                 Text(song.title.isEmpty ? "Untitled Song" : song.title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: iPadScale(16), weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
                     Label(formatDuration(song.duration), systemImage: "clock")
-                        .font(.system(size: 12))
+                        .font(.system(size: iPadScale(12)))
                         .foregroundColor(.white.opacity(0.6))
                     
                     Text("•")
                         .foregroundColor(.white.opacity(0.6))
-                        .font(.system(size: 10))
+                        .font(.system(size: iPadScale(10)))
                     
                     Text(song.modelName)
-                        .font(.system(size: 12))
+                        .font(.system(size: iPadScale(12)))
                         .foregroundColor(AivoTheme.Primary.orange)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -226,9 +226,9 @@ struct GenerationSuccessDialog: View {
             
             Spacer()
         }
-        .padding(10)
+        .padding(iPadScaleSmall(10))
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: iPadScale(12))
                 .fill(Color.white.opacity(0.05))
         )
     }

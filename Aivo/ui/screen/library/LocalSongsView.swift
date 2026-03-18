@@ -146,8 +146,8 @@ struct LocalSongsView: View {
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
                                         
-                                        // Model Label
-                                        Text(song.modelName)
+                                        // Username / Model Label
+                                        Text((song.username?.isEmpty == false ? song.username! : song.modelName))
                                             .font(.system(size: iPadScale(12)))
                                             .foregroundColor(.gray)
                                             .lineLimit(1)

@@ -26,7 +26,7 @@ struct GenerateSongProcessingScreen: View {
         ZStack {
             // Background
             AivoSunsetBackground()
-            VStack(spacing: 40) {
+            VStack(spacing: iPadScaleSmall(40)) {
                 // Header (Close/Cancel button)
                  HStack {
                     Spacer()
@@ -34,7 +34,7 @@ struct GenerateSongProcessingScreen: View {
                         showCancelAlert = true
                     }) {
                         Image(systemName: "xmark")
-                            .font(.title2)
+                            .font(.system(size: iPadScale(22)))
                             .foregroundColor(.white)
                             .padding()
                     }
@@ -58,15 +58,14 @@ struct GenerateSongProcessingScreen: View {
                     onBackgroundProcess()
                 }) {
                     Text("Process in Background")
-                        .font(.headline)
-                        .fontWeight(.semibold)
+                        .font(.system(size: iPadScale(17), weight: .semibold))
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .frame(height: iPadScale(50))
                         .background(Color.white.opacity(0.2))
-                        .cornerRadius(25)
+                        .cornerRadius(iPadScale(25))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 25)
+                            RoundedRectangle(cornerRadius: iPadScale(25))
                                 .stroke(Color.white.opacity(0.5), lineWidth: 1)
                         )
                 }
@@ -84,7 +83,7 @@ struct GenerateSongProcessingScreen: View {
                 Spacer()
                 if showToast {
                     Text(toastMessage)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 12)
@@ -111,35 +110,38 @@ struct GenerateSongProcessingScreen: View {
     
     // MARK: - Title View
     private var titleView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: iPadScaleSmall(8)) {
             Text(requestType.displayName)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: iPadScale(28), weight: .bold))
                 .foregroundColor(.white)
             
             Text("Just a Moment!")
-                .font(.system(size: 18, weight: .medium))
+                .font(.system(size: iPadScale(18), weight: .medium))
                 .foregroundColor(.white)
         }
     }
     
     // MARK: - Animation View
     private var animationView: some View {
-        ZStack {
+        let animSize: CGFloat = DeviceScale.isIPad ? 440 : 220
+        let lottieSize: CGFloat = DeviceScale.isIPad ? 400 : 200
+        
+        return ZStack {
             Circle()
-                .stroke(Color.white.opacity(0.18), lineWidth: 2)
-                .frame(width: 220, height: 220)
+                .stroke(Color.white.opacity(0.18), lineWidth: DeviceScale.isIPad ? 3 : 2)
+                .frame(width: animSize, height: animSize)
 
             LottieView(name: "lottie_wave_loop", loopMode: .loop, speed: 2.0)
-                        .frame(width: 200, height: 200)
+                        .frame(width: lottieSize, height: lottieSize)
                         .clipShape(Circle())
                         .shadow(color: .yellow.opacity(0.4), radius: 10, x: 0, y: 0)
             Circle()
                 .stroke(
                     LinearGradient(colors: [.yellow.opacity(0.8), .orange.opacity(0.4)],
                                    startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 3
+                    lineWidth: DeviceScale.isIPad ? 4 : 3
                 )
-                .frame(width: 220, height: 220)
+                .frame(width: animSize, height: animSize)
         }
         .padding(.top, 8)
     }
@@ -147,14 +149,14 @@ struct GenerateSongProcessingScreen: View {
     
     // MARK: - Status View
     private var statusView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: iPadScaleSmall(8)) {
             Text("We'll let you know once it's done!")
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: iPadScale(16), weight: .medium))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.center)
             
             Text("(2-5 Min)")
-                .font(.system(size: 14, weight: .regular))
+                .font(.system(size: iPadScale(14), weight: .regular))
                 .foregroundColor(.white.opacity(0.8))
         }
     }

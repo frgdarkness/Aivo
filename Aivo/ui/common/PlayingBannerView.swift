@@ -55,7 +55,7 @@ struct PlayingBannerView: View {
         if let currentSong = activeSong {
             let shape = TopRoundedRectangle(radius: cornerRadius)
 
-            HStack(spacing: 12) {
+            HStack(spacing: iPadScaleSmall(12)) {
                 // Album Art
                 AsyncImage(url: URL(string: currentSong.imageUrl)) { image in
                     image
@@ -66,25 +66,25 @@ struct PlayingBannerView: View {
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 }
-                .frame(width: 40, height: 40)
+                .frame(width: iPadScale(40), height: iPadScale(40))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
                 // Song Info
                 VStack(alignment: .leading, spacing: 2) {
                     Text(currentSong.title)
-                        .font(.system(size: 16, weight: .medium))
+                        .font(.system(size: iPadScale(16), weight: .medium))
                         .foregroundColor(.white)
                         .lineLimit(1)
 
                     Text(currentSong.username ?? "Aivo Music")
-                        .font(.system(size: 14))
+                        .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.8))
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 // Control Buttons
-                HStack(spacing: 8) {
+                HStack(spacing: iPadScaleSmall(8)) {
                     // Play/Pause Button
                     Button(action: {
                         if isOnlinePlaying {
@@ -94,9 +94,9 @@ struct PlayingBannerView: View {
                         }
                     }) {
                         Image(systemName: (isOnlinePlaying ? onlinePlayer.isPlaying : musicPlayer.isPlaying) ? "pause.fill" : "play.fill")
-                            .font(.system(size: 20))
+                            .font(.system(size: iPadScale(20)))
                             .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
+                            .frame(width: iPadScale(36), height: iPadScale(36))
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
                     }
@@ -110,16 +110,16 @@ struct PlayingBannerView: View {
                         }
                     }) {
                         Image(systemName: "xmark")
-                            .font(.system(size: 16, weight: .medium))
+                            .font(.system(size: iPadScale(16), weight: .medium))
                             .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
+                            .frame(width: iPadScale(36), height: iPadScale(36))
                             .background(Color.white.opacity(0.2))
                             .clipShape(Circle())
                     }
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, iPadScaleSmall(12))
+            .padding(.vertical, iPadScaleSmall(8))
             .background(
                 shape
                     .fill(AivoTheme.Primary.blackOrange.opacity(0.9))

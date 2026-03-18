@@ -358,32 +358,26 @@ struct SubscriptionScreenIntro: View {
             
             Button(action: handleRestore) {
                 if isRestoring {
-                    HStack {
+                    HStack(spacing: 6) {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .frame(width: 20, height: 20)
                         Text("Restore")
-                            .font(.system(size: iPadScale(15), weight: .semibold))
+                            .font(.system(size: 15, weight: .semibold))
                             .foregroundColor(.white.opacity(0.55))
                             .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
                     }
                     
                 } else {
                     Text("Restore")
-                        .font(.system(size: iPadScale(15), weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white.opacity(0.55))
                         .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
                 }
             }
             .disabled(isRestoring)
             .padding(.horizontal, 6)
             .padding(.vertical, 8)
-//            .background(
-//                RoundedRectangle(cornerRadius: 8)
-//                    .fill(Color.white.opacity(0.1))
-//            )
         }
         .padding(.top, 50)
     }

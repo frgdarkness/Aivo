@@ -353,11 +353,11 @@ struct PlaySunoSongIntroScreen: View {
             
             HStack {
                 Text(formatTime(isSongReady ? (isScrubbing ? scrubTime : musicPlayer.currentTime) : 0))
-                    .font(.system(size: iPadScale(12)))
+                    .font(.system(size: iPadScale(14)))
                     .foregroundColor(.white.opacity(0.8))
                 Spacer()
                 Text(formatTime(isSongReady ? musicPlayer.duration : sunoData.duration))
-                    .font(.system(size: iPadScale(12)))
+                    .font(.system(size: iPadScale(14)))
                     .foregroundColor(.white.opacity(0.8))
             }
         }

@@ -39,10 +39,10 @@ struct SelectMultiGenreScreen: View {
                 // Content
                 ScrollView {
                     LazyVGrid(columns: [
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12),
-                        GridItem(.flexible(), spacing: 12)
-                    ], spacing: 10) {
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12)),
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12)),
+                        GridItem(.flexible(), spacing: iPadScaleSmall(12))
+                    ], spacing: iPadScaleSmall(10)) {
                         ForEach(filteredGenres, id: \.self) { genre in
                             genreChipView(genre: genre)
                         }
@@ -68,21 +68,21 @@ struct SelectMultiGenreScreen: View {
                 dismiss()
             }) {
                 Image(systemName: "xmark")
-                    .font(.title2)
+                    .font(.system(size: iPadScale(22)))
                     .foregroundColor(.white)
             }
             
             Spacer()
             
             Text("Select Genre")
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: iPadScale(20), weight: .bold))
                 .foregroundColor(.white)
             
             Spacer()
             
             // Placeholder for symmetry
             Color.clear
-                .frame(width: 24, height: 24)
+                .frame(width: iPadScale(24), height: iPadScale(24))
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -93,9 +93,11 @@ struct SelectMultiGenreScreen: View {
     private var searchBar: some View {
         HStack {
             Image(systemName: "magnifyingglass")
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.gray)
             
             TextField("Search Genre", text: $searchText)
+                .font(.system(size: iPadScale(16)))
                 .foregroundColor(.white)
                 .autocapitalization(.none)
                 .disableAutocorrection(true)
@@ -105,11 +107,12 @@ struct SelectMultiGenreScreen: View {
                     searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: iPadScale(16)))
                         .foregroundColor(.gray)
                 }
             }
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, iPadScaleSmall(10))
         .padding(.horizontal, 15)
         .background(Color.gray.opacity(0.2))
         .cornerRadius(10)
@@ -123,10 +126,10 @@ struct SelectMultiGenreScreen: View {
             toggleGenreSelection(genre)
         }) {
             Text(genre.displayName)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: iPadScale(14), weight: .medium))
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .padding(.vertical, iPadScaleSmall(14))
                 .background(
                     Capsule()
                         .fill(selectedGenres.contains(genre) ? Color.clear : Color.clear)
@@ -147,19 +150,18 @@ struct SelectMultiGenreScreen: View {
                 dismiss()
             }) {
                 Text("Done")
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(.system(size: iPadScale(16), weight: .bold))
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
+                    .frame(height: iPadScale(50))
                     .background(AivoTheme.Primary.orange)
-                    .cornerRadius(12)
+                    .cornerRadius(iPadScale(12))
             }
             .disabled(selectedGenres.isEmpty)
             .opacity(selectedGenres.isEmpty ? 0.5 : 1.0)
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 14)
+        .padding(.vertical, iPadScaleSmall(14))
         .background(
             Rectangle()
                 .fill(AivoTheme.Background.primary)

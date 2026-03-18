@@ -193,6 +193,24 @@ struct TestScreen: View {
     private var clearDataSection: some View {
         VStack(spacing: 16) {
             Button(action: {
+                clearIntroStatus()
+            }) {
+                HStack {
+                    Image(systemName: "arrow.counterclockwise.circle.fill")
+                        .font(.system(size: 18))
+                    Text("Clear Intro Status")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.blue.opacity(0.7))
+                )
+            }
+            
+            Button(action: {
                 clearRewardData()
             }) {
                 HStack {
@@ -326,6 +344,11 @@ struct TestScreen: View {
         KeychainManager.shared.clearAllKeychainData()
         
         showToast("All Keychain data cleared")
+    }
+    
+    private func clearIntroStatus() {
+        UserDefaultsManager.shared.resetOnboarding()
+        showToast("Intro status cleared. Restart app to see intro.")
     }
     
     private func clearRewardData() {
