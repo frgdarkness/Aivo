@@ -16,9 +16,6 @@ struct PlaylistTabView: View {
     
     var body: some View {
         ZStack {
-                 // Background handled by parent or transparent
-                 AivoTheme.Background.primary.ignoresSafeArea()
-                 
                  ScrollView {
                      VStack(alignment: .leading, spacing: 24) {
                          // Smart Playlists Grid

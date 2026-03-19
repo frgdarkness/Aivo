@@ -65,11 +65,10 @@ struct ExploreTabViewNew: View {
                     )
                 }
                 
-                // Native Ad below AIVO GREATEST HITS (non-premium only)
+                // Limited Offer (Discount Ad) - below AIVO GREATEST HITS
                 if !SubscriptionManager.shared.isPremium {
-                    NativeAdContainerView()
-                        .frame(height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    DiscountAdView()
+                        .padding(.horizontal, 4)
                 }
                 
                 // Songs For You Section (Optional, keeping it below if needed, or removing)
@@ -92,10 +91,11 @@ struct ExploreTabViewNew: View {
                     )
                 }
                 
-                // Limited Offer (Discount Ad)
+                // Native Ad (non-premium only)
                 if !SubscriptionManager.shared.isPremium {
-                    DiscountAdView()
-                        .padding(.horizontal, 4) // Adjust padding to match Sona style if needed, Sona used 20 on container
+                    NativeAdContainerView()
+                        .frame(height: iPadScale(150))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                 }
                 
                 // Search Bar
@@ -106,13 +106,6 @@ struct ExploreTabViewNew: View {
 
                 // Trending Section
                 trendingSection
-                
-                // Native Ad below Trending (non-premium only)
-                if !SubscriptionManager.shared.isPremium {
-                    NativeAdContainerView()
-                        .frame(height: 150)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
                 
                 // Popular Section
                 //popularSection

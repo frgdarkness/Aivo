@@ -192,6 +192,25 @@ struct TestScreen: View {
     // MARK: - Clear Data Section
     private var clearDataSection: some View {
         VStack(spacing: 16) {
+            // Reset Free First Time
+            Button(action: {
+                resetFreeFirstTime()
+            }) {
+                HStack {
+                    Image(systemName: "gift.fill")
+                        .font(.system(size: 18))
+                    Text("Reset Free First Time")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.green.opacity(0.7))
+                )
+            }
+            
             Button(action: {
                 clearIntroStatus()
             }) {
@@ -381,6 +400,14 @@ struct TestScreen: View {
         WeeklyRewardManager.shared.dismissReward()
         
         showToast("All reward data cleared")
+    }
+    
+    private func resetFreeFirstTime() {
+        KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialSongKey)
+        KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialCoverKey)
+        KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialLyricKey)
+        ProfileManager.shared.objectWillChange.send()
+        showToast("Free first time reset ✅ (Song, Cover, Lyric)")
     }
     
     private func showToast(_ message: String) {

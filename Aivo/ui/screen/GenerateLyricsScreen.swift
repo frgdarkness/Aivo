@@ -125,6 +125,7 @@ struct GenerateLyricsScreen: View {
     @State private var showBuyCreditDialog = false
     @State private var showServerErrorAlert = false
     @State private var showResultScreen = false
+    @State private var showPremiumFeatureDialog = false
 
     var body: some View {
         ZStack {
@@ -145,7 +146,7 @@ struct GenerateLyricsScreen: View {
                 
                 generateButton
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
+                    .padding(.bottom, iPadScaleSmall(16))
                 
                 // Banner Ad at very bottom, full width edge-to-edge, for non-premium users
                 if !subscriptionManager.isPremium {
@@ -180,6 +181,31 @@ struct GenerateLyricsScreen: View {
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionView()
+        }
+        .overlay {
+            if showPremiumFeatureDialog {
+                PremiumFeatureDialog(
+                    featureType: .lyric,
+                    onGoPremium: {
+                        showPremiumFeatureDialog = false
+                        showSubscriptionScreen = true
+                    },
+                    onTryFree: {
+                        showPremiumFeatureDialog = false
+                        // Show reward ad before allowing free trial
+                        AdManager.shared.showRewardAd { _ in
+                            DispatchQueue.main.async {
+                                performGeneration(isFreeTry: true)
+                            }
+                        }
+                    },
+                    onDismiss: {
+                        showPremiumFeatureDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
+            }
         }
         .fullScreenCover(isPresented: $showResultScreen) {
             GenerateLyricResultScreen(
@@ -632,15 +658,11 @@ struct GenerateLyricsScreen: View {
                         .scaleEffect(0.8)
                 }
 
-                if !subscriptionManager.isPremium && remoteConfig.enableOneTimeFreeTry && !profileManager.hasUsedFreeLyricGeneration {
-                    Text(isGenerating ? "Generating..." : "Generate First Lyric Free")
-                        .font(.system(size: iPadScale(17), weight: .semibold))
-                        .fontWeight(.bold)
-                } else {
-                    Text(isGenerating ? "Generating..." : "Generate Lyrics")
-                        .font(.system(size: iPadScale(17), weight: .semibold))
-                        .fontWeight(.bold)
-                }
+                
+                Text(isGenerating ? "Generating..." : "Generate Lyrics")
+                    .font(.system(size: iPadScale(17), weight: .semibold))
+                    .fontWeight(.bold)
+                
             }
             .foregroundColor(.black)
             .frame(maxWidth: .infinity)
@@ -736,26 +758,26 @@ struct GenerateLyricsScreen: View {
     
     private func generateLyrics() {
         // Check premium status
-        let isFreeTry = !subscriptionManager.isPremium && remoteConfig.enableOneTimeFreeTry && !profileManager.hasUsedFreeLyricGeneration
+        let canFreeTry = !subscriptionManager.isPremium && remoteConfig.enableFreeFirstTime && !profileManager.hasUsedFreeLyricGeneration
 
-        if isFreeTry {
-             performGeneration(isFreeTry: true)
-             return
+        guard subscriptionManager.isPremium || canFreeTry else {
+            // Non-premium, no free trial → show dialog
+            showPremiumFeatureDialog = true
+            return
+        }
+        
+        if canFreeTry {
+            // Has free trial → show dialog with Try Free option
+            showPremiumFeatureDialog = true
+            return
         }
 
-        if !isFreeTry {
-            guard subscriptionManager.isPremium else {
-                showPremiumAlert = true
-                return
-            }
-            
-            // Check credits
-            let baseCost = config.mode == .simple ? 10 : (config.mode == .custom ? 15 : 20)
-            let totalCost = baseCost * config.lyricCount
-            guard creditManager.credits >= totalCost else {
-                showInsufficientCreditsAlert = true
-                return
-            }
+        // Premium user → check credits
+        let baseCost = config.mode == .simple ? 10 : (config.mode == .custom ? 15 : 20)
+        let totalCost = baseCost * config.lyricCount
+        guard creditManager.credits >= totalCost else {
+            showInsufficientCreditsAlert = true
+            return
         }
         
         performGeneration(isFreeTry: false)
@@ -791,7 +813,7 @@ struct GenerateLyricsScreen: View {
                     showToastMessage("Lyrics generated successfully!")
                     
                     if isFreeTry {
-                        ProfileManager.shared.setHasUsedFreeLyricGeneration(true)
+                        profileManager.markFreeLyricGenerationUsed()
                     } else {
                         // Deduct credits only after successful generation
                         Task {

@@ -12,7 +12,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var creditsPerSong = 30
     @Published var creditsPerCover = 20
     @Published var creditsPerLyric = 5
-    @Published var enableOneTimeFreeTry = true // Added support for free try
+    @Published var enableFreeFirstTime = false // ENABLE_FREE_FIRST_TIME from Remote Config
     @Published var playCountMinTime: Int = 30 // Minimum seconds to count a play
     @Published var countSuggestPromptToShowAd: Int = 3 // Every N-th "Get Inspired" tap shows reward ad
     
@@ -58,7 +58,8 @@ class RemoteConfigManager: ObservableObject {
             "CREDITS_PER_COVER": 20 as NSNumber,
             "CREDITS_PER_LYRIC": 5 as NSNumber,
             "PLAY_COUNT_MIN_TIME": 30 as NSNumber,
-            "COUNT_SUGGEST_PROMPT_TO_SHOW_AD": 3 as NSNumber
+            "COUNT_SUGGEST_PROMPT_TO_SHOW_AD": 3 as NSNumber,
+            "ENABLE_FREE_FIRST_TIME": false as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -131,6 +132,10 @@ class RemoteConfigManager: ObservableObject {
                     countSuggestPromptToShowAd = countSuggestValue.intValue
                     Logger.d("### RemoteConfigManager: COUNT_SUGGEST_PROMPT_TO_SHOW_AD: \(countSuggestPromptToShowAd)")
                 }
+                
+                let enableFreeValue = remoteConfig.configValue(forKey: "ENABLE_FREE_FIRST_TIME").boolValue
+                enableFreeFirstTime = enableFreeValue
+                Logger.d("### RemoteConfigManager: ENABLE_FREE_FIRST_TIME: \(enableFreeFirstTime)")
             }
             
             // Always try to activate, even if fetch didn't get new data

@@ -37,6 +37,9 @@ struct CoverTabView: View {
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
     @State private var showBackgroundBusyAlert = false
+    @State private var showPremiumFeatureDialog = false
+    @State private var isFreeTryCover = false
+    @ObservedObject private var profileManager = ProfileManager.shared
     
     enum SourceType { case song, youtube }
     @State private var selectedSource: SourceType = .song
@@ -121,6 +124,32 @@ struct CoverTabView: View {
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionView()
+        }
+        .overlay {
+            if showPremiumFeatureDialog {
+                PremiumFeatureDialog(
+                    featureType: .cover,
+                    onGoPremium: {
+                        showPremiumFeatureDialog = false
+                        showSubscriptionScreen = true
+                    },
+                    onTryFree: {
+                        showPremiumFeatureDialog = false
+                        // Show reward ad before allowing free trial
+                        AdManager.shared.showRewardAd { _ in
+                            DispatchQueue.main.async {
+                                isFreeTryCover = true
+                                generateCoverSong()
+                            }
+                        }
+                    },
+                    onDismiss: {
+                        showPremiumFeatureDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
+            }
         }
         .fullScreenCover(isPresented: $showModelSelectionScreen) {
             SelectModelScreen(
@@ -509,15 +538,17 @@ struct CoverTabView: View {
         }
         
         // Check subscription first
-        guard subscriptionManager.isPremium else {
-            showSubscriptionScreen = true
+        guard subscriptionManager.isPremium || isFreeTryCover else {
+            showPremiumFeatureDialog = true
             return
         }
         
-        // Check credits before starting
-        guard creditManager.credits >= creditsRequired else {
-            showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a cover song.")
-            return
+        // Check credits before starting (skip for free trial)
+        if !isFreeTryCover {
+            guard creditManager.credits >= creditsRequired else {
+                showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a cover song.")
+                return
+            }
         }
         
         Logger.i("🎤 [CoverTab] Starting cover song generation via BackgroundManager...")
@@ -591,9 +622,14 @@ struct CoverTabView: View {
                     modelName: coverModelName,
                     coverImageUrl: coverImageUrl,
                     audioSource: selectedSource == .song ? "song" : "youtube",
-                    creditCost: creditsRequired
+                    creditCost: isFreeTryCover ? 0 : creditsRequired
                 )
-                //showToastMessage("Cover generation started in background!")
+                
+                // Mark free trial as used
+                if isFreeTryCover {
+                    profileManager.markFreeCoverGenerationUsed()
+                    isFreeTryCover = false
+                }
             }
         }
     }

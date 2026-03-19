@@ -40,6 +40,9 @@ struct GenerateSongTabView: View {
     @State private var selectedLanguage: String = "English"
     @State private var showBackgroundBusyAlert = false
     @State private var getInspiredCount: Int = 0 // Track "Get Inspired" tap count for reward ad
+    @State private var showPremiumFeatureDialog = false // Premium feature dialog
+    @State private var isFreeTrySong = false // Whether current generation is a free trial
+    @ObservedObject private var profileManager = ProfileManager.shared
 
     // MARK: - New Generation State
     @State private var generationMode: GenerationMode = .simple
@@ -80,6 +83,13 @@ struct GenerateSongTabView: View {
                 
                 // Genre Selection
                 genreSelectionSection
+                
+                // Native Ad below Genre (non-premium only)
+                if !SubscriptionManager.shared.isPremium {
+                    NativeAdContainerView()
+                        .frame(height: iPadScale(150))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
+                }
                 
                 // Song Name
                 songNameSection
@@ -168,6 +178,32 @@ struct GenerateSongTabView: View {
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionView()
+        }
+        .overlay {
+            if showPremiumFeatureDialog {
+                PremiumFeatureDialog(
+                    featureType: .song,
+                    onGoPremium: {
+                        showPremiumFeatureDialog = false
+                        showSubscriptionScreen = true
+                    },
+                    onTryFree: {
+                        showPremiumFeatureDialog = false
+                        // Show reward ad before allowing free trial
+                        AdManager.shared.showRewardAd { _ in
+                            DispatchQueue.main.async {
+                                isFreeTrySong = true
+                                generateSong()
+                            }
+                        }
+                    },
+                    onDismiss: {
+                        showPremiumFeatureDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
+            }
         }
         .alert("Content Policy Violation", isPresented: $showArtistNameAlert) {
             Button("OK", role: .cancel) { }
@@ -1071,18 +1107,20 @@ struct GenerateSongTabView: View {
         }
         
         // Check subscription first
-        guard subscriptionManager.isPremium else {
-            showSubscriptionScreen = true
+        guard subscriptionManager.isPremium || isFreeTrySong else {
+            showPremiumFeatureDialog = true
             return
         }
         
-        // Check credits before starting
-        guard creditManager.credits >= creditsRequired else {
-            showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a song.")
-            return
+        // Check credits before starting (skip for free trial)
+        if !isFreeTrySong {
+            guard creditManager.credits >= creditsRequired else {
+                showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a song.")
+                return
+            }
         }
         
-        print("🎵 [GenerateSong] Starting song generation via BackgroundManager...")
+        print("🎵 [GenerateSong] Starting song generation via BackgroundManager... (freeTry: \(isFreeTrySong))")
         
         // Log to both Firebase and AppsFlyer
         AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_GENERATE_SONG_START, parameters: [
@@ -1092,6 +1130,7 @@ struct GenerateSongTabView: View {
             "model": selectedModel.rawValue,
             "moods_count": selectedMoods.count,
             "genres_count": selectedGenres.count,
+            "is_free_try": isFreeTrySong,
             "timestamp": Date().timeIntervalSince1970
         ])
         
@@ -1114,6 +1153,9 @@ struct GenerateSongTabView: View {
         // Show processing screen
         showGenerateSongScreen = true
         
+        // Determine credit cost (0 for free trial)
+        let actualCreditCost = isFreeTrySong ? 0 : creditsRequired
+        
         // Start background generation
         BackgroundGenerationManager.shared.startGeneration(
             prompt: prompt,
@@ -1125,13 +1167,14 @@ struct GenerateSongTabView: View {
             vocalGender: vocalGender,
             selectedMoods: selectedMoods,
             selectedGenres: selectedGenres,
-            creditCost: creditsRequired
+            creditCost: actualCreditCost
         )
-        // showToastMessage("Generation started in background! You can continue using the app.")
         
-        // Note: Credit deduction handled by Manager/Server side logic or dependent on success?
-        // Ideally we should deduct here? No, if it fails immediately in background we want to not deduct.
-        // We will add deduction logic to BackgroundGenerationManager completion block later.
+        // Mark free trial as used
+        if isFreeTrySong {
+            profileManager.markFreeSongGenerationUsed()
+            isFreeTrySong = false
+        }
     }
     
     private func buildPrompt() -> String {
