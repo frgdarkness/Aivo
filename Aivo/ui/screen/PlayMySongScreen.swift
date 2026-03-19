@@ -53,10 +53,25 @@ struct PlayMySongScreen: View {
     private var currentSong: SunoData? { musicPlayer.currentSong }
     private var displaySongs: [SunoData] { musicPlayer.songs.isEmpty ? songs : musicPlayer.songs }
 
+    /// Check if the song is imported from device (not AI-generated)
+    private var isImportedSong: Bool {
+        guard let song = currentSong else { return false }
+        let imported = song.id.hasPrefix("local_") || song.modelName == "Local"
+        if imported {
+            Logger.d("🔍 [ShareDebug] isImportedSong: true (ID: \(song.id), Model: \(song.modelName))")
+        }
+        return imported
+    }
+    
     private var isOwnSong: Bool {
         guard let song = currentSong, let profileID = LocalStorageManager.shared.localProfile?.profileID else { 
             Logger.d("🔍 [ShareDebug] isOwnSong: false (currentSong or profileID is nil)")
             return false 
+        }
+        // Imported songs are NOT own songs for sharing purposes
+        if isImportedSong {
+            Logger.d("🔍 [ShareDebug] isOwnSong: false (imported song cannot be shared)")
+            return false
         }
         let matches = song.profileID == profileID
         Logger.d("🔍 [ShareDebug] isOwnSong: \(matches) (Song ProfileID: \(song.profileID ?? "nil") vs Local ProfileID: \(profileID))")
@@ -459,6 +474,12 @@ struct PlayMySongScreen: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                         shareError = nil
                     }
+                } else if isImportedSong {
+                    Logger.d("🚫 [ShareDebug] Restricted: Imported song cannot be shared")
+                    shareError = "Only AI-generated songs can be shared"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        shareError = nil
+                    }
                 } else if !isOwnSong {
                     Logger.d("🚫 [ShareDebug] Restricted: Not own song")
                     shareError = "You cannot share this song"
@@ -484,7 +505,7 @@ struct PlayMySongScreen: View {
                         .font(.system(size: iPadScale(16), weight: .medium))
                         .multilineTextAlignment(.leading)
                 }
-                .foregroundColor((!isOwnSong || isAlreadyShared) ? .gray.opacity(0.6) : AivoTheme.Primary.orange)
+                .foregroundColor((!isOwnSong || isAlreadyShared || isImportedSong) ? .gray.opacity(0.6) : AivoTheme.Primary.orange)
                 .padding(.horizontal, iPadScaleSmall(16))
                 .padding(.vertical, iPadScaleSmall(12))
             }

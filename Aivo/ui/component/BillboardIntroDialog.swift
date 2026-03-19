@@ -58,7 +58,7 @@ struct BillboardIntroDialog: View {
                     .multilineTextAlignment(.center)
                     .padding(.bottom, iPadScaleSmall(8))
                 
-                Text("The Weekly Billboard is officially live, celebrating the most listened-to tracks. Create your unique masterpiece and share it with the community to join the race now!")
+                Text("The Weekly Billboard is officially live, celebrating the most listened-to tracks. Create your song and share it with the community to join the race now!")
                     .font(.system(size: iPadScale(15)))
                     .foregroundColor(.white.opacity(0.8))
                     .multilineTextAlignment(.leading)
