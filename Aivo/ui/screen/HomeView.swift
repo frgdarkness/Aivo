@@ -100,6 +100,13 @@ struct HomeView: View {
                     
                     // Bottom Navigation - Fixed
                     bottomNavigationView
+                    
+                    // Banner Ad at very bottom, below tab bar, full width, for non-premium users
+                    if !subscriptionManager.isPremium {
+                        BannerAdView()
+                            .frame(height: 50)
+                            .frame(maxWidth: .infinity)
+                    }
                 }
                 .transition(.move(edge: .leading))
             }
@@ -134,6 +141,7 @@ struct HomeView: View {
                 .zIndex(2000)
             }
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         .animation(.easeInOut(duration: 0.3), value: showProfile)
         .buyCreditDialog(isPresented: $showBuyCreditDialog)
         .overlay {

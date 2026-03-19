@@ -33,6 +33,7 @@ struct TopRoundedRectangle: Shape {
 struct PlayingBannerView: View {
     @StateObject private var musicPlayer = MusicPlayer.shared
     @StateObject private var onlinePlayer = OnlineStreamPlayer.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var showFullPlayer = false
 
     private let cornerRadius: CGFloat = 16
@@ -134,13 +135,29 @@ struct PlayingBannerView: View {
             .padding(.horizontal, iPadScaleSmall(12))
             .padding(.vertical, iPadScaleSmall(8))
             .background(
-                shape
-                    .fill(AivoTheme.Primary.blackOrange.opacity(0.9))
+                Group {
+                    if subscriptionManager.isPremium {
+                        TopRoundedRectangle(radius: cornerRadius)
+                            .fill(AivoTheme.Primary.blackOrange.opacity(0.9))
+                    } else {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .fill(AivoTheme.Primary.blackOrange.opacity(0.9))
+                    }
+                }
             )
             .overlay(
-                shape
-                    .stroke(AivoTheme.Primary.orange.opacity(0.8), lineWidth: 1)
+                Group {
+                    if subscriptionManager.isPremium {
+                        TopRoundedRectangle(radius: cornerRadius)
+                            .stroke(AivoTheme.Primary.orange.opacity(0.8), lineWidth: 1)
+                    } else {
+                        RoundedRectangle(cornerRadius: cornerRadius)
+                            .stroke(AivoTheme.Primary.orange.opacity(0.8), lineWidth: 1)
+                    }
+                }
             )
+            .padding(.horizontal, subscriptionManager.isPremium ? 0 : 12)
+            .padding(.bottom, subscriptionManager.isPremium ? 0 : 12)
             .onTapGesture { showFullPlayer = true }
             .fullScreenCover(isPresented: $showFullPlayer) {
                 if isOnlinePlaying {

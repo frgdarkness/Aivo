@@ -68,7 +68,7 @@ struct ExploreTabViewNew: View {
                 // Native Ad below AIVO GREATEST HITS (non-premium only)
                 if !SubscriptionManager.shared.isPremium {
                     NativeAdContainerView()
-                        .frame(height: 160)
+                        .frame(height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 
@@ -110,7 +110,7 @@ struct ExploreTabViewNew: View {
                 // Native Ad below Trending (non-premium only)
                 if !SubscriptionManager.shared.isPremium {
                     NativeAdContainerView()
-                        .frame(height: 160)
+                        .frame(height: 150)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 

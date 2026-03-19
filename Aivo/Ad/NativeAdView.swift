@@ -7,16 +7,18 @@ typealias GADNativeAdView = GoogleMobileAds.NativeAdView
 import UIKit
 import GoogleMobileAds
 
-// MARK: - Compact Native Ad (Dark Theme + Compliant MediaView)
+// MARK: - Horizontal Card Native Ad
 // Layout:
 // ┌──────────────────────────────────────────────┐
 // │ AD                                           │
-// │ ┌────────┐  Headline text...       ┌──────┐ │
-// │ │ Media  │  Body description...    │ CTA  │ │
-// │ │120x120 │  🔸 icon  Advertiser   │      │ │
-// │ └────────┘                         └──────┘ │
+// │ ┌────────────────┐  ┌──────────────────────┐ │
+// │ │                │  │ 🔸 Icon              │ │
+// │ │   MediaView    │  │ Headline text...     │ │
+// │ │   (4/7 width)  │  │ Body description...  │ │
+// │ │                │  │        [CTA Button]  │ │
+// │ └────────────────┘  └──────────────────────┘ │
 // └──────────────────────────────────────────────┘
-// Height: ~140pt
+// Height: 150pt
 final class CompactNativeAdUIView: GADNativeAdView {
     // MARK: - Subviews
     private let iconImageView = UIImageView()
@@ -25,10 +27,8 @@ final class CompactNativeAdUIView: GADNativeAdView {
     private let bodyLabel = UILabel()
     private let media = GoogleMobileAds.MediaView()
     private let callToActionButton = UIButton(type: .system)
-    private let advertiserLabel = UILabel()
 
-    private let paddingH: CGFloat = 12
-    private let paddingV: CGFloat = 10
+    private let margin: CGFloat = 10
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -44,107 +44,94 @@ final class CompactNativeAdUIView: GADNativeAdView {
 
     // MARK: - UI Setup
     private func setupUI() {
-        // Dark background matching Aivo theme
         backgroundColor = UIColor(white: 0.08, alpha: 1.0)
         layer.cornerRadius = 12
         layer.borderWidth = 1
         layer.borderColor = UIColor(red: 1.0, green: 0.6, blue: 0.2, alpha: 0.15).cgColor
         clipsToBounds = true
 
-        // ── AD badge (top-left) ──
+        // ── MediaView (left 4/7) ──
+        media.translatesAutoresizingMaskIntoConstraints = false
+        media.backgroundColor = UIColor.black
+        media.layer.cornerRadius = 8
+        media.layer.masksToBounds = true
+        media.contentMode = .scaleAspectFill
+        addSubview(media)
+
+        // ── AD badge (top-left, overlaying media — custom label, not native asset) ──
         adBadgeLabel.text = " AD "
         adBadgeLabel.font = .systemFont(ofSize: 9, weight: .bold)
         adBadgeLabel.textColor = .black
         adBadgeLabel.backgroundColor = UIColor(red: 1.0, green: 0.75, blue: 0.1, alpha: 1.0)
         adBadgeLabel.textAlignment = .center
-        adBadgeLabel.layer.cornerRadius = 3
+        adBadgeLabel.layer.cornerRadius = 2
         adBadgeLabel.layer.masksToBounds = true
         adBadgeLabel.translatesAutoresizingMaskIntoConstraints = false
         addSubview(adBadgeLabel)
 
-        // ── Media view (left thumbnail, 120x120 minimum for AdMob policy) ──
-        media.translatesAutoresizingMaskIntoConstraints = false
-        media.backgroundColor = UIColor(white: 0.12, alpha: 1.0)
-        media.layer.cornerRadius = 8
-        media.layer.masksToBounds = true
-        media.contentMode = .scaleAspectFill
-        addSubview(media)
+        // ── Icon (right side, top) ──
+        iconImageView.translatesAutoresizingMaskIntoConstraints = false
+        iconImageView.layer.cornerRadius = 6
+        iconImageView.layer.masksToBounds = true
+        iconImageView.contentMode = .scaleAspectFill
+        iconImageView.backgroundColor = UIColor(white: 0.15, alpha: 1.0)
+        addSubview(iconImageView)
 
         // ── Headline ──
         headlineLabel.font = .systemFont(ofSize: 14, weight: .semibold)
         headlineLabel.textColor = .white
         headlineLabel.numberOfLines = 2
         headlineLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(headlineLabel)
 
         // ── Body ──
         bodyLabel.font = .systemFont(ofSize: 12)
         bodyLabel.textColor = UIColor(white: 0.55, alpha: 1.0)
-        bodyLabel.numberOfLines = 2
+        bodyLabel.numberOfLines = 3
         bodyLabel.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(bodyLabel)
 
-        // ── Icon (small, beside advertiser) ──
-        iconImageView.translatesAutoresizingMaskIntoConstraints = false
-        iconImageView.layer.cornerRadius = 4
-        iconImageView.layer.masksToBounds = true
-        iconImageView.contentMode = .scaleAspectFill
-        iconImageView.backgroundColor = UIColor(white: 0.15, alpha: 1.0)
-
-        // ── Advertiser label ──
-        advertiserLabel.font = .systemFont(ofSize: 11, weight: .medium)
-        advertiserLabel.textColor = UIColor(white: 0.45, alpha: 1.0)
-        advertiserLabel.numberOfLines = 1
-        advertiserLabel.translatesAutoresizingMaskIntoConstraints = false
-
-        // Icon + Advertiser row
-        let advertiserRow = UIStackView(arrangedSubviews: [iconImageView, advertiserLabel])
-        advertiserRow.axis = .horizontal
-        advertiserRow.alignment = .center
-        advertiserRow.spacing = 6
-        advertiserRow.translatesAutoresizingMaskIntoConstraints = false
-
-        // Right text stack: headline → body → advertiser row
-        let textStack = UIStackView(arrangedSubviews: [headlineLabel, bodyLabel, advertiserRow])
-        textStack.axis = .vertical
-        textStack.alignment = .leading
-        textStack.spacing = 3
-        textStack.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(textStack)
-
-        // ── CTA button (pill) ──
+        // ── CTA button ──
         callToActionButton.translatesAutoresizingMaskIntoConstraints = false
         callToActionButton.backgroundColor = UIColor(red: 1.0, green: 0.55, blue: 0.1, alpha: 1.0)
         callToActionButton.setTitleColor(.black, for: .normal)
-        callToActionButton.titleLabel?.font = .systemFont(ofSize: 11, weight: .bold)
+        callToActionButton.titleLabel?.font = .systemFont(ofSize: 12, weight: .bold)
         callToActionButton.layer.cornerRadius = 12
         callToActionButton.layer.masksToBounds = true
-        callToActionButton.contentEdgeInsets = UIEdgeInsets(top: 5, left: 12, bottom: 5, right: 12)
+        callToActionButton.contentEdgeInsets = UIEdgeInsets(top: 5, left: 14, bottom: 5, right: 14)
         addSubview(callToActionButton)
 
         // MARK: - Constraints
         NSLayoutConstraint.activate([
-            // AD badge (top-left)
-            adBadgeLabel.topAnchor.constraint(equalTo: topAnchor, constant: 8),
-            adBadgeLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: paddingH),
+            // AD badge (top-left, on top of media)
+            adBadgeLabel.topAnchor.constraint(equalTo: media.topAnchor, constant: 6),
+            adBadgeLabel.leadingAnchor.constraint(equalTo: media.leadingAnchor, constant: 6),
 
-            // Media (left side, 120x120)
-            media.topAnchor.constraint(equalTo: adBadgeLabel.bottomAnchor, constant: 6),
-            media.leadingAnchor.constraint(equalTo: leadingAnchor, constant: paddingH),
-            media.widthAnchor.constraint(equalToConstant: 120),
-            media.heightAnchor.constraint(equalToConstant: 120),
-            media.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -paddingV),
+            // Media (left side, 4/7 width, equal margin all 4 sides)
+            media.topAnchor.constraint(equalTo: topAnchor, constant: margin),
+            media.leadingAnchor.constraint(equalTo: leadingAnchor, constant: margin),
+            media.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -margin),
+            media.widthAnchor.constraint(equalTo: widthAnchor, multiplier: 4.0 / 7.0, constant: -(margin * 2 * 4.0 / 7.0)),
 
-            // Icon size
-            iconImageView.widthAnchor.constraint(equalToConstant: 18),
-            iconImageView.heightAnchor.constraint(equalToConstant: 18),
+            // Icon (right side, top-left of right area)
+            iconImageView.topAnchor.constraint(equalTo: media.topAnchor),
+            iconImageView.leadingAnchor.constraint(equalTo: media.trailingAnchor, constant: 10),
+            iconImageView.widthAnchor.constraint(equalToConstant: 32),
+            iconImageView.heightAnchor.constraint(equalToConstant: 32),
 
-            // Text stack (right of media)
-            textStack.topAnchor.constraint(equalTo: media.topAnchor, constant: 2),
-            textStack.leadingAnchor.constraint(equalTo: media.trailingAnchor, constant: 10),
-            textStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -paddingH),
+            // Headline (right of icon, same top)
+            headlineLabel.topAnchor.constraint(equalTo: iconImageView.topAnchor),
+            headlineLabel.leadingAnchor.constraint(equalTo: iconImageView.trailingAnchor, constant: 8),
+            headlineLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -margin),
 
-            // CTA button (bottom-right)
-            callToActionButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -paddingH),
-            callToActionButton.bottomAnchor.constraint(equalTo: media.bottomAnchor),
+            // Body (below headline)
+            bodyLabel.topAnchor.constraint(equalTo: headlineLabel.bottomAnchor, constant: 4),
+            bodyLabel.leadingAnchor.constraint(equalTo: media.trailingAnchor, constant: 10),
+            bodyLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -margin),
+
+            // CTA button (bottom-right of right area)
+            callToActionButton.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -margin),
+            callToActionButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -margin),
             callToActionButton.heightAnchor.constraint(equalToConstant: 24),
         ])
     }
@@ -155,14 +142,12 @@ final class CompactNativeAdUIView: GADNativeAdView {
         headlineView = headlineLabel
         bodyView = bodyLabel
         callToActionView = callToActionButton
-        advertiserView = advertiserLabel
     }
 
     // MARK: - Helpers
     func applyPlaceholderForMissingIcon() {
         iconImageView.image = nil
         iconImageView.backgroundColor = UIColor(white: 0.15, alpha: 1.0)
-        iconImageView.isHidden = false
     }
 
     func clearIconBackgroundIfNeeded() {
@@ -188,7 +173,6 @@ struct NativeAdContainerView: UIViewRepresentable {
                 (view.headlineView as? UILabel)?.text = ad.headline
                 (view.bodyView as? UILabel)?.text = ad.body
                 (view.callToActionView as? UIButton)?.setTitle(ad.callToAction, for: .normal)
-                (view.advertiserView as? UILabel)?.text = ad.advertiser ?? ""
                 view.mediaView?.mediaContent = ad.mediaContent
 
                 if let icon = ad.icon?.image {
@@ -208,7 +192,7 @@ struct NativeAdContainerView: UIViewRepresentable {
 #Preview {
     VStack {
         NativeAdContainerView()
-            .frame(height: 160)
+            .frame(height: 150)
             .padding(.horizontal, 20)
         Spacer()
     }

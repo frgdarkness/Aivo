@@ -91,16 +91,26 @@ struct PlayMySongScreen: View {
             customBackgroundView
 
             // MAIN CONTENT
-            Group {
-                if isLoading {
-                    loadingView
-                } else if currentSong != nil {
-                    mainContent
-                } else {
-                    emptyView
+            VStack(spacing: 0) {
+                Group {
+                    if isLoading {
+                        loadingView
+                    } else if currentSong != nil {
+                        mainContent
+                    } else {
+                        emptyView
+                    }
+                }
+                
+                // Banner Ad at very bottom, full width, for non-premium users
+                if !subscriptionManager.isPremium {
+                    BannerAdView()
+                        .frame(height: 50)
+                        .frame(maxWidth: .infinity)
                 }
             }
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         // ✅ MENU OVERLAY Ở TẦNG NGOÀI CÙNG
         .overlay {
             if showMenu {
@@ -296,12 +306,6 @@ struct PlayMySongScreen: View {
             Spacer()
             playbackControlsView
             Spacer()
-            
-            // Banner Ad at bottom for non-premium users
-            if !subscriptionManager.isPremium {
-                BannerAdView()
-                    .frame(height: 50)
-            }
         }
     }
 
