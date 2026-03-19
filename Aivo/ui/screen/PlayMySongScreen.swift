@@ -296,6 +296,12 @@ struct PlayMySongScreen: View {
             Spacer()
             playbackControlsView
             Spacer()
+            
+            // Banner Ad at bottom for non-premium users
+            if !subscriptionManager.isPremium {
+                BannerAdView()
+                    .frame(height: 50)
+            }
         }
     }
 
@@ -1136,16 +1142,19 @@ struct PlayMySongScreen: View {
     private func exportCurrentSong() {
         guard let song = currentSong else { return }
         
-        // Check export limit for free users
+        // Non-premium users must watch a reward ad before exporting
         if !subscriptionManager.isPremium {
-            let userDefaults = UserDefaultsManager.shared
-            if !userDefaults.canExportSong() {
-                // Show alert that export limit reached
-                showPremiumAlert = true
-                return
+            Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
+            AdManager.shared.showRewardAd { [self] _ in
+                Logger.d("📢 [Export] Reward ad completed, proceeding with export")
+                self.performExport(song: song)
             }
+        } else {
+            performExport(song: song)
         }
-        
+    }
+    
+    private func performExport(song: SunoData) {
         // Log Firebase event for export
         AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
             "song_id": song.id,
@@ -1153,11 +1162,6 @@ struct PlayMySongScreen: View {
             "is_premium": subscriptionManager.isPremium,
             "timestamp": Date().timeIntervalSince1970
         ])
-        
-        // Mark export as used for free users
-        if !subscriptionManager.isPremium {
-            UserDefaultsManager.shared.markExportUsed()
-        }
         
         Task {
             var sourceURL: URL?

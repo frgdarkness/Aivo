@@ -311,32 +311,37 @@ struct GenerateSunoSongResultScreen: View {
                                    }
                                },
                                onExport: {
-                                   // Check export limit for free users
+                                   // Non-premium users must watch a reward ad before exporting
                                    if !subscriptionManager.isPremium {
-                                       let userDefaults = UserDefaultsManager.shared
-                                       if !userDefaults.canExportSong() {
-                                           // Show alert that export limit reached
-                                           showPremiumAlert = true
-                                           return
+                                       Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
+                                       AdManager.shared.showRewardAd { _ in
+                                           Logger.d("📢 [Export] Reward ad completed, proceeding with export")
+                                           // Log Firebase event for export
+                                           AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
+                                               "song_id": song.id,
+                                               "song_title": song.title,
+                                               "is_premium": subscriptionManager.isPremium,
+                                               "timestamp": Date().timeIntervalSince1970
+                                           ])
+                                           
+                                           if let fileURL = downloadedFileURLs[song.id] {
+                                               currentFileURL = fileURL
+                                               showExportSheet = true
+                                           }
                                        }
-                                   }
-                                   
-                                   // Log Firebase event for export
-                                   AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
-                                       "song_id": song.id,
-                                       "song_title": song.title,
-                                       "is_premium": subscriptionManager.isPremium,
-                                       "timestamp": Date().timeIntervalSince1970
-                                   ])
-                                   
-                                   // Mark export as used for free users
-                                   if !subscriptionManager.isPremium {
-                                       UserDefaultsManager.shared.markExportUsed()
-                                   }
-                                   
-                                   if let fileURL = downloadedFileURLs[song.id] {
-                                       currentFileURL = fileURL
-                                       showExportSheet = true
+                                   } else {
+                                       // Log Firebase event for export
+                                       AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
+                                           "song_id": song.id,
+                                           "song_title": song.title,
+                                           "is_premium": subscriptionManager.isPremium,
+                                           "timestamp": Date().timeIntervalSince1970
+                                       ])
+                                       
+                                       if let fileURL = downloadedFileURLs[song.id] {
+                                           currentFileURL = fileURL
+                                           showExportSheet = true
+                                       }
                                    }
                                },
                                onShareToCommunity: {

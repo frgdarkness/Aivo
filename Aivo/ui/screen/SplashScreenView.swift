@@ -217,6 +217,15 @@ extension SplashScreenView {
             Logger.d("🔄 Checking Subscription Status...")
             await subscriptionManager.refreshStatus()
             
+            // Preload App Open Ad in parallel (only for non-premium users)
+            let isPremium = SubscriptionManager.shared.isPremium
+            if !isPremium {
+                Logger.d("📢 Splash: Preloading App Open Ad for non-premium user...")
+                AppOpenAdManager.shared.preloadAppOpenAd { success in
+                    Logger.d("📢 Splash: App Open Ad preload result: \(success)")
+                }
+            }
+            
             // Fetch remote config
             Logger.d("🔄 Fetching Remote Config...")
             await remoteConfigManager.fetchRemoteConfig()
@@ -228,7 +237,7 @@ extension SplashScreenView {
                 }
             }
             
-            // Navigate directly to intro (skip language selection and ad)
+            // Determine next screen
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 guard !hasNavigated else { return }
                 hasNavigated = true
@@ -246,7 +255,6 @@ extension SplashScreenView {
                     Logger.d("🔍 Splash: Navigating to interview (first time)")
                 } else if !SubscriptionManager.shared.isPremium {
                     // Not first time, but not subscribed: Show subscription directly
-                    // Don't mark as shown here, let user dismiss or purchase
                     nextScreen = .subscription
                     Logger.d("🔍 Splash: Navigating to subscription (user not subscribed)")
                 } else {
@@ -255,7 +263,17 @@ extension SplashScreenView {
                     Logger.d("🔍 Splash: Navigating to home (user is premium)")
                 }
                 
-                onSplashCompleted(nextScreen)
+                // Show App Open Ad before navigating (only for non-premium returning users)
+                if !SubscriptionManager.shared.isPremium && !userDefaultsManager.shouldShowIntro() {
+                    Logger.d("📢 Splash: Showing App Open Ad before navigation...")
+                    AppOpenAdManager.shared.showAppOpenAd { _ in
+                        Logger.d("📢 Splash: App Open Ad dismissed, navigating to \(nextScreen)")
+                        onSplashCompleted(nextScreen)
+                    }
+                } else {
+                    // Premium user or first-time user: skip ad
+                    onSplashCompleted(nextScreen)
+                }
             }
         }
     }

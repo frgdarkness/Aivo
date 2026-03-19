@@ -20,12 +20,12 @@ final class AdManager: NSObject, ObservableObject {
     static let shared = AdManager()
     
     @Published var ADMOB_APP_ID = "ca-app-pub-9821898502051437~6864300948"
-    @Published var ADMOB_BANNER_AD_ID = "ca-app-pub-9821898502051437/8508237870"
-    @Published var ADMOB_INTERSTITIAL_AD_ID = "ca-app-pub-9821898502051437/9563450620"
-    @Published var ADMOB_REWARDED_AD_ID = "ca-app-pub-9821898502051437/9423849826"
-    @Published var ADMOB_APP_OPEN_AD_ID = "ca-app-pub-9821898502051437/2449324819"
-    @Published var ADMOB_NATIVE_VIDEO_AD_ID = "ca-app-pub-9821898502051437/9292003791"
-    @Published var ADMOB_NATIVE_AD_ID = "ca-app-pub-9821898502051437/9292003791"
+    @Published var ADMOB_BANNER_AD_ID = "ca-app-pub-3940256099942544/2435281174"
+    @Published var ADMOB_INTERSTITIAL_AD_ID = "ca-app-pub-3940256099942544/4411468910"
+    @Published var ADMOB_REWARDED_AD_ID = "ca-app-pub-3940256099942544/1712485313"
+    @Published var ADMOB_APP_OPEN_AD_ID = "ca-app-pub-3940256099942544/5575463023"
+    @Published var ADMOB_NATIVE_VIDEO_AD_ID = "ca-app-pub-3940256099942544/2521693316"
+    @Published var ADMOB_NATIVE_AD_ID = "ca-app-pub-3940256099942544/3986624511"
 
     private(set) var bannerView: GADBannerView?
     private(set) var interstitial: GADInterstitialAd?
@@ -40,6 +40,7 @@ final class AdManager: NSObject, ObservableObject {
      // MARK: Native preload (single buffer)
      private var isLoadingNative = false
      private var adLoader: GADAdLoader?
+     private var nativeLoadCompletion: ((Bool) -> Void)?
     
     
     // Loading states
@@ -64,13 +65,13 @@ final class AdManager: NSObject, ObservableObject {
         let remoteConfig = RemoteConfig.remoteConfig()
         
         // Load ad configuration values
-        ADMOB_APP_ID = remoteConfig.configValue(forKey: "ADMOB_APP_ID").stringValue
-        ADMOB_BANNER_AD_ID = remoteConfig.configValue(forKey: "ADMOB_BANNER_AD_ID").stringValue
-        ADMOB_INTERSTITIAL_AD_ID = remoteConfig.configValue(forKey: "ADMOB_INTERSTITIAL_AD_ID").stringValue
-        ADMOB_REWARDED_AD_ID = remoteConfig.configValue(forKey: "ADMOB_REWARDED_AD_ID").stringValue
-        ADMOB_APP_OPEN_AD_ID = remoteConfig.configValue(forKey: "ADMOB_APP_OPEN_AD_ID").stringValue
-        ADMOB_NATIVE_VIDEO_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_VIDEO_AD_ID").stringValue
-        ADMOB_NATIVE_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_AD_ID").stringValue
+//        ADMOB_APP_ID = remoteConfig.configValue(forKey: "ADMOB_APP_ID").stringValue
+//        ADMOB_BANNER_AD_ID = remoteConfig.configValue(forKey: "ADMOB_BANNER_AD_ID").stringValue
+//        ADMOB_INTERSTITIAL_AD_ID = remoteConfig.configValue(forKey: "ADMOB_INTERSTITIAL_AD_ID").stringValue
+//        ADMOB_REWARDED_AD_ID = remoteConfig.configValue(forKey: "ADMOB_REWARDED_AD_ID").stringValue
+//        ADMOB_APP_OPEN_AD_ID = remoteConfig.configValue(forKey: "ADMOB_APP_OPEN_AD_ID").stringValue
+//        ADMOB_NATIVE_VIDEO_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_VIDEO_AD_ID").stringValue
+//        ADMOB_NATIVE_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_AD_ID").stringValue
         
         // Log loaded values
         Logger.d("AdManager: Loaded ad configuration:")
@@ -292,7 +293,7 @@ final class AdManager: NSObject, ObservableObject {
             guard let topVC = UIApplication.shared.topViewController() else {
                 Logger.w("AdManager: No top view controller found")
                 rewardAdCallback = nil
-                onFinish(false)
+                onFinish(true) // Don't block user
                 return
             }
             rewardedAd.present(from: topVC) {}
@@ -312,9 +313,9 @@ final class AdManager: NSObject, ObservableObject {
                         if success {
                             self.showRewardAd(onFinish: onFinish)
                         } else {
-                            Logger.w("❌ Timeout waiting for rewarded ad")
+                            Logger.w("❌ Timeout waiting for rewarded ad → treating as success to avoid blocking user")
                             self.rewardAdCallback = nil
-                            onFinish(false)
+                            onFinish(true) // Don't block user
                         }
                     }
                 }
@@ -333,8 +334,9 @@ final class AdManager: NSObject, ObservableObject {
                     if success {
                         self.showRewardAd(onFinish: onFinish)
                     } else {
+                        Logger.w("❌ Failed to load rewarded ad → treating as success to avoid blocking user")
                         self.rewardAdCallback = nil
-                        onFinish(false)
+                        onFinish(true) // Don't block user
                     }
                 }
             }
@@ -371,7 +373,7 @@ final class AdManager: NSObject, ObservableObject {
         adLoader?.load(request)
 
         // Lưu completion để callback khi load xong
-        //nativeLoadCompletion = onFinish
+        nativeLoadCompletion = onFinish
     }
 
     func getNativeAd(onFinish: @escaping (GADNativeAd?) -> Void) {
@@ -437,6 +439,8 @@ extension AdManager: GADAdLoaderDelegate, GADNativeAdLoaderDelegate {
             Logger.d("AdManager: Native ad loaded successfully")
             self.isLoadingNative = false
             self.nativeAd = nativeAd
+            self.nativeLoadCompletion?(true)
+            self.nativeLoadCompletion = nil
         }
     }
 
@@ -444,6 +448,8 @@ extension AdManager: GADAdLoaderDelegate, GADNativeAdLoaderDelegate {
         DispatchQueue.main.async {
             Logger.e("AdManager: Failed to load native ad: \(error.localizedDescription)")
             self.isLoadingNative = false
+            self.nativeLoadCompletion?(false)
+            self.nativeLoadCompletion = nil
         }
     }
 }
@@ -478,11 +484,11 @@ extension AdManager: FullScreenContentDelegate {
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         // Kiểm tra loại ad để handle đúng
         if ad is GADRewardedAd {
-            Logger.e("AdManager: Failed to present rewarded ad: \(error.localizedDescription)")
+            Logger.e("AdManager: Failed to present rewarded ad: \(error.localizedDescription) → treating as success to avoid blocking user")
             
-            // Clear ad và gọi callback với false
+            // Clear ad và gọi callback với true (không block user)
             rewardedAd = nil
-            rewardAdCallback?(false)
+            rewardAdCallback?(true)
             rewardAdCallback = nil
         } else if ad is GADInterstitialAd {
             Logger.e("AdManager: Failed to present interstitial ad: \(error.localizedDescription)")

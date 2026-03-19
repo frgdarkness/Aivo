@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GenerateLyricResultScreen: View {
     @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     
     let results: [LyricsResult]
     @Binding var selectedLyrics: String
@@ -31,6 +32,12 @@ struct GenerateLyricResultScreen: View {
                     }
                     .padding(20)
                     .padding(.bottom, 100)
+                }
+                
+                // Banner Ad at bottom for non-premium users
+                if !subscriptionManager.isPremium {
+                    BannerAdView()
+                        .frame(height: 50)
                 }
             }
         }

@@ -14,6 +14,7 @@ class RemoteConfigManager: ObservableObject {
     @Published var creditsPerLyric = 5
     @Published var enableOneTimeFreeTry = true // Added support for free try
     @Published var playCountMinTime: Int = 30 // Minimum seconds to count a play
+    @Published var countSuggestPromptToShowAd: Int = 3 // Every N-th "Get Inspired" tap shows reward ad
     
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
@@ -56,7 +57,8 @@ class RemoteConfigManager: ObservableObject {
             "CREDITS_PER_SONG": 30 as NSNumber,
             "CREDITS_PER_COVER": 20 as NSNumber,
             "CREDITS_PER_LYRIC": 5 as NSNumber,
-            "PLAY_COUNT_MIN_TIME": 30 as NSNumber
+            "PLAY_COUNT_MIN_TIME": 30 as NSNumber,
+            "COUNT_SUGGEST_PROMPT_TO_SHOW_AD": 3 as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -122,6 +124,12 @@ class RemoteConfigManager: ObservableObject {
                 if playCountMinTimeValue.intValue > 0 {
                     playCountMinTime = playCountMinTimeValue.intValue
                     Logger.d("### RemoteConfigManager: PLAY_COUNT_MIN_TIME: \(playCountMinTime)")
+                }
+                
+                let countSuggestValue = remoteConfig.configValue(forKey: "COUNT_SUGGEST_PROMPT_TO_SHOW_AD").numberValue
+                if countSuggestValue.intValue > 0 {
+                    countSuggestPromptToShowAd = countSuggestValue.intValue
+                    Logger.d("### RemoteConfigManager: COUNT_SUGGEST_PROMPT_TO_SHOW_AD: \(countSuggestPromptToShowAd)")
                 }
             }
             

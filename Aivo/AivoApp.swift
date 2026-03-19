@@ -28,7 +28,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         MobileAds.shared.start(completionHandler: nil)
         
         // Load app open ad after SDK initialization
-        //AppOpenAdManager.shared.loadAd()
+        AppOpenAdManager.shared.loadAd()
         
         // 🎯 Log first start event (only once after install)
         AnalyticsLogger.shared.logFirstStart()
@@ -123,8 +123,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
     }
     
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Show app open ad when app becomes active
-        //AppOpenAdManager.shared.showAdIfAvailable()
+        // Show app open ad when app becomes active (only for non-premium users)
+        if !SubscriptionManager.shared.isPremium {
+            AppOpenAdManager.shared.showAdIfAvailable()
+        }
         
         // ✅ CRITICAL: Activate Facebook App Events when app becomes active
         // This ensures Facebook can track app opens and conversions
@@ -213,6 +215,10 @@ struct AivoApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     @StateObject private var languageManager = LanguageManager.shared
+    @Environment(\.scenePhase) private var scenePhase
+    
+    /// Track if app was in background to avoid showing ad on first launch
+    @State private var wasInBackground = false
     
     init() {
         // Configure Firebase before any Firebase services are used
@@ -228,6 +234,26 @@ struct AivoApp: App {
                 .environmentObject(LanguageManager.shared)
                 .environment(\.locale, languageManager.locale)
                 //.id(languageManager.currentLanguageCode) // ép SwiftUI rebuild toàn bộ
+                .onChange(of: scenePhase) { newPhase in
+                    switch newPhase {
+                    case .background:
+                        wasInBackground = true
+                        Logger.d("📱 App entered background")
+                    case .active:
+                        if wasInBackground {
+                            Logger.d("📱 App returned to foreground from background")
+                            // Show App Open Ad for non-premium users
+                            if !SubscriptionManager.shared.isPremium {
+                                Logger.d("📢 Showing App Open Ad on resume...")
+                                AppOpenAdManager.shared.showAdIfAvailable()
+                            }
+                        }
+                    case .inactive:
+                        break
+                    @unknown default:
+                        break
+                    }
+                }
         }
     }
 }

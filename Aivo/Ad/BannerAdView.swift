@@ -58,7 +58,7 @@ struct BannerAdView: UIViewRepresentable {
         let root = UIApplication.shared.topViewController()
 
         // Tính width thực tế của container
-        let targetWidth = max(container.bounds.width, UIScreen.main.bounds.width - 32) // fallback nếu chưa layout
+        let targetWidth = max(container.bounds.width, UIScreen.main.bounds.width) // full width edge-to-edge
         let rounded = floor(targetWidth)
 
         // Nếu chưa có banner -> tạo

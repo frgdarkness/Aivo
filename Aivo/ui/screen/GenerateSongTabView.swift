@@ -39,6 +39,7 @@ struct GenerateSongTabView: View {
     @State private var showArtistNameAlert = false
     @State private var selectedLanguage: String = "English"
     @State private var showBackgroundBusyAlert = false
+    @State private var getInspiredCount: Int = 0 // Track "Get Inspired" tap count for reward ad
 
     // MARK: - New Generation State
     @State private var generationMode: GenerationMode = .simple
@@ -1245,6 +1246,27 @@ struct GenerateSongTabView: View {
     private func getInspired() {
         print("💡 [GetInspired] Loading sample prompts...")
         
+        // Increment counter for non-premium users
+        if !subscriptionManager.isPremium {
+            getInspiredCount += 1
+            let threshold = remoteConfig.countSuggestPromptToShowAd
+            Logger.d("💡 [GetInspired] Tap count: \(getInspiredCount) / \(threshold)")
+            
+            // Show reward ad every N taps
+            if getInspiredCount % threshold == 0 {
+                Logger.d("📢 [GetInspired] Showing reward ad at tap #\(getInspiredCount)")
+                AdManager.shared.showRewardAd { _ in
+                    Logger.d("📢 [GetInspired] Reward ad completed, loading prompt")
+                    self.loadRandomPrompt()
+                }
+                return
+            }
+        }
+        
+        loadRandomPrompt()
+    }
+    
+    private func loadRandomPrompt() {
         // Use prompts from RemoteConfigManager (loaded from remote or local)
         let prompts = remoteConfig.sampleSongPrompts
         
@@ -1252,7 +1274,6 @@ struct GenerateSongTabView: View {
             if let randomPrompt = prompts.randomElement() {
                 print("💡 [GetInspired] Selected prompt: \(randomPrompt)")
                 songDescription = randomPrompt
-                //showToastMessage("Inspiration loaded!")
             } else {
                 print("❌ [GetInspired] No prompts found in list")
                 showToastMessage("No inspiration prompts available")

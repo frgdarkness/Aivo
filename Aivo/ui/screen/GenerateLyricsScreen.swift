@@ -145,9 +145,18 @@ struct GenerateLyricsScreen: View {
                 
                 generateButton
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 16)
+                
+                // Banner Ad at very bottom, full width edge-to-edge, for non-premium users
+                if !subscriptionManager.isPremium {
+                    BannerAdView()
+                        .frame(height: 50)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, -20) // extend beyond parent padding for full width
+                }
             }
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         .overlay(
             toastOverlay
         )

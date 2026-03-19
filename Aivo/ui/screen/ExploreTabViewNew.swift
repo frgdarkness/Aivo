@@ -65,6 +65,13 @@ struct ExploreTabViewNew: View {
                     )
                 }
                 
+                // Native Ad below AIVO GREATEST HITS (non-premium only)
+                if !SubscriptionManager.shared.isPremium {
+                    NativeAdContainerView()
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
                 // Songs For You Section (Optional, keeping it below if needed, or removing)
                 // if !songsForYou.isEmpty { ... }
                 
@@ -99,6 +106,13 @@ struct ExploreTabViewNew: View {
 
                 // Trending Section
                 trendingSection
+                
+                // Native Ad below Trending (non-premium only)
+                if !SubscriptionManager.shared.isPremium {
+                    NativeAdContainerView()
+                        .frame(height: 160)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
                 
                 // Popular Section
                 //popularSection
