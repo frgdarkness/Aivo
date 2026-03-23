@@ -42,7 +42,9 @@ struct GenerateSongTabView: View {
     @State private var getInspiredCount: Int = 0 // Track "Get Inspired" tap count for reward ad
     @State private var showPremiumFeatureDialog = false // Premium feature dialog
     @State private var isFreeTrySong = false // Whether current generation is a free trial
+    @State private var showSongNameRequiredAlert = false // Song name required for lyrics mode
     @ObservedObject private var profileManager = ProfileManager.shared
+    @State private var showUsernameRequiredDialog = false // Dialog for default username users
 
     // MARK: - New Generation State
     @State private var generationMode: GenerationMode = .simple
@@ -117,6 +119,14 @@ struct GenerateSongTabView: View {
         .onAppear {
             // Log screen view to both Firebase and AppsFlyer
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_GENERATE_SONG)
+            
+            // Check if user still has default username
+            let currentUsername = LocalStorageManager.shared.getLocalProfile().userName
+            if currentUsername == "Your name" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    showUsernameRequiredDialog = true
+                }
+            }
         }
         .fullScreenCover(isPresented: $showMultiMoodScreen) {
             SelectMultiMoodScreen(
@@ -205,6 +215,20 @@ struct GenerateSongTabView: View {
                 .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
             }
         }
+        .overlay {
+            if showUsernameRequiredDialog {
+                UsernameRequiredDialog(
+                    onSave: { newName in
+                        saveUsername(newName)
+                    },
+                    onDismiss: {
+                        showUsernameRequiredDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showUsernameRequiredDialog)
+            }
+        }
         .alert("Content Policy Violation", isPresented: $showArtistNameAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -214,6 +238,11 @@ struct GenerateSongTabView: View {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Please wait for the current generation task to finish before starting a new one.")
+        }
+        .alert("Song Name Required", isPresented: $showSongNameRequiredAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("When using \"Create with Lyrics\" mode, you must enter a song name before generating.")
         }
         .onChange(of: backgroundManager.isGenerating) { isGenerating in
             if !isGenerating {
@@ -578,6 +607,7 @@ struct GenerateSongTabView: View {
                 Text("Mode")
                     .font(.headline)
                     .foregroundColor(.white)
+                    .onTapGesture { showUsernameRequiredDialog = true }
                 Spacer()
                 HStack(spacing: 4) {
                     Text("\(generationMode.cost)")
@@ -824,7 +854,7 @@ struct GenerateSongTabView: View {
     private var songNameSection: some View {
         VStack(alignment: .leading, spacing: 12) {
              HStack {
-                 Text("Song Name (Optional)")
+                 Text(selectedInputType == .lyrics ? "Song Name (Required)" : "Song Name (Optional)")
                      .font(.system(size: iPadScale(16), weight: .medium))
                      .foregroundColor(.white)
                  Spacer()
@@ -1106,6 +1136,12 @@ struct GenerateSongTabView: View {
             return
         }
         
+        // Check song name required for lyrics mode
+        if selectedInputType == .lyrics && songName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            showSongNameRequiredAlert = true
+            return
+        }
+        
         // Check subscription first
         guard subscriptionManager.isPremium || isFreeTrySong else {
             showPremiumFeatureDialog = true
@@ -1337,6 +1373,32 @@ struct GenerateSongTabView: View {
         
         DispatchQueue.main.asyncAfter(deadline: .now() + timeout) {
             showToast = false
+        }
+    }
+    
+    private func saveUsername(_ newName: String) {
+        let localStorage = LocalStorageManager.shared
+        let profileID = localStorage.getLocalProfile().profileID
+        let oldName = localStorage.getLocalProfile().userName
+        
+        Task {
+            do {
+                try await FirestoreService.shared.updateUsername(profileID: profileID, newUsername: newName, oldUsername: oldName)
+                
+                await MainActor.run {
+                    var profile = localStorage.getLocalProfile()
+                    profile.updateUserName(newName)
+                    localStorage.updateLocalProfile(profile)
+                    
+                    showUsernameRequiredDialog = false
+                    showToastMessage("Username updated successfully")
+                }
+            } catch {
+                Logger.e("❌ Failed to update username: \(error.localizedDescription)")
+                await MainActor.run {
+                    showToastMessage("Error: \(error.localizedDescription)")
+                }
+            }
         }
     }
 }

@@ -166,13 +166,13 @@ struct ProfileScreen: View {
             // Edit Name Dialog
             Group {
                 if showEditNameDialog {
-                    EditNameDialog(
-                        currentName: localStorage.getLocalProfile().userName,
+                    UsernameRequiredDialog(
+                        title: "Change Your Username",
                         onSave: { newName in
                             saveUserName(newName)
                             showEditNameDialog = false
                         },
-                        onCancel: {
+                        onDismiss: {
                             showEditNameDialog = false
                         }
                     )

@@ -396,7 +396,7 @@ struct ExploreTabViewNew: View {
                 
                 let newsSongs = Array(communityNewestSongs.prefix(15))
                 
-                LazyHGrid(rows: rows, alignment: .top, spacing: 12) {
+                LazyHGrid(rows: rows, alignment: .top, spacing: 24) {
                     ForEach(Array(newsSongs.enumerated()), id: \.element.id) { index, song in
                         NewsCardView(
                             song: song,
@@ -915,7 +915,7 @@ struct NewsCardView: View {
     var body: some View {
         let newsCoverSize: CGFloat = iPadScale(60)
         Button(action: onTap) {
-            HStack(spacing: iPadScaleSmall(12)) {
+            HStack(spacing: iPadScaleSmall(8)) {
                 ZStack {
                     AsyncImage(url: getImageURL(for: song)) { phase in
                         Group {
@@ -970,8 +970,6 @@ struct NewsCardView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Spacer(minLength: 8)
-                
                 VStack(spacing: iPadScaleSmall(4)) {
                     Image(systemName: "headphones")
                         .font(.system(size: iPadScale(14)))
@@ -981,10 +979,10 @@ struct NewsCardView: View {
                         .font(.system(size: iPadScale(12), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                 }
-                .frame(width: iPadScale(44))
+                .frame(width: iPadScale(32))
             }
-            .frame(width: iPadScale(280))
-            .padding(.vertical, iPadScaleSmall(8))
+            .frame(width: iPadScale(290))
+            .padding(.vertical, iPadScaleSmall(6))
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
