@@ -221,6 +221,11 @@ extension FirebaseLogger {
     static let EVENT_GENERATE_COVER_SUCCESS = "event_generate_cover_success"
     static let EVENT_GENERATE_COVER_FAILED = "event_generate_cover_failed"
     
+    // Free Trial Generation Events
+    static let EVENT_FREE_GEN_SONG = "event_free_gen_song"
+    static let EVENT_FREE_GEN_LYRIC = "event_free_gen_lyric"
+    static let EVENT_FREE_GEN_COVER = "event_free_gen_cover"
+    
     // Intro Step Events
     static let EVENT_INTRO_STEP_1 = "event_intro_step_1"
     static let EVENT_INTRO_STEP_2 = "event_intro_step_2"

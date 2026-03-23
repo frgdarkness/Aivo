@@ -19,14 +19,24 @@ let kGADAdSizeBanner = GoogleMobileAds.AdSize(size: CGSize(width: 320, height: 5
 final class AdManager: NSObject, ObservableObject {
     static let shared = AdManager()
     
-    @Published var ADMOB_APP_ID = "ca-app-pub-9821898502051437~6864300948"
-    @Published var ADMOB_BANNER_AD_ID = "ca-app-pub-3940256099942544/2435281174"
-    @Published var ADMOB_INTERSTITIAL_AD_ID = "ca-app-pub-3940256099942544/4411468910"
-    @Published var ADMOB_REWARDED_AD_ID = "ca-app-pub-3940256099942544/1712485313"
-    @Published var ADMOB_APP_OPEN_AD_ID = "ca-app-pub-3940256099942544/5575463023"
-    @Published var ADMOB_NATIVE_VIDEO_AD_ID = "ca-app-pub-3940256099942544/2521693316"
-    @Published var ADMOB_NATIVE_AD_ID = "ca-app-pub-3940256099942544/3986624511"
-
+    // default
+//    @Published var ADMOB_APP_ID = "ca-app-pub-9821898502051437~6864300948"
+//    @Published var ADMOB_BANNER_AD_ID = "ca-app-pub-3940256099942544/2435281174"
+//    @Published var ADMOB_INTERSTITIAL_AD_ID = "ca-app-pub-3940256099942544/4411468910"
+//    @Published var ADMOB_REWARDED_AD_ID = "ca-app-pub-3940256099942544/1712485313"
+//    @Published var ADMOB_APP_OPEN_AD_ID = "ca-app-pub-3940256099942544/5575463023"
+//    @Published var ADMOB_NATIVE_VIDEO_AD_ID = "ca-app-pub-3940256099942544/2521693316"
+//    @Published var ADMOB_NATIVE_AD_ID = "ca-app-pub-3940256099942544/3986624511"
+    
+    // aivo music
+    @Published var ADMOB_APP_ID = "ca-app-pub-9008559586326947~3754937088"
+    @Published var ADMOB_BANNER_AD_ID = "ca-app-pub-9008559586326947/4264538127"
+    @Published var ADMOB_INTERSTITIAL_AD_ID = "ca-app-pub-9008559586326947/4046013873"
+    @Published var ADMOB_REWARDED_AD_ID = "ca-app-pub-9008559586326947/3858311610"
+    @Published var ADMOB_APP_OPEN_AD_ID = "ca-app-pub-9008559586326947/3730886359"
+    @Published var ADMOB_NATIVE_VIDEO_AD_ID = "ca-app-pub-9008559586326947/1419850530"
+    @Published var ADMOB_NATIVE_AD_ID = "ca-app-pub-9008559586326947/1419850530"
+    
     private(set) var bannerView: GADBannerView?
     private(set) var interstitial: GADInterstitialAd?
     private(set) var rewardedAd: GADRewardedAd?
@@ -65,13 +75,13 @@ final class AdManager: NSObject, ObservableObject {
         let remoteConfig = RemoteConfig.remoteConfig()
         
         // Load ad configuration values
-//        ADMOB_APP_ID = remoteConfig.configValue(forKey: "ADMOB_APP_ID").stringValue
-//        ADMOB_BANNER_AD_ID = remoteConfig.configValue(forKey: "ADMOB_BANNER_AD_ID").stringValue
-//        ADMOB_INTERSTITIAL_AD_ID = remoteConfig.configValue(forKey: "ADMOB_INTERSTITIAL_AD_ID").stringValue
-//        ADMOB_REWARDED_AD_ID = remoteConfig.configValue(forKey: "ADMOB_REWARDED_AD_ID").stringValue
-//        ADMOB_APP_OPEN_AD_ID = remoteConfig.configValue(forKey: "ADMOB_APP_OPEN_AD_ID").stringValue
-//        ADMOB_NATIVE_VIDEO_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_VIDEO_AD_ID").stringValue
-//        ADMOB_NATIVE_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_AD_ID").stringValue
+        ADMOB_APP_ID = remoteConfig.configValue(forKey: "ADMOB_APP_ID").stringValue
+        ADMOB_BANNER_AD_ID = remoteConfig.configValue(forKey: "ADMOB_BANNER_AD_ID").stringValue
+        ADMOB_INTERSTITIAL_AD_ID = remoteConfig.configValue(forKey: "ADMOB_INTER_AD_ID").stringValue
+        ADMOB_REWARDED_AD_ID = remoteConfig.configValue(forKey: "ADMOB_REWARD_AD_ID").stringValue
+        ADMOB_APP_OPEN_AD_ID = remoteConfig.configValue(forKey: "ADMOB_OPEN_AD_ID").stringValue
+        ADMOB_NATIVE_VIDEO_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_AD_ID").stringValue
+        ADMOB_NATIVE_AD_ID = remoteConfig.configValue(forKey: "ADMOB_NATIVE_AD_ID").stringValue
         
         // Log loaded values
         Logger.d("AdManager: Loaded ad configuration:")

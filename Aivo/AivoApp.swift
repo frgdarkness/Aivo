@@ -69,20 +69,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         // ✅ CRITICAL: Activate Facebook App Events for conversion tracking
         AppEvents.shared.activateApp()
         
-        if #available(iOS 14, *) {
-            ATTrackingManager.requestTrackingAuthorization { status in
-                // Update Facebook tracking based on ATT status
-                DispatchQueue.main.async {
-                    if status == .authorized {
-                        FBAdSettings.setAdvertiserTrackingEnabled(true)
-                    } else {
-                        FBAdSettings.setAdvertiserTrackingEnabled(false)
-                    }
-                }
-            }
-        } else {
-            FBAdSettings.setAdvertiserTrackingEnabled(true)
-        }
         FBAudienceNetworkAds.initialize(with: nil, completionHandler: nil)
 
         
@@ -129,7 +115,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
         }
         
         // ✅ CRITICAL: Activate Facebook App Events when app becomes active
-        // This ensures Facebook can track app opens and conversions
         AppEvents.shared.activateApp()
         
         // 🔥 Start AppsFlyer SDK

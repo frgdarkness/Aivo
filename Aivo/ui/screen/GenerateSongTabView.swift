@@ -1174,6 +1174,7 @@ struct GenerateSongTabView: View {
         if isFreeTrySong {
             profileManager.markFreeSongGenerationUsed()
             isFreeTrySong = false
+            AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_SONG)
         }
     }
     

@@ -814,6 +814,7 @@ struct GenerateLyricsScreen: View {
                     
                     if isFreeTry {
                         profileManager.markFreeLyricGenerationUsed()
+                        AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_LYRIC)
                     } else {
                         // Deduct credits only after successful generation
                         Task {

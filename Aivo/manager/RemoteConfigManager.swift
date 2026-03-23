@@ -41,7 +41,7 @@ class RemoteConfigManager: ObservableObject {
         
         // Set default values
         let defaults: [String: NSObject] = [
-            "ADMOB_APP_ID": "ca-app-pub-9821898502051437~6864300948" as NSString,
+            "ADMOB_APP_ID": "ca-app-pub-9008559586326947~3754937088" as NSString,
             "ADMOB_BANNER_AD_ID": "ca-app-pub-3940256099942544/9214589741" as NSString,
             "ADMOB_INTERSTITIAL_AD_ID": "ca-app-pub-3940256099942544/1033173712" as NSString,
             "ADMOB_REWARDED_AD_ID": "ca-app-pub-3940256099942544/5224354917" as NSString,

@@ -8,6 +8,8 @@
 import SwiftUI
 import FirebaseCore
 import GoogleMobileAds
+import AppTrackingTransparency
+import FBAudienceNetwork
 
 struct RootView: View {
     @State private var showSplash = true
@@ -179,10 +181,12 @@ struct SplashScreenView: View {
         .onAppear {
             if !isInitialized {
                 isInitialized = true
-                startLoading()
                 
                 // Log screen view
                 AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_SPLASH)
+                
+                // Request ATT first (only on first install), then start loading
+                requestATTThenLoad()
             }
         }
     }
@@ -193,6 +197,53 @@ extension SplashScreenView {
     
     private func testLoggerFuncSoLongAbcefgh12345678(){
         Logger.d("test logger for function name so long abcefgh12345678")
+    }
+    
+    /// Request ATT on first install, then proceed to loading
+    private func requestATTThenLoad() {
+        if #available(iOS 14, *) {
+            let status = ATTrackingManager.trackingAuthorizationStatus
+            if status == .notDetermined {
+                // First time: show ATT dialog, wait for response, then load
+                Logger.i("🔐 ATT: Requesting authorization...")
+                // Small delay so Splash UI is visible first
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    ATTrackingManager.requestTrackingAuthorization { result in
+                        DispatchQueue.main.async {
+                            self.handleATTResult(result)
+                            self.startLoading()
+                        }
+                    }
+                }
+            } else {
+                // Already determined (from previous launch): skip ATT, load directly
+                Logger.i("🔐 ATT: Already determined (\(status.rawValue))")
+                handleATTResult(status)
+                startLoading()
+            }
+        } else {
+            FBAdSettings.setAdvertiserTrackingEnabled(true)
+            startLoading()
+        }
+    }
+    
+    private func handleATTResult(_ status: ATTrackingManager.AuthorizationStatus) {
+        switch status {
+        case .authorized:
+            Logger.i("🔐 ATT: Authorized ✅")
+            FBAdSettings.setAdvertiserTrackingEnabled(true)
+        case .denied:
+            Logger.i("🔐 ATT: Denied")
+            FBAdSettings.setAdvertiserTrackingEnabled(false)
+        case .restricted:
+            Logger.i("🔐 ATT: Restricted")
+            FBAdSettings.setAdvertiserTrackingEnabled(false)
+        case .notDetermined:
+            Logger.i("🔐 ATT: Not Determined")
+            FBAdSettings.setAdvertiserTrackingEnabled(false)
+        @unknown default:
+            FBAdSettings.setAdvertiserTrackingEnabled(false)
+        }
     }
     
     private func startLoading() {

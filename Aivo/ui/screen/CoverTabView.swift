@@ -629,6 +629,7 @@ struct CoverTabView: View {
                 if isFreeTryCover {
                     profileManager.markFreeCoverGenerationUsed()
                     isFreeTryCover = false
+                    AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_COVER)
                 }
             }
         }
