@@ -594,13 +594,29 @@ struct PlayMySongScreen: View {
 
     // MARK: - Song Info
     private var songInfoView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Text(currentSong?.title ?? "Unknown Title")
                 .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white).multilineTextAlignment(.center).lineLimit(2)
                 .padding(.top, iPadScaleSmall(12))
+            
+            Text(displayArtistName(for: currentSong))
+                .font(.system(size: iPadScale(15)))
+                .foregroundColor(.white.opacity(0.7))
+                .lineLimit(1)
         }
         .padding(.horizontal, 40)
+    }
+    
+    /// Returns the best artist/author name for display
+    private func displayArtistName(for song: SunoData?) -> String {
+        guard let song = song else { return "Aivo Music" }
+        // For local/imported songs: prefer username (which stores artist metadata)
+        if song.id.hasPrefix("local_") || song.modelName == "Local" {
+            return song.username ?? "Unknown Artist"
+        }
+        // For AI songs: prefer username
+        return song.username ?? "Aivo Music"
     }
     
     private func formatDuration(_ duration: Double) -> String {
@@ -1786,7 +1802,7 @@ struct LocalPlaylistRowView: View {
                         .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
                         .lineLimit(1)
                     
-                    Text(song.username ?? "Aivo Music")
+                    Text(displayArtist(for: song))
                         .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)
@@ -1824,5 +1840,12 @@ struct LocalPlaylistRowView: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
         .listRowSeparator(.hidden)
         .deleteDisabled(true)
+    }
+    
+    private func displayArtist(for song: SunoData) -> String {
+        if song.id.hasPrefix("local_") || song.modelName == "Local" {
+            return song.username ?? "Unknown Artist"
+        }
+        return song.username ?? "Aivo Music"
     }
 }

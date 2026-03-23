@@ -26,6 +26,15 @@ struct EqualizerView: View {
     @State private var showingSaveDialog = false
     @State private var newPresetName = ""
     @State private var isModified = false
+    @State private var showSubscriptionScreen = false
+    
+    // Backup of EQ state when view appears (for reset on dismiss without apply)
+    @State private var backupBands: [Double] = []
+    @State private var backupBass: Double = 0
+    @State private var backupTreble: Double = 0
+    @State private var backupEnabled: Bool = false
+    @State private var backupPresetId: String? = nil
+    @State private var hasApplied = false
     
     // Computed property to get current preset object from ID
     private var currentSelectedPreset: MusicPlayer.EQPreset? {
@@ -241,10 +250,52 @@ struct EqualizerView: View {
                         .padding(.horizontal, 24)
                     }
                     .padding(.bottom, 10)
+                    
+                    // MARK: - Apply Button
+                    Button(action: handleApplyButton) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: iPadScale(18)))
+                            Text("Apply This Config")
+                                .font(.system(size: iPadScale(16), weight: .bold))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: iPadScale(52))
+                        .background(
+                            RoundedRectangle(cornerRadius: iPadScale(26))
+                                .fill(AivoTheme.Primary.orange)
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
                 }
                 .opacity(musicPlayer.isEqEnabled ? 1.0 : 0.5)
                 .disabled(!musicPlayer.isEqEnabled)
             }
+        }
+        .onAppear {
+            // Backup current state
+            backupBands = musicPlayer.eqBands
+            backupBass = musicPlayer.bassLevel
+            backupTreble = musicPlayer.trebleLevel
+            backupEnabled = musicPlayer.isEqEnabled
+            backupPresetId = musicPlayer.selectedPresetId
+            hasApplied = false
+        }
+        .onDisappear {
+            // If user didn't apply, restore backup
+            if !hasApplied {
+                musicPlayer.eqBands = backupBands
+                musicPlayer.bassLevel = backupBass
+                musicPlayer.trebleLevel = backupTreble
+                musicPlayer.isEqEnabled = backupEnabled
+                musicPlayer.selectedPresetId = backupPresetId
+                Logger.d("🎚️ [Equalizer] Dismissed without apply — restored previous config")
+            }
+        }
+        .fullScreenCover(isPresented: $showSubscriptionScreen) {
+            SubscriptionView()
         }
         .alert("New Preset", isPresented: $showingSaveDialog) {
             TextField("Preset Name", text: $newPresetName)
@@ -355,6 +406,17 @@ struct EqualizerView: View {
             if musicPlayer.selectedPresetId == preset.id {
                 musicPlayer.selectedPresetId = nil
             }
+        }
+    }
+    
+    private func handleApplyButton() {
+        if SubscriptionManager.shared.isPremium {
+            // Save config permanently
+            musicPlayer.saveAppliedEQConfig()
+            hasApplied = true
+            dismiss()
+        } else {
+            showSubscriptionScreen = true
         }
     }
 }

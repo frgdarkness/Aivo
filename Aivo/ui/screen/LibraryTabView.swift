@@ -337,7 +337,7 @@ struct LibrarySongRowView: View {
                             .lineLimit(1)
                         
                         // Voice model / Username
-                        Text((song.username?.isEmpty == false ? song.username! : song.modelName))
+                        Text(song.username ?? "Aivo Music")
                             .font(.system(size: iPadScale(12)))
                             .foregroundColor(.gray)
                             .lineLimit(1)

@@ -286,11 +286,16 @@ struct PlayOnlineSongScreen: View {
 
     // MARK: - Song Info
     private var songInfoView: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             Text(currentSong?.title ?? "Unknown Title")
                 .font(.system(size: iPadScale(22), weight: .bold))
                 .foregroundColor(.white).multilineTextAlignment(.center).lineLimit(2)
                 .padding(.top, iPadScaleSmall(12))
+            
+            Text(currentSong?.username ?? "Aivo Music")
+                .font(.system(size: iPadScale(15)))
+                .foregroundColor(.white.opacity(0.7))
+                .lineLimit(1)
         }
         .padding(.horizontal, 40)
     }

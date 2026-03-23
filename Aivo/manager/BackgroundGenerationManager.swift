@@ -125,26 +125,32 @@ class BackgroundGenerationManager: ObservableObject {
                 let profileID = LocalStorageManager.shared.localProfile?.profileID
                 let username = LocalStorageManager.shared.localProfile?.userName ?? "Aivo Music"
                 
-                for var songData in generatedSongs {
+                // If there are 2+ songs with the same title, rename the 2nd one using Gemini AI
+                var processedSongs = generatedSongs
+                if processedSongs.count >= 2 && processedSongs[0].title == processedSongs[1].title {
+                    let originalTitle = processedSongs[1].title
+                    let lyrics = processedSongs[1].prompt
+                    
+                    Logger.i("🎵 [BackgroundManager] 2 songs have same title '\(originalTitle)', generating alternative for song #2...", file: "BackgroundGenerationManager.swift")
+                    
+                    let newTitle = await GeminiSongService.shared.generateAlternativeSongTitle(
+                        originalTitle: originalTitle,
+                        lyrics: lyrics
+                    )
+                    
+                    processedSongs[1] = processedSongs[1].copyWithTitle(newTitle)
+                    Logger.i("🎵 [BackgroundManager] Song #2 renamed: '\(originalTitle)' → '\(newTitle)'", file: "BackgroundGenerationManager.swift")
+                }
+                
+                for var songData in processedSongs {
                     // Set owner info
                     songData.profileID = profileID
                     songData.username = username
                     
                     do {
-                        // This will trigger the download and save to SwiftData/LocalStorage
-                        // Log auto download start
-//                        AnalyticsLogger.shared.logAutoDownloadStart()
-                        
                         let savedUrl = try await SunoDataManager.shared.saveSunoData(songData)
                         
-                        // Log auto download success
-//                        AnalyticsLogger.shared.logAutoDownloadSuccess()
-                        
                         Logger.i("Successfully downloaded and saved: \(songData.title) to \(savedUrl.path)", file: "BackgroundGenerationManager.swift")
-                        // Reload SunoData with correct local paths if needed, but SunoDataManager saves it to disk.
-                        // We will use the original songData but it should be fine as UI uses async image/audio.
-                        // Ideally we should construct a SunoData that points to local path, but SunoData struct uses String URLs.
-                        // For now we use the one returned from API, the local saving is for library persistence.
                         savedSongs.append(songData)
                     } catch {
                         Logger.e("Failed to auto-download song: \(songData.title), error: \(error)", file: "BackgroundGenerationManager.swift")

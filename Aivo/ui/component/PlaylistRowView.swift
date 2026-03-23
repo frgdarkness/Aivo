@@ -19,7 +19,7 @@ struct PlaylistRowView: View {
                         .foregroundColor(isCurrent ? AivoTheme.Primary.orange : .white)
                         .lineLimit(1)
                     
-                    Text(song.username ?? "Aivo Music")
+                    Text(displayArtist(for: song))
                         .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.6))
                         .lineLimit(1)
@@ -55,5 +55,12 @@ struct PlaylistRowView: View {
         .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 20))
         .listRowSeparator(.hidden)
         .deleteDisabled(true)
+    }
+    
+    private func displayArtist(for song: SunoData) -> String {
+        if song.id.hasPrefix("local_") || song.modelName == "Local" {
+            return song.username ?? "Unknown Artist"
+        }
+        return song.username ?? "Aivo Music"
     }
 }

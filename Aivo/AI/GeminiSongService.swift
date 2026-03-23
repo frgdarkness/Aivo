@@ -191,4 +191,55 @@ class GeminiSongService {
             throw error
         }
     }
+    
+    // MARK: - Alternative Song Title
+    
+    /// Generate an alternative song title when Suno returns 2 songs with the same name.
+    /// Uses the existing titleModel (already proven to work).
+    func generateAlternativeSongTitle(originalTitle: String, lyrics: String) async -> String {
+        Logger.i("🎵 [GeminiSongService] Generating alternative title for: \(originalTitle)")
+        
+        guard let model = titleModel else {
+            Logger.e("🎵 [GeminiSongService] titleModel not initialized, using fallback")
+            return "\(originalTitle) (Ver. 2)"
+        }
+        
+        let truncatedLyrics = String(lyrics.prefix(800))
+        
+        let prompt = """
+        I have a song called "\(originalTitle)" with these lyrics:
+        
+        \(truncatedLyrics)
+        
+        Give me a COMPLETELY DIFFERENT song title that still fits the mood and theme of these lyrics.
+        The new title must NOT contain any words from the original title "\(originalTitle)".
+        The new title should be 1 to 5 words, creative and catchy.
+        
+        Reply with ONLY the new title, nothing else. No quotes, no explanation.
+        """
+        
+        do {
+            let response = try await model.generateContent(prompt)
+            let rawText = response.text ?? ""
+            Logger.i("🎵 [GeminiSongService] Raw response: '\(rawText)'")
+            
+            let cleanedText = rawText
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: "\"", with: "")
+                .replacingOccurrences(of: "'", with: "")
+            
+            if !cleanedText.isEmpty, cleanedText.count <= 80 {
+                Logger.i("🎵 [GeminiSongService] ✅ Alternative title: \(cleanedText)")
+                return cleanedText
+            } else {
+                Logger.e("🎵 [GeminiSongService] Response empty or too long: count=\(cleanedText.count)")
+            }
+        } catch {
+            Logger.e("🎵 [GeminiSongService] ❌ Error: \(error.localizedDescription)")
+        }
+        
+        // Fallback
+        Logger.w("🎵 [GeminiSongService] Using fallback title")
+        return "\(originalTitle) (Ver. 2)"
+    }
 }

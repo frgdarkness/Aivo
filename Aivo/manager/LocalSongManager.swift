@@ -28,11 +28,13 @@ class LocalSongManager {
     }
     
     // MARK: - Import
-    func importSong(from url: URL) throws -> SunoData {
+    func importSong(from url: URL) async throws -> SunoData {
         // 1. Generate unique ID
         let id = "local_" + UUID().uuidString
         let directory = getLocalSongsDirectory()
         let destinationURL = directory.appendingPathComponent("\(id).\(url.pathExtension)")
+        
+        Logger.d("📂 [LocalSongManager] Importing from: \(url.lastPathComponent)")
         
         // 2. Copy file to app storage (using secure copy if from arbitrary location)
         if url.startAccessingSecurityScopedResource() {
@@ -42,28 +44,67 @@ class LocalSongManager {
              try fileManager.copyItem(at: url, to: destinationURL)
         }
         
-        // 3. Extract Metadata (Title, Duration, Artwork)
-        let asset = AVAsset(url: destinationURL)
-        let duration = CMTimeGetSeconds(asset.duration)
+        Logger.d("📂 [LocalSongManager] File copied to: \(destinationURL.lastPathComponent)")
+        
+        // 3. Extract Metadata (Title, Artist, Duration, Artwork)
+        let asset = AVURLAsset(url: destinationURL)
+        
+        // Load metadata & duration asynchronously (required on modern iOS)
+        let loadedMetadata: [AVMetadataItem]
+        let loadedDuration: CMTime
+        
+        if #available(iOS 16.0, *) {
+            loadedMetadata = try await asset.load(.commonMetadata)
+            loadedDuration = try await asset.load(.duration)
+        } else {
+            // Fallback for older iOS — use synchronous access
+            await asset.loadValues(forKeys: ["commonMetadata", "duration"])
+            loadedMetadata = asset.commonMetadata
+            loadedDuration = asset.duration
+        }
+        
+        let duration = CMTimeGetSeconds(loadedDuration)
+        Logger.d("📂 [LocalSongManager] Duration: \(duration)s, Metadata items: \(loadedMetadata.count)")
+        
+        // Log all metadata for debugging
+        for item in loadedMetadata {
+            let key = item.commonKey?.rawValue ?? "nil"
+            let value = item.stringValue ?? "(non-string)"
+            Logger.d("📂 [LocalSongManager] Metadata — key: \(key), value: \(value)")
+        }
         
         var title = url.deletingPathExtension().lastPathComponent
-        // Try to read metadata title if available
-        let metadata = asset.commonMetadata
-        if let titleItem = metadata.first(where: { $0.commonKey == .commonKeyTitle }),
-           let titleValue = titleItem.stringValue {
+        var artist: String? = nil
+        
+        // Try to read metadata title and artist if available
+        if let titleItem = loadedMetadata.first(where: { $0.commonKey == .commonKeyTitle }),
+           let titleValue = titleItem.stringValue, !titleValue.isEmpty {
             title = titleValue
+            Logger.d("📂 [LocalSongManager] ✅ Title from metadata: \(title)")
+        } else {
+            Logger.d("📂 [LocalSongManager] ⚠️ No title in metadata, using filename: \(title)")
+        }
+        
+        if let artistItem = loadedMetadata.first(where: { $0.commonKey == .commonKeyArtist }),
+           let artistValue = artistItem.stringValue, !artistValue.isEmpty {
+            artist = artistValue
+            Logger.d("📂 [LocalSongManager] ✅ Artist from metadata: \(artist!)")
+        } else {
+            Logger.d("📂 [LocalSongManager] ⚠️ No artist in metadata")
         }
         
         // Extract and Save Artwork
-        if let artworkItem = metadata.first(where: { $0.commonKey == .commonKeyArtwork }),
+        if let artworkItem = loadedMetadata.first(where: { $0.commonKey == .commonKeyArtwork }),
            let artworkData = artworkItem.dataValue {
              let coverURL = directory.appendingPathComponent("\(id)_cover.jpg")
              try? artworkData.write(to: coverURL)
+             Logger.d("📂 [LocalSongManager] ✅ Artwork saved")
+        } else {
+            Logger.d("📂 [LocalSongManager] ⚠️ No artwork in metadata")
         }
         
         // 4. Create SunoData
-        // Local songs act as SunoData but with specific "Local" model name
-        // We set audioUrl to the local file path (absolute string)
+        Logger.d("📂 [LocalSongManager] Creating SunoData — title: \(title), artist: \(artist ?? "nil")")
         
         let localSong = SunoData(
             id: id,
@@ -78,7 +119,8 @@ class LocalSongManager {
             title: title,
             tags: "Local",
             createTime: Int64(Date().timeIntervalSince1970 * 1000),
-            duration: duration
+            duration: duration,
+            username: artist
         )
         
         return localSong
@@ -111,34 +153,58 @@ class LocalSongManager {
                     if let metadata = loadLocalMetadata(id: id) {
                         // RECONSTRUCT URL: The absolute path in metadata might be valid only for the session it was saved.
                         // We must point it to the current fileURL.
-                        var validMetadata = metadata
-                        // Since SunoData properties are let (immutable), we need to create a new instance with the updated URL.
-                        // Or if we can't modify it easily (it's a struct let), we have to use the init.
+                        
+                        // If saved metadata has no real artist (nil or old default "Aivo Music"),
+                        // try to re-extract from audio file metadata
+                        var resolvedUsername = metadata.username
+                        if resolvedUsername == nil || resolvedUsername == "Aivo Music" {
+                            let audioMeta = asset.commonMetadata
+                            if let artistItem = audioMeta.first(where: { $0.commonKey == .commonKeyArtist }),
+                               let artistValue = artistItem.stringValue, !artistValue.isEmpty {
+                                resolvedUsername = artistValue
+                                Logger.d("📂 [LocalSongManager] Re-extracted artist for \(id): \(artistValue)")
+                            }
+                        }
                         
                         let validSong = SunoData(
-                            id: validMetadata.id,
+                            id: metadata.id,
                             audioUrl: fileURL.absoluteString, // Use current valid path
-                            sourceAudioUrl: validMetadata.sourceAudioUrl,
-                            streamAudioUrl: validMetadata.streamAudioUrl,
-                            sourceStreamAudioUrl: validMetadata.sourceStreamAudioUrl,
-                            imageUrl: validMetadata.imageUrl,
-                            sourceImageUrl: validMetadata.sourceImageUrl,
-                            prompt: validMetadata.prompt,
-                            modelName: validMetadata.modelName,
-                            title: validMetadata.title,
-                            tags: validMetadata.tags,
-                            createTime: validMetadata.createTime,
-                            duration: validMetadata.duration
+                            sourceAudioUrl: metadata.sourceAudioUrl,
+                            streamAudioUrl: metadata.streamAudioUrl,
+                            sourceStreamAudioUrl: metadata.sourceStreamAudioUrl,
+                            imageUrl: metadata.imageUrl,
+                            sourceImageUrl: metadata.sourceImageUrl,
+                            prompt: metadata.prompt,
+                            modelName: metadata.modelName,
+                            title: metadata.title,
+                            tags: metadata.tags,
+                            createTime: metadata.createTime,
+                            duration: metadata.duration,
+                            username: resolvedUsername
                         )
                         songs.append(validSong)
                     } else {
-                        // Fallback reconstruction
+                        // Fallback reconstruction — also try to extract artist
+                        let metadata = asset.commonMetadata
+                        var fallbackTitle = id
+                        var fallbackArtist: String? = nil
+                        
+                        if let titleItem = metadata.first(where: { $0.commonKey == .commonKeyTitle }),
+                           let titleValue = titleItem.stringValue {
+                            fallbackTitle = titleValue
+                        }
+                        if let artistItem = metadata.first(where: { $0.commonKey == .commonKeyArtist }),
+                           let artistValue = artistItem.stringValue {
+                            fallbackArtist = artistValue
+                        }
+                        
                         let song = SunoData(
                             id: id,
                             audioUrl: fileURL.absoluteString,
                             modelName: "Local",
-                            title: "Unknown Song", 
-                            duration: duration
+                            title: fallbackTitle, 
+                            duration: duration,
+                            username: fallbackArtist
                         )
                         songs.append(song)
                     }
@@ -177,9 +243,10 @@ class LocalSongManager {
     }
     
     // Override import to save metadata
-    func importAndSaveSong(from url: URL) throws -> SunoData {
-        let song = try importSong(from: url)
+    func importAndSaveSong(from url: URL) async throws -> SunoData {
+        let song = try await importSong(from: url)
         saveLocalMetadata(song)
+        Logger.d("📂 [LocalSongManager] ✅ Song saved with metadata — title: \(song.title), artist: \(song.username ?? "nil")")
         return song
     }
     

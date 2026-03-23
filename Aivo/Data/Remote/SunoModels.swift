@@ -159,7 +159,7 @@ struct SunoData: Codable, Identifiable, Equatable {
         profileID: String? = nil,
         isPublic: Bool? = false,
         likeCount: Int? = 0,
-        username: String? = "Aivo Music"
+        username: String? = nil
     ) {
         self.id = id
         self.audioUrl = audioUrl
@@ -180,7 +180,7 @@ struct SunoData: Codable, Identifiable, Equatable {
         self.profileID = profileID
         self.isPublic = isPublic
         self.likeCount = likeCount
-        self.username = username ?? "Aivo Music"
+        self.username = username
     }
     
     static func == (lhs: SunoData, rhs: SunoData) -> Bool {
@@ -191,6 +191,31 @@ struct SunoData: Codable, Identifiable, Equatable {
 extension SunoData {
     var coverImageLocalPath: String? {
         return SunoDataManager.shared.getLocalCoverPath(for: id)?.path
+    }
+    
+    /// Create a copy of this SunoData with a new title
+    func copyWithTitle(_ newTitle: String) -> SunoData {
+        return SunoData(
+            id: self.id,
+            audioUrl: self.audioUrl,
+            sourceAudioUrl: self.sourceAudioUrl,
+            streamAudioUrl: self.streamAudioUrl,
+            sourceStreamAudioUrl: self.sourceStreamAudioUrl,
+            imageUrl: self.imageUrl,
+            sourceImageUrl: self.sourceImageUrl,
+            prompt: self.prompt,
+            modelName: self.modelName,
+            title: newTitle,
+            tags: self.tags,
+            createTime: self.createTime,
+            duration: self.duration,
+            playCount: self.playCount,
+            weekTag: self.weekTag,
+            profileID: self.profileID,
+            isPublic: self.isPublic,
+            likeCount: self.likeCount,
+            username: self.username
+        )
     }
 }
 

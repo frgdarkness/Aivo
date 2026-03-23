@@ -399,5 +399,3 @@ final class GeminiAIService: GeminiAIServiceProtocol {
         return nil
     }
 }
-
-

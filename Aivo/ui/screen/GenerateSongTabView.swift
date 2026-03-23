@@ -80,18 +80,18 @@ struct GenerateSongTabView: View {
                 // Mode Selection
                 modeSelectionSection
                 
-                // Mood Selection
-                moodSelectionSection
-                
-                // Genre Selection
-                genreSelectionSection
-                
-                // Native Ad below Genre (non-premium only)
+                // Native Ad above Mood (non-premium only)
                 if !SubscriptionManager.shared.isPremium {
                     NativeAdContainerView()
                         .frame(height: iPadScale(150))
                         .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
                 }
+                
+                // Mood Selection
+                moodSelectionSection
+                
+                // Genre Selection
+                genreSelectionSection
                 
                 // Song Name
                 songNameSection

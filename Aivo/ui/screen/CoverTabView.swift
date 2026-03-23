@@ -71,6 +71,13 @@ struct CoverTabView: View {
                 // Song Name Input
                 songNameSection
 
+                // Native Ad above Language (non-premium only)
+                if !SubscriptionManager.shared.isPremium {
+                    NativeAdContainerView()
+                        .frame(height: iPadScale(150))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
+                }
+
                 // Language Selection
                 languageSelectionSection
 

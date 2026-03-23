@@ -146,8 +146,8 @@ struct LocalSongsView: View {
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
                                         
-                                        // Username / Model Label
-                                        Text((song.username?.isEmpty == false ? song.username! : song.modelName))
+                                        // Artist / Username
+                                        Text(displayArtist(for: song))
                                             .font(.system(size: iPadScale(12)))
                                             .foregroundColor(.gray)
                                             .lineLimit(1)
@@ -268,23 +268,24 @@ struct LocalSongsView: View {
     
     private func importSongs(from urls: [URL]) {
         isLoading = true
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task {
             var successCount = 0
             var errors: [String] = []
             
             for url in urls {
                 do {
-                     _ = try LocalSongManager.shared.importAndSaveSong(from: url)
+                    _ = try await LocalSongManager.shared.importAndSaveSong(from: url)
                     successCount += 1
                 } catch {
+                    Logger.e("❌ [LocalSongsView] Import failed: \(error.localizedDescription)")
                     errors.append(error.localizedDescription)
                 }
             }
             
-            DispatchQueue.main.async {
+            await MainActor.run {
                 self.refreshSongs()
                 if !errors.isEmpty {
-                    self.importErrorMessage = "Allowed \(successCount) songs. Failed: \(errors.count)"
+                    self.importErrorMessage = "Imported \(successCount) songs. Failed: \(errors.count)"
                     self.showingImportError = true
                 }
             }
@@ -313,6 +314,13 @@ struct LocalSongsView: View {
         let m = Int(duration) / 60
         let s = Int(duration) % 60
         return String(format: "%d:%02d", m, s)
+    }
+    
+    private func displayArtist(for song: SunoData) -> String {
+        if song.id.hasPrefix("local_") || song.modelName == "Local" {
+            return song.username ?? "Unknown Artist"
+        }
+        return song.username ?? "Aivo Music"
     }
 }
 

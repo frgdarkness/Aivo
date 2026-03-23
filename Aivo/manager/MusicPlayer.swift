@@ -95,6 +95,54 @@ class MusicPlayer: NSObject, ObservableObject {
         setupAudioSession()
         setupAudioEngine()
         setupRemoteTransportControls()
+        loadAppliedEQConfig()
+    }
+    
+    // MARK: - EQ Config Persistence
+    
+    /// Save the current EQ configuration as the "applied" config
+    func saveAppliedEQConfig() {
+        let config: [String: Any] = [
+            "bands": eqBands,
+            "bass": bassLevel,
+            "treble": trebleLevel,
+            "enabled": isEqEnabled,
+            "presetId": selectedPresetId ?? ""
+        ]
+        UserDefaults.standard.set(config, forKey: "applied_eq_config")
+        Logger.d("🎚️ [MusicPlayer] Applied EQ config saved")
+    }
+    
+    /// Load the previously applied EQ configuration
+    func loadAppliedEQConfig() {
+        guard let config = UserDefaults.standard.dictionary(forKey: "applied_eq_config") else { return }
+        
+        if let bands = config["bands"] as? [Double], bands.count == 10 {
+            eqBands = bands
+        }
+        if let bass = config["bass"] as? Double {
+            bassLevel = bass
+        }
+        if let treble = config["treble"] as? Double {
+            trebleLevel = treble
+        }
+        if let enabled = config["enabled"] as? Bool {
+            isEqEnabled = enabled
+        }
+        if let presetId = config["presetId"] as? String, !presetId.isEmpty {
+            selectedPresetId = presetId
+        }
+        
+        Logger.d("🎚️ [MusicPlayer] Applied EQ config loaded")
+    }
+    
+    /// Reset EQ to default flat values
+    func resetToDefaultEQ() {
+        eqBands = Array(repeating: 0.0, count: 10)
+        bassLevel = 0
+        trebleLevel = 0
+        selectedPresetId = nil
+        Logger.d("🎚️ [MusicPlayer] EQ reset to default")
     }
     
     // MARK: - Public Methods

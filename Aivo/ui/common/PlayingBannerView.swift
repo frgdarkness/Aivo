@@ -90,7 +90,7 @@ struct PlayingBannerView: View {
                         .foregroundColor(.white)
                         .lineLimit(1)
 
-                    Text(currentSong.username ?? "Aivo Music")
+                    Text(displayArtistForBanner(currentSong))
                         .font(.system(size: iPadScale(14)))
                         .foregroundColor(.white.opacity(0.8))
                         .lineLimit(1)
@@ -173,6 +173,13 @@ struct PlayingBannerView: View {
                 }
             }
         }
+    }
+    
+    private func displayArtistForBanner(_ song: SunoData) -> String {
+        if song.id.hasPrefix("local_") || song.modelName == "Local" {
+            return song.username ?? "Unknown Artist"
+        }
+        return song.username ?? "Aivo Music"
     }
 }
 
