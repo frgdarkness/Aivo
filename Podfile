@@ -14,6 +14,7 @@ target 'Aivo' do
   pod 'Firebase/RemoteConfig'
   pod 'Firebase/Database'
   pod 'Firebase/Firestore'
+  pod 'Firebase/Crashlytics'
   pod 'FirebaseAppCheck'
   pod 'FirebaseVertexAI'
   pod 'Google-Mobile-Ads-SDK'

@@ -540,6 +540,15 @@ struct ProfileScreen: View {
                     showArrow: true,
                     action: { showTestScreen = true }
                 )
+                
+                Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
+                
+                menuRow(
+                    icon: "exclamationmark.triangle.fill",
+                    title: "Test Crashlytics",
+                    showArrow: false,
+                    action: { fatalError("Crashlytics Test Crash") }
+                )
             }
             .background(Color.white.opacity(0.06))
             .cornerRadius(iPadScale(16))
