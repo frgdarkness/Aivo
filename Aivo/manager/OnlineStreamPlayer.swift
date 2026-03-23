@@ -57,6 +57,9 @@ class OnlineStreamPlayer: NSObject, ObservableObject {
     func loadSong(_ song: SunoData, at index: Int, in songs: [SunoData]) {
         Logger.d("🎵 [OnlineStreamPlayer] Loading song: \\(song.title)")
         
+        // Stop offline player FIRST to prevent dual playback
+        MusicPlayer.shared.stop()
+        
         // Clean up previous player
         cleanup()
         

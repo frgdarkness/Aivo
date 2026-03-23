@@ -1,10 +1,18 @@
 import SwiftUI
 import Kingfisher
 
+enum LibrarySortOption: String, CaseIterable {
+    case newest = "Newest First"
+    case oldest = "Oldest First"
+    case aToZ = "A -> Z"
+    case zToA = "Z -> A"
+}
+
 // MARK: - Library Tab View
 struct LibraryTabView: View {
     @State private var tabs: [LibraryTabType] = [.local, .aiSongs, .playlist]
     @State private var selectedTab: LibraryTabType = .local
+    @State private var currentSort: LibrarySortOption = .newest
     
     // Legacy states kept for now to avoid breaking other files if they reference them,
     // but ideally we should only use what's needed for AI Songs.
@@ -12,6 +20,19 @@ struct LibraryTabView: View {
     @State private var downloadedSongs: [SunoData] = []
     @State private var showPlayMySongScreen = false
     @State private var selectedSongIndex = 0
+    
+    private var sortedDownloadedSongs: [SunoData] {
+        switch currentSort {
+        case .aToZ:
+            return downloadedSongs.sorted { ($0.title).lowercased() < ($1.title).lowercased() }
+        case .zToA:
+            return downloadedSongs.sorted { ($0.title).lowercased() > ($1.title).lowercased() }
+        case .newest:
+            return downloadedSongs.sorted { ($0.createTime) > ($1.createTime) }
+        case .oldest:
+            return downloadedSongs.sorted { ($0.createTime) < ($1.createTime) }
+        }
+    }
     
     enum LibraryTabType: String, CaseIterable {
         case local = "Local"
@@ -26,11 +47,38 @@ struct LibraryTabView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 12)
             
+            // Sort Options
+            if selectedTab == .local || selectedTab == .aiSongs {
+                HStack {
+                    Spacer()
+                    Menu {
+                        Picker("Sort By", selection: $currentSort) {
+                            ForEach(LibrarySortOption.allCases, id: \.self) { option in
+                                Text(option.rawValue).tag(option)
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.up.arrow.down")
+                            Text(currentSort.rawValue)
+                        }
+                        .font(.system(size: iPadScale(14), weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.1))
+                        .cornerRadius(8)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 8)
+            }
+            
             // Content
             Group {
                 switch selectedTab {
                 case .local:
-                    LocalSongsView()
+                    LocalSongsView(currentSort: $currentSort)
                 case .aiSongs:
                     aiSongsView
                 case .playlist:
@@ -44,7 +92,7 @@ struct LibraryTabView: View {
         }
         .fullScreenCover(isPresented: $showPlayMySongScreen) {
             PlayMySongScreen(
-                songs: downloadedSongs,
+                songs: sortedDownloadedSongs,
                 initialIndex: selectedSongIndex
             )
         }
@@ -152,14 +200,15 @@ struct LibraryTabView: View {
     private var downloadedSongsListView: some View {
         ScrollView {
             LazyVStack(spacing: 6) {
-                ForEach(Array(downloadedSongs.enumerated()), id: \.element.id) { index, song in
+                let sortedList = sortedDownloadedSongs
+                ForEach(Array(sortedList.enumerated()), id: \.element.id) { index, song in
                     DownloadedSongRowView(
                         song: song,
                         index: index,
-                        downloadedSongs: downloadedSongs,
+                        downloadedSongs: sortedList,
                         onTap: {
                             selectedSongIndex = index
-                            MusicPlayer.shared.loadSong(song, at: index, in: downloadedSongs)
+                            MusicPlayer.shared.loadSong(song, at: index, in: sortedList)
                             showPlayMySongScreen = true
                         },
                         onAddToPlaylist: {

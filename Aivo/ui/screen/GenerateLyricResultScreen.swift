@@ -26,8 +26,14 @@ struct GenerateLyricResultScreen: View {
                 
                 ScrollView {
                     VStack(spacing: 20) {
-                        ForEach(results) { result in
+                        ForEach(Array(results.enumerated()), id: \.element.id) { index, result in
                             lyricsCard(for: result)
+                            
+                            if index == 0 && !subscriptionManager.isPremium {
+                                NativeAdContainerView()
+                                    .frame(height: iPadScale(150))
+                                    .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
+                            }
                         }
                     }
                     .padding(20)

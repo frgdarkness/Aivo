@@ -27,7 +27,7 @@ struct PlayMySongScreen: View {
     @State private var showExportSheet = false
     @State private var currentFileURL: URL?
     @State private var showDeleteAlert = false
-    @State private var rotationAngle: Double = 0
+    @State private var isRotating: Bool = false
     @State private var headerHeight: CGFloat = 0   // <- chiều cao header
     @State private var showAddToPlaylistSheet = false
     @State private var showEditSheet = false
@@ -178,20 +178,16 @@ struct PlayMySongScreen: View {
         .onAppear { onAppearTasks() }
         .onDisappear {
             // Reset animation state immediately when dismissing to prevent lag
-            rotationAngle = 0
+            isRotating = false
         }
         .onChange(of: musicPlayer.currentSong?.id) { songId in
             // Stop any ongoing animation and reset rotation immediately when song changes
-            withAnimation(.linear(duration: 0)) {
-                rotationAngle = 0
-            }
+            isRotating = false
             
             // Restart animation if playing (with small delay to ensure reset takes effect)
             if musicPlayer.isPlaying {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                        rotationAngle = 360
-                    }
+                    isRotating = true
                 }
             }
             
@@ -211,17 +207,10 @@ struct PlayMySongScreen: View {
             }
         }
         .onChange(of: musicPlayer.isPlaying) { isPlaying in
-            // Use explicit animation control to prevent conflicts
             if isPlaying {
-                // Start rotation animation smoothly
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
-                }
+                isRotating = true
             } else {
-                // Stop rotation smoothly
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    rotationAngle = 0
-                }
+                isRotating = false
             }
         }
         .onChange(of: musicPlayer.currentTime) { currentTime in
@@ -584,11 +573,12 @@ struct PlayMySongScreen: View {
         //.shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
         // Use rotation3DEffect instead of rotationEffect for better GPU performance
         .rotation3DEffect(
-            .degrees(rotationAngle),
+            .degrees(isRotating ? 360 : 0),
             axis: (x: 0, y: 0, z: 1),
             perspective: 2.0
         )
-        // Apply smooth animation only when playing (controlled by onChange)
+        // Apply smooth animation mapped to state value to prevent interference from other state changes
+        .animation(isRotating ? .linear(duration: 8).repeatForever(autoreverses: false) : .linear(duration: 0), value: isRotating)
         .drawingGroup() // Optimize rendering to single layer - reduces compositing overhead
     }
 
@@ -1139,15 +1129,13 @@ struct PlayMySongScreen: View {
         
         // Initialize rotation state based on playing status
         if musicPlayer.isPlaying {
-            // Reset angle to 0 first to ensure smooth start
-            rotationAngle = 0
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    rotationAngle = 360
+            if !isRotating {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    isRotating = true
                 }
             }
         } else {
-            rotationAngle = 0
+            isRotating = false
         }
     }
     

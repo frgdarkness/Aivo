@@ -258,6 +258,12 @@ struct GenerateLyricsScreen: View {
              
              // Input Section (always shown)
              inputSection
+             
+             if !subscriptionManager.isPremium {
+                 NativeAdContainerView()
+                     .frame(height: iPadScale(150))
+                     .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
+             }
 
              // Structure (Custom/Advance)
              if config.mode == .custom || config.mode == .advance {
@@ -388,7 +394,7 @@ struct GenerateLyricsScreen: View {
                     maxChars: 500,
                     minLines: 4,
                     maxLines: 8,
-                    placeholder: "Enter a prompt (e.g. A love song about rain)"
+                    placeholder: "Enter a prompt (e.g. First time I saw you, the whole world suddenly felt different)"
                 )
             }
             

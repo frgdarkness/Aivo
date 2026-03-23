@@ -151,6 +151,10 @@ class MusicPlayer: NSObject, ObservableObject {
     func loadSong(_ song: SunoData, at index: Int, in songs: [SunoData]) {
         let profileID = LocalStorageManager.shared.localProfile?.profileID ?? "Unknown"
         Logger.d("🎵 [MusicPlayer] Song Played - ID: \(song.id), Title: \(song.title), ProfileID: \(profileID)")
+        
+        // Stop online stream player FIRST to prevent dual playback
+        OnlineStreamPlayer.shared.stop()
+        
         // Stop current playback first (but don't clear currentSong yet)
         playerNode.stop()
         

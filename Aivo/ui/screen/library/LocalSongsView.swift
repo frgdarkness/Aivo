@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct LocalSongsView: View {
+    @Binding var currentSort: LibrarySortOption
     @State private var localSongs: [SunoData] = []
     @State private var showFilePicker = false
     @State private var showingImportError = false
@@ -11,6 +12,19 @@ struct LocalSongsView: View {
     // For navigation to Player
     @State private var showPlayMySongScreen = false
     @State private var selectedSongIndex = 0
+    
+    private var sortedLocalSongs: [SunoData] {
+        switch currentSort {
+        case .aToZ:
+            return localSongs.sorted { ($0.title).lowercased() < ($1.title).lowercased() }
+        case .zToA:
+            return localSongs.sorted { ($0.title).lowercased() > ($1.title).lowercased() }
+        case .newest:
+            return localSongs.sorted { ($0.createTime) > ($1.createTime) }
+        case .oldest:
+            return localSongs.sorted { ($0.createTime) < ($1.createTime) }
+        }
+    }
     
     var body: some View {
         VStack {
@@ -48,7 +62,7 @@ struct LocalSongsView: View {
         }
         .fullScreenCover(isPresented: $showPlayMySongScreen) {
             PlayMySongScreen(
-                songs: localSongs,
+                songs: sortedLocalSongs,
                 initialIndex: selectedSongIndex
             )
         }
@@ -97,7 +111,8 @@ struct LocalSongsView: View {
     private var listContent: some View {
         ScrollView {
             LazyVStack(spacing: 6) { // Spacing 6 to match AI Songs
-                ForEach(Array(localSongs.enumerated()), id: \.element.id) { index, song in
+                let sortedList = sortedLocalSongs
+                ForEach(Array(sortedList.enumerated()), id: \.element.id) { index, song in
                     Button(action: {
                         playSong(index: index)
                     }) {
@@ -293,8 +308,9 @@ struct LocalSongsView: View {
     }
     
     private func deleteSongs(at offsets: IndexSet) {
+        let sortedList = sortedLocalSongs
         for index in offsets {
-            let song = localSongs[index]
+            let song = sortedList[index]
             LocalSongManager.shared.deleteLocalSong(song)
         }
         refreshSongs()
@@ -302,7 +318,8 @@ struct LocalSongsView: View {
     
     private func playSong(index: Int) {
         selectedSongIndex = index
-        MusicPlayer.shared.loadSong(localSongs[index], at: index, in: localSongs)
+        let sortedList = sortedLocalSongs
+        MusicPlayer.shared.loadSong(sortedList[index], at: index, in: sortedList)
         showPlayMySongScreen = true
     }
     

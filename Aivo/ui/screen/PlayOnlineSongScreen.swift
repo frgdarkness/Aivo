@@ -27,7 +27,7 @@ struct PlayOnlineSongScreen: View {
     @State private var isLoading = true
     @State private var showExportSheet = false
     @State private var currentFileURL: URL?
-    @State private var rotationAngle: Double = 0
+    @State private var isRotating: Bool = false
     @State private var headerHeight: CGFloat = 0
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
@@ -95,13 +95,11 @@ struct PlayOnlineSongScreen: View {
         .onAppear { onAppearTasks() }
         .onDisappear {
             // Reset animation state immediately when dismissing to prevent lag
-            rotationAngle = 0
+            isRotating = false
         }
         .onChange(of: streamPlayer.currentSong?.id) { songId in
             // Stop any ongoing animation and reset rotation immediately when song changes
-            withAnimation(.linear(duration: 0)) {
-                rotationAngle = 0
-            }
+            isRotating = false
             
             // Load timestamped lyrics and check download state when song changes
             if let songId = songId {
@@ -276,11 +274,12 @@ struct PlayOnlineSongScreen: View {
         //.shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
         // Use rotation3DEffect instead of rotationEffect for better GPU performance
         .rotation3DEffect(
-            .degrees(rotationAngle),
+            .degrees(isRotating ? 360 : 0),
             axis: (x: 0, y: 0, z: 1),
             perspective: 2.0
         )
-        // Apply smooth animation only when playing (controlled by onChange)
+        // Apply smooth animation mapped to state value to prevent interference from other state changes like downloading
+        .animation(isRotating ? .linear(duration: 8).repeatForever(autoreverses: false) : .linear(duration: 0), value: isRotating)
         .drawingGroup() // Optimize rendering to single layer - reduces compositing overhead
     }
 
@@ -875,20 +874,15 @@ struct PlayOnlineSongScreen: View {
         
         if shouldRotate {
             // Start rotation animation smoothly
-            if rotationAngle == 0 {
+            if !isRotating {
                 // First time starting - reset and animate
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                        rotationAngle = 360
-                    }
+                    isRotating = true
                 }
             }
-            // If already rotating (rotationAngle != 0), let it continue
         } else {
             // Stop rotation immediately
-            withAnimation(.linear(duration: 0)) {
-                rotationAngle = 0
-            }
+            isRotating = false
         }
     }
     
