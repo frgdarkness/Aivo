@@ -200,7 +200,8 @@ struct GenerateSongTabView: View {
                     onTryFree: {
                         showPremiumFeatureDialog = false
                         // Show reward ad before allowing free trial
-                        AdManager.shared.showRewardAd { _ in
+                        AdManager.shared.showRewardAd { success in
+                            guard success else { return }
                             DispatchQueue.main.async {
                                 isFreeTrySong = true
                                 generateSong()
@@ -325,6 +326,7 @@ struct GenerateSongTabView: View {
                     
                     Button(action: {
                         if selectedInputType == .lyrics {
+                            AdManager.shared.countEventToTriggerShowInterAds()
                             showGenerateLyricsScreen = true
                         } else {
                             getInspired()
@@ -506,6 +508,7 @@ struct GenerateSongTabView: View {
                     }
                     
                     Button(action: {
+                        AdManager.shared.countEventToTriggerShowInterAds()
                         showMultiMoodScreen = true
                     }) {
                         Text("More")
@@ -571,6 +574,7 @@ struct GenerateSongTabView: View {
                     
                     // Nút "More"
                     Button(action: {
+                        AdManager.shared.countEventToTriggerShowInterAds()
                         showMultiGenreScreen = true
                     }) {
                         VStack(spacing: 4) {
@@ -1335,7 +1339,8 @@ struct GenerateSongTabView: View {
             // Show reward ad every N taps
             if getInspiredCount % threshold == 0 {
                 Logger.d("📢 [GetInspired] Showing reward ad at tap #\(getInspiredCount)")
-                AdManager.shared.showRewardAd { _ in
+                AdManager.shared.showRewardAd { success in
+                    guard success else { return }
                     Logger.d("📢 [GetInspired] Reward ad completed, loading prompt")
                     self.loadRandomPrompt()
                 }

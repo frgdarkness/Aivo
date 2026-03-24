@@ -52,6 +52,8 @@ struct SelectModelScreen: View {
                 bottomButtons
             }
         }
+        .onAppear {
+        }
     }
 
     // MARK: - Header

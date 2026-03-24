@@ -25,8 +25,10 @@ struct BannerAdView: UIViewRepresentable {
     /// Bạn có thể truyền adUnitID khác; mặc định dùng từ AdManager (nếu có)
     var adUnitID: String = AdManager.shared.ADMOB_BANNER_AD_ID
 
-    /// Khoảng thời gian retry khi load fail (đơn giản)
-    var retryDelay: TimeInterval = 5
+    /// Maximum number of retries on ad load failure
+    private let maxRetries = 3
+    /// Base retry delay in seconds (will use exponential backoff)
+    private let baseRetryDelay: TimeInterval = 10
 
     final class Container: UIView {
         var banner: GADBannerView?
@@ -34,14 +36,13 @@ struct BannerAdView: UIViewRepresentable {
         var heightConstraint: NSLayoutConstraint?
         var currentWidth: CGFloat = 0
         var adUnitID: String = ""
-        var retryDelay: TimeInterval = 5
+        var hasLoadedOnce: Bool = false  // Prevent duplicate loads from updateUIView
     }
 
     func makeUIView(context: Context) -> Container {
         let container = Container()
         container.backgroundColor = .clear
         container.adUnitID = adUnitID
-        container.retryDelay = retryDelay
 
         // Khởi tạo banner theo width ban đầu (có thể bằng 0 -> sẽ update ở updateUIView)
         setupOrUpdateBanner(in: container, context: context)
@@ -49,7 +50,14 @@ struct BannerAdView: UIViewRepresentable {
     }
 
     func updateUIView(_ container: Container, context: Context) {
-        setupOrUpdateBanner(in: container, context: context)
+        // Only setup if banner hasn't been created yet (first-time layout)
+        // Avoid reloading ad on every SwiftUI redraw
+        if container.banner == nil {
+            setupOrUpdateBanner(in: container, context: context)
+        } else if !container.hasLoadedOnce {
+            // Banner exists but hasn't loaded yet (width was 0 initially)
+            setupOrUpdateBanner(in: container, context: context)
+        }
     }
 
     // MARK: - Core
@@ -79,8 +87,8 @@ struct BannerAdView: UIViewRepresentable {
             container.currentWidth = 0 // ép tính lại size
         }
 
-        // Nếu width thay đổi đáng kể -> set lại adSize và reload
-        if abs(container.currentWidth - rounded) >= 1 {
+        // Nếu width thay đổi đáng kể VÀ chưa từng load -> set adSize và load lần đầu
+        if abs(container.currentWidth - rounded) >= 1 && !container.hasLoadedOnce {
             container.currentWidth = rounded
             let adSize = currentOrientationAnchoredAdaptiveBanner(width: rounded)
             container.banner?.adSize = adSize
@@ -100,30 +108,46 @@ struct BannerAdView: UIViewRepresentable {
                 container.banner?.rootViewController = root
             }
 
-            // Load request
+            // Load request (only once)
+            container.hasLoadedOnce = true
             container.banner?.load(GoogleMobileAds.Request())
+            Logger.d("🎯 [BannerAd] Initial load request sent")
         }
     }
 
     // MARK: - Coordinator
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeCoordinator() -> Coordinator { Coordinator(maxRetries: maxRetries, baseRetryDelay: baseRetryDelay) }
 
     final class Coordinator: NSObject, BannerViewDelegate {
-        private let parent: BannerAdView
+        private var retryCount = 0
+        private let maxRetries: Int
+        private let baseRetryDelay: TimeInterval
 
-        init(_ parent: BannerAdView) {
-            self.parent = parent
+        init(maxRetries: Int, baseRetryDelay: TimeInterval) {
+            self.maxRetries = maxRetries
+            self.baseRetryDelay = baseRetryDelay
+            super.init()
         }
 
         func bannerViewDidReceiveAd(_ bannerView: GADBannerView) {
-            // Nhận được ad -> ok
-            // Có thể animate hiện banner ở đây nếu ban đầu bạn ẩn nó.
-            // VD: bannerView.alpha = 0; UIView.animate(withDuration: 0.25) { bannerView.alpha = 1 }
+            // Reset retry count on success
+            retryCount = 0
+            Logger.d("🎯 [BannerAd] ✅ Ad received successfully")
         }
 
         func bannerView(_ bannerView: GADBannerView, didFailToReceiveAdWithError error: Error) {
-            // Retry đơn giản sau vài giây
-            DispatchQueue.main.asyncAfter(deadline: .now() + parent.retryDelay) { [weak bannerView] in
+            retryCount += 1
+
+            if retryCount > maxRetries {
+                Logger.w("🎯 [BannerAd] ❌ Max retries (\(maxRetries)) reached, stopping. Error: \(error.localizedDescription)")
+                return
+            }
+
+            // Exponential backoff: 30s, 60s, 120s
+            let delay = baseRetryDelay * pow(2.0, Double(retryCount - 1))
+            Logger.d("🎯 [BannerAd] ⏳ Retry \(retryCount)/\(maxRetries) in \(Int(delay))s. Error: \(error.localizedDescription)")
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak bannerView] in
                 guard let bannerView = bannerView else { return }
                 bannerView.load(GoogleMobileAds.Request())
             }
@@ -132,7 +156,9 @@ struct BannerAdView: UIViewRepresentable {
         func bannerViewWillPresentScreen(_ bannerView: GADBannerView) { }
         func bannerViewWillDismissScreen(_ bannerView: GADBannerView) { }
         func bannerViewDidDismissScreen(_ bannerView: GADBannerView) { }
-        func bannerViewDidRecordImpression(_ bannerView: GADBannerView) { }
+        func bannerViewDidRecordImpression(_ bannerView: GADBannerView) {
+            Logger.d("🎯 [BannerAd] 📊 Impression recorded")
+        }
     }
 }
 

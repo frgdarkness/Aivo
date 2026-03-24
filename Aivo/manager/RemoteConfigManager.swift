@@ -15,6 +15,13 @@ class RemoteConfigManager: ObservableObject {
     @Published var enableFreeFirstTime = false // ENABLE_FREE_FIRST_TIME from Remote Config
     @Published var playCountMinTime: Int = 30 // Minimum seconds to count a play
     @Published var countSuggestPromptToShowAd: Int = 3 // Every N-th "Get Inspired" tap shows reward ad
+    @Published var interAdCountTime: Int = 4 // Show inter ad every N events
+    @Published var interAdCountdownIntervalTime: Int = 60 // Minimum seconds between inter ads
+    
+    // Play count randomization from Remote Config
+    @Published var enableRandomPlayCount: Bool = false
+    @Published var randomPlayCountValue: Int = 5
+    @Published var timeToRecordPlayCount: Int = 30 // Threshold replaced PLAY_COUNT_MIN_TIME
     
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
@@ -59,7 +66,12 @@ class RemoteConfigManager: ObservableObject {
             "CREDITS_PER_LYRIC": 5 as NSNumber,
             "PLAY_COUNT_MIN_TIME": 30 as NSNumber,
             "COUNT_SUGGEST_PROMPT_TO_SHOW_AD": 3 as NSNumber,
-            "ENABLE_FREE_FIRST_TIME": false as NSNumber
+            "ENABLE_FREE_FIRST_TIME": false as NSNumber,
+            "INTER_AD_COUNT_TIME": 4 as NSNumber,
+            "INTER_AD_COUNTDOWN_INTERVAL_TIME": 60 as NSNumber,
+            "ENABLE_RANDOM_PLAY_COUNT": false as NSNumber,
+            "RANDOM_PLAY_COUNT_VALUE": 5 as NSNumber,
+            "TIME_TO_RECORD_PLAY_COUNT": 30 as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -136,6 +148,39 @@ class RemoteConfigManager: ObservableObject {
                 let enableFreeValue = remoteConfig.configValue(forKey: "ENABLE_FREE_FIRST_TIME").boolValue
                 enableFreeFirstTime = enableFreeValue
                 Logger.d("### RemoteConfigManager: ENABLE_FREE_FIRST_TIME: \(enableFreeFirstTime)")
+                
+                let interCountValue = remoteConfig.configValue(forKey: "INTER_AD_COUNT_TIME").numberValue
+                if interCountValue.intValue > 0 {
+                    interAdCountTime = interCountValue.intValue
+                    Logger.d("### RemoteConfigManager: INTER_AD_COUNT_TIME: \(interAdCountTime)")
+                }
+                
+                let interIntervalValue = remoteConfig.configValue(forKey: "INTER_AD_COUNTDOWN_INTERVAL_TIME").numberValue
+                if interIntervalValue.intValue > 0 {
+                    interAdCountdownIntervalTime = interIntervalValue.intValue
+                    Logger.d("### RemoteConfigManager: INTER_AD_COUNTDOWN_INTERVAL_TIME: \(interAdCountdownIntervalTime)")
+                }
+                
+                let enableRandomPlayValue = remoteConfig.configValue(forKey: "ENABLE_RANDOM_PLAY_COUNT").boolValue
+                enableRandomPlayCount = enableRandomPlayValue
+                Logger.d("### RemoteConfigManager: ENABLE_RANDOM_PLAY_COUNT: \(enableRandomPlayCount)")
+                
+                let randomPlayCountValueRem = remoteConfig.configValue(forKey: "RANDOM_PLAY_COUNT_VALUE").numberValue
+                if randomPlayCountValueRem.intValue > 0 {
+                    randomPlayCountValue = randomPlayCountValueRem.intValue
+                    Logger.d("### RemoteConfigManager: RANDOM_PLAY_COUNT_VALUE: \(randomPlayCountValue)")
+                }
+                
+                let timeToRecordValue = remoteConfig.configValue(forKey: "TIME_TO_RECORD_PLAY_COUNT").numberValue
+                if timeToRecordValue.intValue > 0 {
+                    timeToRecordPlayCount = timeToRecordValue.intValue
+                    playCountMinTime = timeToRecordPlayCount // Maintain compatibility if needed
+                    Logger.d("### RemoteConfigManager: TIME_TO_RECORD_PLAY_COUNT: \(timeToRecordPlayCount)")
+                }
+                if interIntervalValue.intValue > 0 {
+                    interAdCountdownIntervalTime = interIntervalValue.intValue
+                    Logger.d("### RemoteConfigManager: INTER_AD_COUNTDOWN_INTERVAL_TIME: \(interAdCountdownIntervalTime)")
+                }
             }
             
             // Always try to activate, even if fetch didn't get new data

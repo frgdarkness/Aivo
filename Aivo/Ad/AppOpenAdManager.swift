@@ -9,6 +9,7 @@ protocol AppOpenAdManagerDelegate: AnyObject {
     func appOpenAdDidDismissScreen()
 }
 
+@MainActor
 class AppOpenAdManager: NSObject {
     /// The app open ad.
     var appOpenAd: AppOpenAd?

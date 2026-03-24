@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 struct AddSongsToPlaylistView: View {
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     let playlist: Playlist
     var onFinish: (() -> Void)?
     @Environment(\.dismiss) var dismiss
@@ -265,6 +266,23 @@ struct AddSongsToPlaylistView: View {
     }
     
     private func addSelectedSongs() {
+        // Non-premium users must watch a reward ad before adding songs
+        if !subscriptionManager.isPremium {
+            Logger.d("📢 [AddSongs] Non-premium user, showing reward ad before adding songs...")
+            AdManager.shared.showRewardAd { success in
+                guard success else {
+                    Logger.d("📢 [AddSongs] User skipped reward ad, blocking add songs")
+                    return
+                }
+                Logger.d("📢 [AddSongs] Reward ad completed, proceeding with add songs")
+                performAddSongs()
+            }
+        } else {
+            performAddSongs()
+        }
+    }
+    
+    private func performAddSongs() {
         for songId in selectedSongIds {
             if let song = allSongs.first(where: { $0.id == songId }) {
                 PlaylistManager.shared.addSongToPlaylist(song, playlist: playlist)

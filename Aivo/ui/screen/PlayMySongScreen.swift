@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Kingfisher
 
 // MARK: - PreferenceKey để đo chiều cao header
 private struct HeaderHeightKey: PreferenceKey {
@@ -302,7 +303,11 @@ struct PlayMySongScreen: View {
     private var headerView: some View {
         HStack {
             // Back Button
-            Button(action: { dismiss() }) {
+            Button(action: { 
+                AdManager.shared.countEventToTriggerShowInterAds {
+                    dismiss()
+                }
+            }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: iPadScale(22))).foregroundColor(.white)
                     .frame(width: iPadScale(44), height: iPadScale(44))
@@ -487,7 +492,16 @@ struct PlayMySongScreen: View {
                     }
                 } else {
                     Logger.d("🚀 [ShareDebug] Checks passed, calling shareToCommunity()")
-                    shareToCommunity()
+                    // Non-premium users must watch a reward ad before sharing
+                    if !subscriptionManager.isPremium {
+                        Logger.d("📢 [Share] Non-premium user, showing reward ad before share...")
+                        AdManager.shared.showRewardAd { _ in
+                            Logger.d("📢 [Share] Reward ad completed, proceeding with share")
+                            shareToCommunity()
+                        }
+                    } else {
+                        shareToCommunity()
+                    }
                 }
                 
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
@@ -546,26 +560,13 @@ struct PlayMySongScreen: View {
 
     // MARK: - Album Art
     private var albumArtView: some View {
-        AsyncImage(url: cachedCoverImageURL ?? getImageURLForSong(currentSong)) { phase in
-            Group {
-                switch phase {
-                case .empty:
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure(_):
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                @unknown default:
-                    Image("demo_cover")
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                }
+        let coverURL = cachedCoverImageURL ?? getImageURLForSong(currentSong)
+        
+        return Group {
+            if let url = coverURL {
+                kfCoverImage(url: url)
+            } else {
+                defaultCoverView
             }
         }
         .frame(width: DeviceScale.isIPad ? 420 : 280, height: DeviceScale.isIPad ? 420 : 280)
@@ -574,12 +575,24 @@ struct PlayMySongScreen: View {
         // Use rotation3DEffect instead of rotationEffect for better GPU performance
         .rotation3DEffect(
             .degrees(isRotating ? 360 : 0),
-            axis: (x: 0, y: 0, z: 1),
-            perspective: 2.0
+            axis: (x: 0, y: 0, z: 1), perspective: 2.0
         )
         // Apply smooth animation mapped to state value to prevent interference from other state changes
         .animation(isRotating ? .linear(duration: 8).repeatForever(autoreverses: false) : .linear(duration: 0), value: isRotating)
-        .drawingGroup() // Optimize rendering to single layer - reduces compositing overhead
+    }
+
+    private func kfCoverImage(url: URL) -> some View {
+        KFImage(url)
+            .placeholder { defaultCoverView }
+            .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 800, height: 800)))
+            .resizable()
+            .aspectRatio(contentMode: .fill)
+    }
+
+    private var defaultCoverView: some View {
+        Image("demo_cover")
+            .resizable()
+            .aspectRatio(contentMode: .fill)
     }
 
     // MARK: - Song Info
@@ -1153,7 +1166,11 @@ struct PlayMySongScreen: View {
         // Non-premium users must watch a reward ad before exporting
         if !subscriptionManager.isPremium {
             Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
-            AdManager.shared.showRewardAd { [self] _ in
+            AdManager.shared.showRewardAd { [self] success in
+                guard success else {
+                    Logger.d("📢 [Export] User skipped reward ad, blocking export")
+                    return
+                }
                 Logger.d("📢 [Export] Reward ad completed, proceeding with export")
                 self.performExport(song: song)
             }
@@ -1637,6 +1654,23 @@ struct EditSongInfoDialog: View {
     }
     
     private func saveChanges() {
+        // Non-premium users must watch a reward ad before saving edits
+        if !SubscriptionManager.shared.isPremium {
+            Logger.d("📢 [EditSong] Non-premium user, showing reward ad before save...")
+            AdManager.shared.showRewardAd { success in
+                guard success else {
+                    Logger.d("📢 [EditSong] User skipped reward ad, blocking save")
+                    return
+                }
+                Logger.d("📢 [EditSong] Reward ad completed, proceeding with save")
+                performSave()
+            }
+        } else {
+            performSave()
+        }
+    }
+    
+    private func performSave() {
         isSaving = true
         
         Task {

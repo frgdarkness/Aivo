@@ -49,12 +49,16 @@ struct GenerateLyricResultScreen: View {
         }
         .overlay(toastOverlay)
         .navigationBarHidden(true)
+        .onAppear {
+        }
     }
     
     // MARK: - Header
     private var headerView: some View {
         HStack {
-            Button(action: { dismiss() }) {
+            Button(action: { 
+                dismiss() 
+            }) {
                 Image(systemName: "arrow.left")
                     .font(.system(size: iPadScale(18)))
                     .foregroundColor(.white)

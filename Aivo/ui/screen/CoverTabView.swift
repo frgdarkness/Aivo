@@ -143,7 +143,8 @@ struct CoverTabView: View {
                     onTryFree: {
                         showPremiumFeatureDialog = false
                         // Show reward ad before allowing free trial
-                        AdManager.shared.showRewardAd { _ in
+                        AdManager.shared.showRewardAd { success in
+                            guard success else { return }
                             DispatchQueue.main.async {
                                 isFreeTryCover = true
                                 generateCoverSong()
@@ -463,7 +464,10 @@ struct CoverTabView: View {
                     }
                 }
                 if availableModels.count > 8 {
-                    Button(action: { showModelSelectionScreen = true }) {
+                    Button(action: { 
+                        AdManager.shared.countEventToTriggerShowInterAds()
+                        showModelSelectionScreen = true 
+                    }) {
                         VStack(spacing: iPadScaleSmall(8)) {
                             ZStack {
                                 RoundedRectangle(cornerRadius: iPadScale(12))

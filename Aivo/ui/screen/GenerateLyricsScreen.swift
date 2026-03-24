@@ -193,7 +193,8 @@ struct GenerateLyricsScreen: View {
                     onTryFree: {
                         showPremiumFeatureDialog = false
                         // Show reward ad before allowing free trial
-                        AdManager.shared.showRewardAd { _ in
+                        AdManager.shared.showRewardAd { success in
+                            guard success else { return }
                             DispatchQueue.main.async {
                                 performGeneration(isFreeTry: true)
                             }
@@ -247,6 +248,8 @@ struct GenerateLyricsScreen: View {
         }
         .onTapGesture {
             hideKeyboard()
+        }
+        .onAppear {
         }
     }
     
@@ -312,7 +315,9 @@ struct GenerateLyricsScreen: View {
 
             Spacer()
 
-            Button(action: { dismiss() }) {
+            Button(action: { 
+                dismiss() 
+            }) {
                 Image(systemName: "xmark")
                     .font(.system(size: iPadScale(18)))
                     .foregroundColor(.white)
@@ -656,7 +661,10 @@ struct GenerateLyricsScreen: View {
 
     // MARK: - Generate Button
     private var generateButton: some View {
-        Button(action: { generateLyrics() }) {
+        Button(action: { 
+            AdManager.shared.countEventToTriggerShowInterAds()
+            generateLyrics() 
+        }) {
             HStack(spacing: 12) {
                 if isGenerating {
                     ProgressView()

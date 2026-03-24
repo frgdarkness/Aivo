@@ -260,6 +260,7 @@ struct HomeView: View {
             
             // Settings
             Button(action: {
+                AdManager.shared.countEventToTriggerShowInterAds()
                 showProfile = true
             }) {
                 Image(systemName: "gearshape.fill")
@@ -278,7 +279,10 @@ struct HomeView: View {
         HStack(spacing: 0) {
             ForEach(TabItem.allCases, id: \.self) { tab in
                 Button(action: {
-                    selectedTab = tab
+                    if selectedTab != tab {
+                        selectedTab = tab
+                        AdManager.shared.countEventToTriggerShowInterAds()
+                    }
                 }) {
                     VStack(spacing: iPadScaleSmall(4)) {
                         Image(systemName: tab.icon)

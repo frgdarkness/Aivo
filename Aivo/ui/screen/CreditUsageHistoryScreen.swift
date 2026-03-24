@@ -45,6 +45,9 @@ struct CreditUsageHistoryScreen: View {
         .onAppear {
             // Log screen view
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_CREDIT_HISTORY)
+            
+            // Trigger interstitial ad on entry (as requested)
+            AdManager.shared.countEventToTriggerShowInterAds()
         }
     }
     
@@ -53,7 +56,9 @@ struct CreditUsageHistoryScreen: View {
         HStack {
             // Back Button
             Button(action: {
-                dismiss()
+                AdManager.shared.countEventToTriggerShowInterAds {
+                    dismiss()
+                }
             }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: iPadScale(18), weight: .semibold))

@@ -46,7 +46,7 @@ final class PlayCountManager {
         trackingStartTime = Date()
         
         // Get minimum play time from RemoteConfig
-        let minTime = RemoteConfigManager.shared.playCountMinTime
+        let minTime = RemoteConfigManager.shared.timeToRecordPlayCount
         
         Logger.d("📊 [PlayCountManager] Start tracking: \(songName) - \(songID), minTime: \(minTime)s")
         
@@ -97,10 +97,20 @@ final class PlayCountManager {
         
         countedSongIDs.insert(songID)
         
+        // Calculate increment value (1 or random 1..RANDOM_PLAY_COUNT_VALUE)
+        let remoteConfig = RemoteConfigManager.shared
+        let incrementValue: Int
+        if remoteConfig.enableRandomPlayCount {
+            incrementValue = Int.random(in: 1...remoteConfig.randomPlayCountValue)
+            Logger.d("📊 [PlayCountManager] Random increment enabled: +\(incrementValue)")
+        } else {
+            incrementValue = 1
+        }
+        
         // Write to RTDB using atomic increment
         let path = "\(basePath)/play_counts/\(songID)"
-        Logger.d("### write playCount RTDB: \(songName) - \(songID)")
-        dbRef.child(path).setValue(ServerValue.increment(1 as NSNumber)) { error, _ in
+        Logger.d("### write playCount RTDB: \(songName) - \(songID) (increment: \(incrementValue))")
+        dbRef.child(path).setValue(ServerValue.increment(incrementValue as NSNumber)) { error, _ in
             if let error = error {
                 Logger.e("❌ [PlayCountManager] RTDB write FAILED: \(songName) - \(songID) | Error: \(error.localizedDescription)")
             } else {

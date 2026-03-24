@@ -38,7 +38,9 @@ struct WeeklyBoardHistoryScreen: View {
     // MARK: - Header
     private var headerView: some View {
         HStack {
-            Button(action: { dismiss() }) {
+            Button(action: {
+                dismiss()
+            }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.white)

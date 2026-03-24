@@ -473,7 +473,10 @@ struct ProfileScreen: View {
                     icon: "clock.arrow.circlepath",
                     title: "Credit Usage History",
                     showArrow: true,
-                    action: { showCreditHistory = true }
+                    action: { 
+                        AdManager.shared.countEventToTriggerShowInterAds()
+                        showCreditHistory = true 
+                    }
                 )
             }
             .background(Color.white.opacity(0.06))

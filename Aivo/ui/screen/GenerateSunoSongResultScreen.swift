@@ -314,8 +314,12 @@ struct GenerateSunoSongResultScreen: View {
                                    // Non-premium users must watch a reward ad before exporting
                                    if !subscriptionManager.isPremium {
                                        Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
-                                       AdManager.shared.showRewardAd { _ in
-                                           Logger.d("📢 [Export] Reward ad completed, proceeding with export")
+                                       AdManager.shared.showRewardAd { success in
+                                            guard success else {
+                                                Logger.d("📢 [Export] User skipped reward ad, blocking export")
+                                                return
+                                            }
+                                            Logger.d("📢 [Export] Reward ad completed, proceeding with export")
                                            // Log Firebase event for export
                                            AnalyticsLogger.shared.logEventWithBundle(AnalyticsLogger.EVENT.EVENT_EXPORT_SONG, parameters: [
                                                "song_id": song.id,

@@ -4,6 +4,7 @@ import Kingfisher
 // MARK: - Explore Tab View New
 struct ExploreTabViewNew: View {
     @ObservedObject private var remoteConfig = RemoteConfigManager.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @State private var selectedSongForPlayback: SongPlaybackItem? = nil
     @State private var songStatusMap: [String: SongStatus] = [:]
     
@@ -66,7 +67,7 @@ struct ExploreTabViewNew: View {
                 }
                 
                 // Limited Offer (Discount Ad) - below AIVO GREATEST HITS
-                if !SubscriptionManager.shared.isPremium {
+                if !subscriptionManager.isPremium {
                     DiscountAdView()
                         .padding(.horizontal, 4)
                 }
@@ -92,7 +93,7 @@ struct ExploreTabViewNew: View {
                 }
                 
                 // Native Ad (non-premium only)
-                if !SubscriptionManager.shared.isPremium {
+                if !subscriptionManager.isPremium {
                     NativeAdContainerView()
                         .frame(height: iPadScale(150))
                         .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
@@ -334,6 +335,7 @@ struct ExploreTabViewNew: View {
                 Spacer()
                 
                 Button(action: {
+                    AdManager.shared.countEventToTriggerShowInterAds()
                     selectedThemeList = ThemeList(title: "Popular", songs: remoteConfig.hottestList)
                 }) {
                     Text("See All")
@@ -379,6 +381,7 @@ struct ExploreTabViewNew: View {
                 
                 Button(action: {
                     selectedThemeList = ThemeList(title: "New from the Community", songs: communityNewestSongs)
+                    AdManager.shared.countEventToTriggerShowInterAds()
                 }) {
                     Text("See All")
                         .font(.system(size: iPadScale(14), weight: .medium))
@@ -439,6 +442,7 @@ struct ExploreTabViewNew: View {
                     },
                     onSeeAll: { _ in
                         selectedThemeList = ThemeList(title: genre.displayName, songs: filteredSongs)
+                        AdManager.shared.countEventToTriggerShowInterAds()
                     }
                 )
             }
@@ -501,17 +505,32 @@ struct ExploreTabViewNew: View {
     
     /// Handle reload button tap — check cooldown then reload or show dialog
     private func handleReloadCommunity() {
-        let remaining = getReloadCooldownRemaining()
-        
-        if remaining > 0 {
-            // Cooldown active — show dialog with countdown
-            showReloadCooldownDialog = true
+        if subscriptionManager.isPremium {
+            // Premium logic: strictly follow 30min cooldown
+            let remaining = getReloadCooldownRemaining()
+            if remaining > 0 {
+                showReloadCooldownDialog = true
+            } else {
+                performReloadCommunity()
+            }
         } else {
-            // Cooldown expired — reload and save timestamp
-            fetchCommunitySongs(force: true)
-            UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastReloadTimeKey)
-            Logger.d("🔄 [Explore] Community reload triggered, cooldown started")
+            // Basic logic: always show reward ad to reload, bypassing cooldown if watched
+            Logger.d("📢 [Explore] Non-premium user, showing reward ad before reload...")
+            AdManager.shared.showRewardAd { success in
+                guard success else {
+                    Logger.d("📢 [Explore] User skipped reward ad, blocking reload")
+                    return
+                }
+                Logger.d("📢 [Explore] Reward ad completed, proceeding with reload")
+                performReloadCommunity()
+            }
         }
+    }
+    
+    private func performReloadCommunity() {
+        fetchCommunitySongs(force: true)
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastReloadTimeKey)
+        Logger.d("🔄 [Explore] Community reload triggered, cooldown reset")
     }
 }
 
@@ -1057,7 +1076,10 @@ struct CommunityHottestSection: View {
                 
                 Spacer()
                 
-                Button(action: onSeeAll) {
+                Button(action: {
+                    AdManager.shared.countEventToTriggerShowInterAds()
+                    onSeeAll()
+                }) {
                     Text("See All")
                         .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
@@ -1244,7 +1266,10 @@ struct SongsForYouSection: View {
                         .foregroundColor(Color.white)
 //                }
                 Spacer()
-                Button(action: onSeeAll) {
+                Button(action: {
+                    AdManager.shared.countEventToTriggerShowInterAds()
+                    onSeeAll()
+                }) {
                     Text("See All")
                         .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white.opacity(0.7))

@@ -9,6 +9,7 @@ import SwiftUI
 
 struct SleepTimerView: View {
     @ObservedObject var musicPlayer = MusicPlayer.shared
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     @Environment(\.dismiss) private var dismiss
     
     @State private var selectedMinutes: Double = 15
@@ -117,8 +118,22 @@ struct SleepTimerView: View {
                         musicPlayer.cancelSleepTimer()
                     } else {
                         if selectedMinutes > 0 {
-                            musicPlayer.startSleepTimer(minutes: Int(selectedMinutes))
-                            dismiss()
+                            // Non-premium users must watch a reward ad before starting timer
+                            if !subscriptionManager.isPremium {
+                                Logger.d("📢 [SleepTimer] Non-premium user, showing reward ad before start timer...")
+                                AdManager.shared.showRewardAd { success in
+                                    guard success else {
+                                        Logger.d("📢 [SleepTimer] User skipped reward ad, blocking timer start")
+                                        return
+                                    }
+                                    Logger.d("📢 [SleepTimer] Reward ad completed, starting timer")
+                                    musicPlayer.startSleepTimer(minutes: Int(selectedMinutes))
+                                    dismiss()
+                                }
+                            } else {
+                                musicPlayer.startSleepTimer(minutes: Int(selectedMinutes))
+                                dismiss()
+                            }
                         }
                     }
                 }) {

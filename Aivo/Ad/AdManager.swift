@@ -16,6 +16,7 @@ typealias GADNativeAdLoaderDelegate = GoogleMobileAds.NativeAdLoaderDelegate
 // Định nghĩa kích thước banner
 let kGADAdSizeBanner = GoogleMobileAds.AdSize(size: CGSize(width: 320, height: 50), flags: 0)
 
+@MainActor
 final class AdManager: NSObject, ObservableObject {
     static let shared = AdManager()
     
@@ -60,7 +61,15 @@ final class AdManager: NSObject, ObservableObject {
     // Ad callbacks
     private var rewardAdCallback: ((Bool) -> Void)?
     private var interstitialAdCallback: ((Bool) -> Void)?
-
+    /// Tracks whether the user actually earned the reward (watched full ad)
+    private var userEarnedReward = false
+    
+    // Interstitial logic tracking
+    private var interAdTriggerCount = 0
+    private var lastInterAdShowTime: Date?
+    private var lastTriggerTime: Date? // Added for debounce
+    private var lastRewardAdDismissTime: Date? // Added for cooldown after reward ad
+    
     private var loadingVC: AdLoadingViewController?
     
     private override init() { super.init() }
@@ -186,7 +195,7 @@ final class AdManager: NSObject, ObservableObject {
         
         // Kiểm tra xem có loadedAd chưa
         if let interstitial = interstitial {
-            // Có rồi thì show luôn
+            // Use topViewController instead of rootViewController to avoid "already presenting" errors
             guard let topVC = UIApplication.shared.topViewController() else {
                 Logger.w("AdManager: No top view controller found")
                 interstitialAdCallback = nil
@@ -195,7 +204,7 @@ final class AdManager: NSObject, ObservableObject {
             }
             
             interstitial.present(from: topVC)
-            Logger.d("AdManager: Interstitial ad shown successfully")
+            Logger.d("AdManager: Interstitial ad shown successfully from topVC")
             return
         }
         
@@ -306,8 +315,12 @@ final class AdManager: NSObject, ObservableObject {
                 onFinish(true) // Don't block user
                 return
             }
-            rewardedAd.present(from: topVC) {}
-            Logger.d("AdManager: Rewarded ad shown successfully")
+            rewardedAd.present(from: topVC) { [weak self] in
+                // This closure is called ONLY when user earns the reward (watched full ad)
+                Logger.d("AdManager: ✅ User earned reward (watched full ad)")
+                self?.userEarnedReward = true
+            }
+            Logger.d("AdManager: Rewarded ad shown successfully from topVC")
             return
         }
 
@@ -441,6 +454,75 @@ final class AdManager: NSObject, ObservableObject {
     func showInterstitial(from viewController: UIViewController?) {
         showInterAd { _ in }
     }
+    
+    /// Trigger interstitial ad based on count and time interval from Remote Config
+    func countEventToTriggerShowInterAds(completion: (() -> Void)? = nil) {
+        // Skip for premium users
+        guard !SubscriptionManager.shared.isPremium else {
+            Logger.d("📢 [InterAd] Skipping: User is premium")
+            completion?()
+            return
+        }
+        
+        // Debounce: Ignore duplicate triggers within 1.0 second (common in SwiftUI onAppear/tab switches)
+        let now = Date()
+        if let last = lastTriggerTime, now.timeIntervalSince(last) < 1.0 {
+            Logger.d("📢 [InterAd] Debouncing: Trigger called too recently (less than 1s)")
+            completion?()
+            return
+        }
+        lastTriggerTime = now
+        
+        // 🚨 Anti-sequential ad: Skip if a reward ad was dismissed very recently (e.g., 15 seconds)
+        if let lastReward = lastRewardAdDismissTime, now.timeIntervalSince(lastReward) < 15.0 {
+            Logger.d("📢 [InterAd] Skipping: Triggered too soon after a reward ad (less than 15s)")
+            completion?()
+            return
+        }
+        
+        interAdTriggerCount += 1
+        
+        let remoteConfig = RemoteConfigManager.shared
+        let countThreshold = remoteConfig.interAdCountTime
+        let intervalThreshold = TimeInterval(remoteConfig.interAdCountdownIntervalTime)
+        
+        let elapsed: String = {
+            if let last = lastInterAdShowTime {
+                return "\(Int(Date().timeIntervalSince(last)))s"
+            }
+            return "N/A"
+        }()
+        
+        Logger.d("📢 [InterAd] CountToShowInterAd: trigger #\(interAdTriggerCount) | elapsed: \(elapsed) (Config: count \(countThreshold) | threshold \(Int(intervalThreshold))s)")
+        
+        // 1. Check count threshold
+        guard interAdTriggerCount >= countThreshold else {
+            Logger.d("📢 [InterAd] Skipping: Trigger count \(interAdTriggerCount) < threshold \(countThreshold)")
+            completion?()
+            return
+        }
+        
+        // 2. Check time interval threshold
+        if let lastShowTime = lastInterAdShowTime {
+            let elapsedSec = Date().timeIntervalSince(lastShowTime)
+            guard elapsedSec >= intervalThreshold else {
+                Logger.d("📢 [InterAd] Skipping: elapsed \(Int(elapsedSec))s < threshold \(Int(intervalThreshold))s")
+                completion?()
+                return
+            }
+        }
+        
+        // Reset count immediately and show interstitial ad
+        interAdTriggerCount = 0
+        Logger.d("📢 [InterAd] ✅ Conditions met! Resetting count to 0 and showing interstitial ad...")
+        showInterAd { [weak self] success in
+            if success {
+                self?.lastInterAdShowTime = Date()
+                Logger.d("📢 [InterAd] Interstitial ad shown and timestamp updated")
+            }
+            completion?()
+        }
+    }
 }
 
 extension AdManager: GADAdLoaderDelegate, GADNativeAdLoaderDelegate {
@@ -471,10 +553,19 @@ extension AdManager: FullScreenContentDelegate {
         if ad is GADRewardedAd {
             Logger.d("AdManager: Rewarded ad dismissed")
             
-            // Clear ad và gọi callback với true (user đã xem xong ad)
+            // Clear ad và gọi callback dựa trên việc user có xem hết ad không
+            let earned = userEarnedReward
             rewardedAd = nil
-            rewardAdCallback?(true)
+            userEarnedReward = false
+            lastRewardAdDismissTime = Date() // Mark reward ad dismissed
+            rewardAdCallback?(earned)
             rewardAdCallback = nil
+            
+            if earned {
+                Logger.d("AdManager: ✅ Reward ad completed - user earned reward")
+            } else {
+                Logger.d("AdManager: ⚠️ Reward ad dismissed early - user did NOT earn reward")
+            }
             
             // Preload ad mới cho lần sau
             preloadRewardedAd { _ in }

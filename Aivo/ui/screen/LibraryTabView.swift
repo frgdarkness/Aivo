@@ -90,6 +90,9 @@ struct LibraryTabView: View {
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_LIBRARY)
             loadDownloadedSongs()
         }
+        .onChange(of: selectedTab) { _ in
+            AdManager.shared.countEventToTriggerShowInterAds()
+        }
         .fullScreenCover(isPresented: $showPlayMySongScreen) {
             PlayMySongScreen(
                 songs: sortedDownloadedSongs,
