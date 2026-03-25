@@ -250,6 +250,11 @@ final class CreditStoreManager: ObservableObject {
             // Sync with Firestore
             await syncPurchaseWithFirestore(transaction: transaction, credits: credits)
             
+            // ✅ Log daily counter to RTDB (daily_new/yyyyMMdd)
+            Task {
+                try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: productID)
+            }
+            
             Logger.i("purchaseSuccess: product_id=\(productID) total_credits=\(CreditManager.shared.credits)")
 
             // Thông báo UI

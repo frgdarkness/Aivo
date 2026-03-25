@@ -167,7 +167,7 @@ final class FirebaseRealtimeService: ObservableObject {
     }
 
     private func dailyAnalyticsPath(_ date: String) -> String {
-        "\(basePath)/daily/\(date)"
+        "\(basePath)/daily_new/\(date)"
     }
 
     /// Increment daily counter for a package (thread-safe) - Kept for legacy analytics if needed
@@ -175,7 +175,7 @@ final class FirebaseRealtimeService: ObservableObject {
         ensureFirebaseConfigured()
         
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "ddMMyyyy"
+        dateFormatter.dateFormat = "yyyyMMdd"
         let dateKey = dateFormatter.string(from: Date())
         
         // Sanitize packageId to be safe for Firebase path (replace . with _)

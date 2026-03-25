@@ -568,6 +568,14 @@ final class SubscriptionManager: ObservableObject {
         // Log to Firestore
         await syncSubscriptionWithFirestore(transaction: transaction)
         
+        // ✅ Log daily counter to RTDB (daily_new/yyyyMMdd)
+        // Only log for initial purchases (not renewals)
+        if transaction.id == transaction.originalID {
+            Task {
+                try? await FirebaseRealtimeService.shared.incrementDailyCounter(packageId: transaction.productID)
+            }
+        }
+        
         await transaction.finish()
 
         NotificationCenter.default.post(name: NSNotification.Name("SubscriptionPurchaseSuccess"), object: nil)
