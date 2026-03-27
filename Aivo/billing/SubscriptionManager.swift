@@ -21,6 +21,8 @@ final class SubscriptionManager: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
+    private var isCheckingBonus = false
+    
     // MARK: - Product IDs
     enum ProductID: String, CaseIterable {
         case weekly = "AIVO_PREMIUM_WEEKLY"
@@ -230,8 +232,8 @@ final class SubscriptionManager: ObservableObject {
     }
 
     /// Check subscription (wrapper)
-    func checkSubscriptionStatus() {
-        Task { await refreshStatus() }
+    func checkSubscriptionStatus() async {
+        await refreshStatus()
     }
 
     // MARK: - Refresh Status (with sandbox-friendly fallback)
@@ -430,6 +432,14 @@ final class SubscriptionManager: ObservableObject {
             Logger.d("checkBonusCreditForSubscription: user not premium, skip")
             return
         }
+        
+        // Prevent concurrent execution (race condition fix)
+        guard !isCheckingBonus else { 
+            Logger.d("checkBonusCreditForSubscription: Already checking, skipping concurrent call")
+            return 
+        }
+        isCheckingBonus = true
+        defer { isCheckingBonus = false }
 
         let now = Date()
         let bonusAmount = bonusCreditAmount
@@ -451,11 +461,17 @@ final class SubscriptionManager: ObservableObject {
         if let last = lastBonusDate {
             let days = now.timeIntervalSince(last) / (60 * 60 * 24)
             if days >= interval {
+                let previousBalance = CreditManager.shared.credits
                 await CreditManager.shared.increaseCredits(by: bonusAmount)
+                let afterBalance = CreditManager.shared.credits
                 
-                // Log to credit history
                 let historyType: RequestType = (currentSubscription?.period == .yearly) ? .bonusPremiumYearly : .bonusPremiumWeekly
                 CreditHistoryManager.shared.addRequest(historyType, cost: bonusAmount)
+                
+                // ✅ Log bonus to Firestore bonus_history
+                let bonusReason = (currentSubscription?.period == .yearly) ? "YearlyPremium" : "WeeklyPremium"
+                let profileID = LocalStorageManager.shared.getLocalProfile().profileID
+                await FirestoreService.shared.logBonusCredit(profileID: profileID, amount: bonusAmount, reason: bonusReason, previousBalance: previousBalance, afterBalance: afterBalance)
                 
                 KeychainManager.shared.saveLastBonusDate(now)
                 // Also save to UserDefaults for backward compatibility
@@ -478,11 +494,18 @@ final class SubscriptionManager: ObservableObject {
             }
         } else {
             // First time after sub
+            let previousBalance = CreditManager.shared.credits
             await CreditManager.shared.increaseCredits(by: bonusAmount)
+            let afterBalance = CreditManager.shared.credits
             
             // Log to credit history
             let historyType: RequestType = (currentSubscription?.period == .yearly) ? .bonusPremiumYearly : .bonusPremiumWeekly
             CreditHistoryManager.shared.addRequest(historyType, cost: bonusAmount)
+            
+            // ✅ Log bonus to Firestore bonus_history
+            let bonusReason = (currentSubscription?.period == .yearly) ? "YearlyPremium" : "WeeklyPremium"
+            let profileID = LocalStorageManager.shared.getLocalProfile().profileID
+            await FirestoreService.shared.logBonusCredit(profileID: profileID, amount: bonusAmount, reason: bonusReason, previousBalance: previousBalance, afterBalance: afterBalance)
             
             KeychainManager.shared.saveLastBonusDate(now)
             // Also save to UserDefaults for backward compatibility

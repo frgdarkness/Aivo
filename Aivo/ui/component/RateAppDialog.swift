@@ -52,7 +52,7 @@ struct RateAppDialog: View {
                     .fill(Color(hex: 0x2C2C2E)) // Lighter dark background
                     .overlay(
                         RoundedRectangle(cornerRadius: 24)
-                            .stroke(Color.white.opacity(0.2), lineWidth: 1) // White border
+                            .stroke(AivoTheme.Primary.orange.opacity(0.4), lineWidth: 2) // Orange border
                     )
                     .shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 10)
             )
@@ -70,15 +70,16 @@ struct RateAppDialog: View {
         VStack(spacing: 24) {
             // Text
             VStack(spacing: 12) {
-                Text("Do you love Aivo?")
+                Text("Loving Aivo Music?")
                     .font(.system(size: 22, weight: .bold))
                     .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(.leading)
                 
-                Text("Please rate your experience!")
+                Text("How do you feel about your experience?")
                     .font(.system(size: 16))
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.center)
+                    .padding(.top, 8)
             }
             .padding(.top, 8)
             
@@ -88,15 +89,18 @@ struct RateAppDialog: View {
                     emojiButton(for: index)
                 }
             }
+            .padding(.vertical, 6)
             
             // Not Now
-            Button(action: {
-                onDismiss()
-            }) {
-                Text("Not now")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
-                    .padding(.bottom, 8)
+            HStack {
+                Spacer()
+                Button(action: {
+                    onDismiss()
+                }) {
+                    Text("Not now")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white.opacity(0.2))
+                }
             }
         }
     }

@@ -248,7 +248,7 @@ struct ProfileScreen: View {
                     }
                 }
                 
-                // ID Badge
+                // ID Badge (Fixed layout to prevent wrapping and show full ID)
                 HStack(spacing: 0) {
                     Text("ID")
                         .font(.system(size: iPadScale(14), weight: .medium))
@@ -258,13 +258,14 @@ struct ProfileScreen: View {
                         .background(Color.white)
                         .clipShape(RoundedCorner(radius: 6, corners: [.topLeft, .bottomLeft]))
                     
-                    Text(profileID.prefix(20))
+                    Text(profileID)
                         .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(.white)
                         .padding(.horizontal, iPadScaleSmall(8))
                         .padding(.vertical, iPadScaleSmall(6))
                         .background(Color(white: 0.4))
                         .clipShape(RoundedCorner(radius: 6, corners: [.topRight, .bottomRight]))
+                        .lineLimit(1)
                     
                     Button(action: {
                         copyIDToClipboard()
@@ -276,6 +277,7 @@ struct ProfileScreen: View {
                     }
                     .padding(.leading, 4)
                 }
+                .fixedSize(horizontal: true, vertical: false) // Prevent compression on small screens
             }
             
             Spacer()

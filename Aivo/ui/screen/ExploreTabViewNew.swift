@@ -40,6 +40,9 @@ struct ExploreTabViewNew: View {
     @State private var isFetchingCommunity = false
     @State private var showReloadCooldownDialog = false
     
+    // Cached genre-filtered results (shuffled once, not on every render)
+    @State private var genreCache: [SongGenre: [SunoData]] = [:]
+    
     // Reload cooldown key
     private static let lastReloadTimeKey = "CommunityLastReloadTime"
     
@@ -151,6 +154,13 @@ struct ExploreTabViewNew: View {
             loadSongStatus()
             fetchCommunitySongs()
             checkBillboardIntroFirstTime()
+            buildGenreCache()
+        }
+        .onChange(of: communityNewestSongs.count) { _ in
+            buildGenreCache()
+        }
+        .onChange(of: remoteConfig.allSongsList.count) { _ in
+            buildGenreCache()
         }
     }
     
@@ -418,26 +428,13 @@ struct ExploreTabViewNew: View {
     private var genreSections: some View {
         VStack(alignment: .leading, spacing: 24) {
             ForEach(SongGenre.getExplore(), id: \.self) { genre in
-                // Filter songs once to maintain consistency
-                let filteredSongs = filterSongsByGenre(genre)
+                let filteredSongs = genreCache[genre] ?? []
                 
                 GenreSectionView(
                     genre: genre,
-                    songs: filteredSongs, // Pass full list
+                    songs: filteredSongs,
                     songStatusMap: songStatusMap,
-                    onSongTap: { _, index in // We ignore the passed array and use filteredSongs logic inside or just pass it through
-                         // Play full list starting at index. Even if UI shows 10, playing should probably queue the filtered list?
-                         // User said: "show max 10... see all >> full list".
-                         // Usually playing from a preview list just plays that context.
-                         // But if I want to "get more songs", maybe I should just play the top 10?
-                         // User said: "filter không giới hạn số bài... sau khi filter xong thì xáo trộn bài... ở explore thì show max 10... user bấm see all mới xem đc full list".
-                         // This implies the Explore view is a "preview" of the filtered list.
-                         // If I tap 3rd song, I probably expect to hear that + maybe subsequent ones in that preview?
-                         // Let's pass the full filteredSongs list but start at `index`. 
-                         // Note: `index` comes from the UI loop which is `prefix(10)`. So index is 0..9.
-                         // Only `filteredSongs` are passed to `SongPlaybackItem`.
-                         // If `filteredSongs` has 100 items, and I tap index 2, I play from index 2 of 100.
-                         // This is great behavior - user finds a song, keeps listening to genre radio.
+                    onSongTap: { _, index in
                          selectedSongForPlayback = SongPlaybackItem(songs: filteredSongs, initialIndex: index)
                     },
                     onSeeAll: { _ in
@@ -449,35 +446,75 @@ struct ExploreTabViewNew: View {
         }
     }
     
+    // MARK: - Build Genre Cache
+    private func buildGenreCache() {
+        var cache: [SongGenre: [SunoData]] = [:]
+        for genre in SongGenre.getExplore() {
+            cache[genre] = filterSongsByGenre(genre)
+        }
+        genreCache = cache
+        Logger.d("📦 [Explore] Genre cache built: \(cache.map { "\($0.key.displayName): \($0.value.count)" }.joined(separator: ", "))")
+    }
+    
     // MARK: - Filter Songs by Genre
     private func filterSongsByGenre(_ genre: SongGenre) -> [SunoData] {
         let keywords = genre.searchKeywords
         
-        // 1. Filter from community newest songs first (always at the top)
-        let communityFiltered = communityNewestSongs.filter { song in
-            let songTags = song.tags.lowercased()
-            return keywords.contains { keyword in
-                songTags.contains(keyword)
+        if remoteConfig.enableTargetNewSongForGenre {
+            // MODE ON: Community/new songs prioritized at top, then shuffled allSongsList
+            
+            // 1. Filter from community newest songs first (always at the top)
+            let communityFiltered = communityNewestSongs.filter { song in
+                let songTags = song.tags.lowercased()
+                return keywords.contains { keyword in
+                    songTags.contains(keyword)
+                }
             }
-        }
-        
-        // 2. Collect IDs of community songs to avoid duplicates
-        let communityIDs = Set(communityFiltered.map { $0.id })
-        
-        // 3. Filter from allSongsList, excluding songs already in community list
-        var allFiltered = remoteConfig.allSongsList.filter { song in
-            guard !communityIDs.contains(song.id) else { return false }
-            let songTags = song.tags.lowercased()
-            return keywords.contains { keyword in
-                songTags.contains(keyword)
+            
+            // 2. Collect IDs of community songs to avoid duplicates
+            let communityIDs = Set(communityFiltered.map { $0.id })
+            
+            // 3. Filter from allSongsList, excluding songs already in community list
+            var allFiltered = remoteConfig.allSongsList.filter { song in
+                guard !communityIDs.contains(song.id) else { return false }
+                let songTags = song.tags.lowercased()
+                return keywords.contains { keyword in
+                    songTags.contains(keyword)
+                }
             }
+            
+            // Shuffle only the allSongsList portion
+            allFiltered.shuffle()
+            
+            // 4. Community songs first, then shuffled allSongsList songs
+            return communityFiltered + allFiltered
+        } else {
+            // MODE OFF: Merge all sources, deduplicate, then shuffle everything together
+            
+            // 1. Combine community + allSongsList
+            let allSources = communityNewestSongs + remoteConfig.allSongsList
+            
+            // 2. Deduplicate by ID (keep first occurrence)
+            var seenIDs = Set<String>()
+            let uniqueSongs = allSources.filter { song in
+                guard !seenIDs.contains(song.id) else { return false }
+                seenIDs.insert(song.id)
+                return true
+            }
+            
+            // 3. Filter by genre keywords
+            var filtered = uniqueSongs.filter { song in
+                let songTags = song.tags.lowercased()
+                return keywords.contains { keyword in
+                    songTags.contains(keyword)
+                }
+            }
+            
+            // 4. Shuffle all together — no priority
+            filtered.shuffle()
+            
+            return filtered
         }
-        
-        // Shuffle only the allSongsList portion
-        allFiltered.shuffle()
-        
-        // 4. Community songs first, then shuffled allSongsList songs
-        return communityFiltered + allFiltered
     }
     
     // MARK: - Reload Cooldown Logic

@@ -25,27 +25,36 @@ class AppRatingManager: ObservableObject {
     /// Checks conditions and triggers the custom rating dialog to be shown.
     @MainActor
     func tryShowRateApp() {
+        Logger.d("⭐️ [AppRatingManager] Checking conditions to show rating dialog...")
+        
         // 1. Check if user already rated
         guard !hasRatedApp else {
-            Logger.d("⭐️ [AppRatingManager] User already rated. Skipping.")
+            Logger.d("⭐️ [AppRatingManager] hasRatedApp is true. Skip showing.")
             return
         }
         
         // 2. Check if already shown today
         if let lastDate = lastRatingShownDate {
             if Calendar.current.isDateInToday(lastDate) {
-                Logger.d("⭐️ [AppRatingManager] Already shown today. Skipping.")
+                Logger.d("⭐️ [AppRatingManager] Already shown today (lastDate: \(lastDate)). Skip showing.")
                 return
             }
         }
+        
+        Logger.i("⭐️ [AppRatingManager] CONDITIONS MET! Triggering Rating Dialog.")
         
         // 3. Trigger Custom Dialog
         withAnimation {
             showRatingDialog = true
         }
         
-    // Update last shown date immediately when we attempt to show
+        // Update last shown date immediately when we attempt to show
         lastRatingShownDate = Date()
+        Logger.d("⭐️ [AppRatingManager] Set lastRatingShownDate to TODAY (\(lastRatingShownDate!))")
+    }
+
+    func logStatus() {
+        Logger.i("⭐️ [AppRatingManager] STATUS: hasRatedApp = \(hasRatedApp), lastRatingShownDate = \(String(describing: lastRatingShownDate))")
     }
     
     /// Forces the rating dialog to show (e.g. from Profile screen)

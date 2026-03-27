@@ -81,8 +81,8 @@ struct GenerationSuccessDialog: View {
                             NotificationCenter.default.post(name: NSNotification.Name("SwitchLibraryCategory"), object: "AI Generate")
                         }
                         
-                        // Show rating after 3s delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        // Show rating after 5s delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                             AppRatingManager.shared.tryShowRateApp()
                         }
                     }) {
@@ -101,8 +101,8 @@ struct GenerationSuccessDialog: View {
                     // Play Now Button
                     Button(action: {
                         onPlayNow()
-                        // Show rating after 3s delay
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        // Show rating after 5s delay
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                             AppRatingManager.shared.tryShowRateApp()
                         }
                     }) {

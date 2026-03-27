@@ -128,7 +128,12 @@ struct GenerateSunoSongResultScreen: View {
         }
         .sheet(isPresented: $showExportSheet) {
             if let url = currentFileURL {
-                DocumentExporter(fileURL: url)
+                DocumentExporter(fileURL: url, onCompletion: {
+                    Logger.d("⭐️ [SunoResult] Export success, triggering rating after 5s")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        AppRatingManager.shared.tryShowRateApp()
+                    }
+                })
             }
         }
         .sheet(isPresented: $showShareSheet) {
@@ -581,6 +586,12 @@ struct GenerateSunoSongResultScreen: View {
                     }
                 }
                 
+                // Song downloaded successfully - trigger rating after 5s (Case 4)
+                Logger.d("⭐️ [SunoResult] Download success, triggering rating after 5s")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                    AppRatingManager.shared.tryShowRateApp()
+                }
+                
                 // Song downloaded successfully - auto-play first song
                 if song.id == self.sunoDataList.first?.id {
                     Logger.d("🎵 [SunoResult] Auto-playing first song: \(song.title)")
@@ -686,6 +697,12 @@ struct GenerateSunoSongResultScreen: View {
         // Song is already saved to Documents directory during download
         // This method is for future use if we need additional save functionality
         savedToDevice.insert(song.id)
+        
+        // Trigger rating after manual save success (Case 4)
+        Logger.d("⭐️ [SunoResult] Manual save success, triggering rating after 5s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+            AppRatingManager.shared.tryShowRateApp()
+        }
     }
     
     private func formatDuration(_ duration: Double) -> String {
@@ -826,15 +843,37 @@ struct SunoSongRowView: View {
 /// Save to Files (UIDocumentPicker, iOS 14+)
 struct DocumentExporter: UIViewControllerRepresentable {
     let fileURL: URL
+    var onCompletion: (() -> Void)? = nil
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
     
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
         let vc = UIDocumentPickerViewController(forExporting: [fileURL], asCopy: true)
         vc.allowsMultipleSelection = false
         vc.shouldShowFileExtensions = true
+        vc.delegate = context.coordinator
         return vc
     }
     
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) {}
+    
+    class Coordinator: NSObject, UIDocumentPickerDelegate {
+        var parent: DocumentExporter
+        
+        init(_ parent: DocumentExporter) {
+            self.parent = parent
+        }
+        
+        func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
+            parent.onCompletion?()
+        }
+        
+        func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
+            // No action needed for cancel
+        }
+    }
 }
 
 /// Share Sheet (UIActivityViewController)

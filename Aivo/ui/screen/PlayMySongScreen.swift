@@ -143,7 +143,14 @@ struct PlayMySongScreen: View {
             }
         }
         .sheet(isPresented: $showExportSheet) {
-            if let url = currentFileURL { DocumentExporter(fileURL: url) }
+            if let url = currentFileURL { 
+                DocumentExporter(fileURL: url, onCompletion: {
+                    Logger.d("⭐️ [PlayMySong] Export success, triggering rating after 5s")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        AppRatingManager.shared.tryShowRateApp()
+                    }
+                })
+            }
         }
         .alert("Delete Song", isPresented: $showDeleteAlert) {
             Button("Cancel", role: .cancel) { }

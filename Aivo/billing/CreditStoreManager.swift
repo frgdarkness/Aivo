@@ -289,8 +289,13 @@ final class CreditStoreManager: ObservableObject {
                 status: .completed
             )
             
-            // Save to Firestore sub-collection
+            // Save to Firestore sub-collection (purchases)
             try await FirestoreService.shared.logPurchase(profileID: profile.profileID, purchase: purchase)
+            
+            // ✅ Also log to bonus_history sub-collection
+            let after = CreditManager.shared.credits
+            let previous = after - credits
+            await FirestoreService.shared.logBonusCredit(profileID: profile.profileID, amount: credits, reason: "Buy", previousBalance: previous, afterBalance: after)
             
             // Also update the top-level profile in Firestore to ensure credits are synced
             try await FirestoreService.shared.saveProfile(profile)

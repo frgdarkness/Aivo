@@ -23,6 +23,9 @@ class RemoteConfigManager: ObservableObject {
     @Published var randomPlayCountValue: Int = 5
     @Published var timeToRecordPlayCount: Int = 30 // Threshold replaced PLAY_COUNT_MIN_TIME
     
+    // Genre filtering behavior
+    @Published var enableTargetNewSongForGenre: Bool = true // Prioritize new/community songs in genre lists
+    
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
     @Published var introSongList: [IntroSongJSON] = []
@@ -71,7 +74,8 @@ class RemoteConfigManager: ObservableObject {
             "INTER_AD_COUNTDOWN_INTERVAL_TIME": 60 as NSNumber,
             "ENABLE_RANDOM_PLAY_COUNT": false as NSNumber,
             "RANDOM_PLAY_COUNT_VALUE": 5 as NSNumber,
-            "TIME_TO_RECORD_PLAY_COUNT": 30 as NSNumber
+            "TIME_TO_RECORD_PLAY_COUNT": 30 as NSNumber,
+            "ENABLE_TARGET_NEW_SONG_FOR_GENRE": false as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -181,6 +185,10 @@ class RemoteConfigManager: ObservableObject {
                     interAdCountdownIntervalTime = interIntervalValue.intValue
                     Logger.d("### RemoteConfigManager: INTER_AD_COUNTDOWN_INTERVAL_TIME: \(interAdCountdownIntervalTime)")
                 }
+                
+                let enableTargetNewSongValue = remoteConfig.configValue(forKey: "ENABLE_TARGET_NEW_SONG_FOR_GENRE").boolValue
+                enableTargetNewSongForGenre = enableTargetNewSongValue
+                Logger.d("### RemoteConfigManager: ENABLE_TARGET_NEW_SONG_FOR_GENRE: \(enableTargetNewSongForGenre)")
             }
             
             // Always try to activate, even if fetch didn't get new data

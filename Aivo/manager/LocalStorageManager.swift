@@ -346,9 +346,9 @@ final class LocalStorageManager: ObservableObject {
     
     /// Unified method to generate profile ID (persists across app reinstalls)
     private func generateProfileID() -> String {
-        // Lấy ngày hiện tại dạng ddMMyy
+        // Lấy ngày hiện tại dạng yyMMdd
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "ddMMyy"
+        dateFormatter.dateFormat = "yyMMdd"
         let dateString = dateFormatter.string(from: Date())
         
         // Tạo raw data để hash
@@ -360,7 +360,7 @@ final class LocalStorageManager: ObservableObject {
         // Hash base64
         let hash = raw.data(using: .utf8)?.base64EncodedString() ?? UUID().uuidString
         
-        // Trả về kết quả dạng user_ddMMyy_xxxxxxxx
+        // Trả về kết quả dạng user_yyMMdd_xxxxxxxx
         return "user_\(dateString)_\(hash.prefix(10))"
     }
     

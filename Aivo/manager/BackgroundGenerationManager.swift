@@ -217,7 +217,7 @@ class BackgroundGenerationManager: ObservableObject {
                     }
                     
                     // Try to show rating dialog
-                    AppRatingManager.shared.tryShowRateApp()
+                    // AppRatingManager.shared.tryShowRateApp()
                 }
                 
             } catch is CancellationError {
@@ -372,7 +372,7 @@ class BackgroundGenerationManager: ObservableObject {
                     }
                     
                     // Try to show rating dialog
-                    AppRatingManager.shared.tryShowRateApp()
+                    // AppRatingManager.shared.tryShowRateApp()
                 }
                 
             } catch is CancellationError {

@@ -32,7 +32,7 @@ struct SimpleToastModifier: ViewModifier {
                             .font(.system(size: 16, weight: .semibold))
                     }
                     Text(toast.message)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .multilineTextAlignment(.center)
                 }
                 .foregroundColor(.white)

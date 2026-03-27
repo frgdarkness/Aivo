@@ -88,9 +88,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
                 // Check subscription status on app startup and update premium status
                 await SubscriptionManager.shared.checkSubscriptionStatus()
                 
-                // Check and grant bonus credits for subscription (separate from purchase flow)
-                await SubscriptionManager.shared.checkBonusCreditForSubscription()
-                
                 // Check weekly billboard reward
                 await WeeklyRewardManager.shared.checkAndClaimWeeklyReward()
             } catch {

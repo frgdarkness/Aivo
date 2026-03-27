@@ -267,6 +267,24 @@ struct TestScreen: View {
             }
             
             Button(action: {
+                clearRateStatus()
+            }) {
+                HStack {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 18))
+                    Text("Clear Rate Status")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 54)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.orange.opacity(0.8))
+                )
+            }
+            
+            Button(action: {
                 showClearDataAlert = true
             }) {
                 HStack {
@@ -381,12 +399,23 @@ struct TestScreen: View {
         // Use KeychainManager's method to clear all data
         KeychainManager.shared.clearAllKeychainData()
         
-        showToast("All Keychain data cleared")
+        // Also update in-memory state to reflect immediate change
+        Task { @MainActor in
+            CreditManager.shared.credits = 0
+            // Reset profileID in LocalStorage as well to sync with Keychain deletion
+            localStorage.clearLocalProfile()
+        }
+        
+        showToast("All Keychain data cleared ✅")
     }
     
     private func clearIntroStatus() {
         UserDefaultsManager.shared.resetOnboarding()
-        showToast("Intro status cleared. Restart app to see intro.")
+        // Reset also the first start logged flags to re-trigger analytical events
+        UserDefaults.standard.removeObject(forKey: "AIVO_HAS_LOGGED_FIRST_START")
+        UserDefaults.standard.removeObject(forKey: "AIVO_HAS_LOGGED_FIRST_START_FIREBASE")
+        
+        showToast("Intro & Start flags cleared. Restart app to see intro.")
     }
     
     private func clearRewardData() {
@@ -403,11 +432,31 @@ struct TestScreen: View {
     }
     
     private func resetFreeFirstTime() {
+        // 1. Reset Keychain-based flags (The primary ones)
         KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialSongKey)
         KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialCoverKey)
         KeychainManager.shared.saveBool(false, forKey: KeychainManager.freeTrialLyricKey)
+        
+        // 2. Reset legacy AppStorage/UserDefaults flags if they exist
+        UserDefaults.standard.removeObject(forKey: "has_used_free_lyric_generation")
+        
+        // 3. Reset daily usage flags to allow immediate testing of free experience
+        UserDefaultsManager.shared.dailyFreeGenerateUsed = false
+        UserDefaultsManager.shared.dailyExportCount = 0
+        UserDefaultsManager.shared.dailyVideoCreditUsedCount = 0
+        
+        // 4. Notify managers to update UI
         ProfileManager.shared.objectWillChange.send()
-        showToast("Free first time reset ✅ (Song, Cover, Lyric)")
+        UserDefaultsManager.shared.objectWillChange.send()
+        
+        showToast("Free first time reset ✅ (Song, Cover, Lyric + Daily states)")
+    }
+    
+    private func clearRateStatus() {
+        UserDefaults.standard.removeObject(forKey: "AIVO_HAS_RATED_APP")
+        UserDefaults.standard.removeObject(forKey: "AIVO_LAST_RATING_SHOWN_DATE")
+        AppRatingManager.shared.showRatingDialog = false
+        showToast("Rate status cleared ✅")
     }
     
     private func showToast(_ message: String) {

@@ -62,7 +62,12 @@ struct GenerateSongResultScreen: View {
         // MARK: - Sheets cho Export/Share
         .sheet(isPresented: $showExportSheet) {
             if let url = downloadedFileURL {
-                DocumentExporter(fileURL: url)
+                DocumentExporter(fileURL: url, onCompletion: {
+                    Logger.d("⭐️ [GenerateSongResult] Export success, triggering rating after 5s")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        AppRatingManager.shared.tryShowRateApp()
+                    }
+                })
             }
         }
         .sheet(isPresented: $showShareSheet) {

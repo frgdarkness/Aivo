@@ -94,10 +94,16 @@ class WeeklyRewardManager: ObservableObject {
                 let song = parseSongFromDict(songData)
                 
                 // Grant credits
+                let previousBalance = CreditManager.shared.credits
                 await CreditManager.shared.increaseCredits(by: rewardAmount)
+                let afterBalance = CreditManager.shared.credits
                 
                 // Log to credit history
                 CreditHistoryManager.shared.addRequest(.weeklyReward, cost: rewardAmount)
+                
+                // ✅ Log bonus to Firestore bonus_history
+                await FirestoreService.shared.logBonusCredit(profileID: userProfileID, amount: rewardAmount, reason: "WeeklyBillboard", previousBalance: previousBalance, afterBalance: afterBalance)
+                
                 // Update weeklyRewardTag on profile and sync
                 LocalStorageManager.shared.updateWeeklyRewardTag(previousWeekTag)
                 await ProfileSyncManager.shared.syncProfileIfNeeded()

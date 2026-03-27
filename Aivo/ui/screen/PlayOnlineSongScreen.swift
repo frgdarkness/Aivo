@@ -74,7 +74,12 @@ struct PlayOnlineSongScreen: View {
         .sheet(isPresented: $showPlaylist) { playlistView }
         .sheet(isPresented: $showExportSheet) {
             if let url = currentFileURL {
-                DocumentExporter(fileURL: url)
+                DocumentExporter(fileURL: url, onCompletion: {
+                    Logger.d("⭐️ [PlayOnline] Export success, triggering rating after 5s")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        AppRatingManager.shared.tryShowRateApp()
+                    }
+                })
             }
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
@@ -931,6 +936,12 @@ struct PlayOnlineSongScreen: View {
                     isDownloaded = true
                     downloadProgress = 1.0
                     Logger.i("✅ [PlayOnline] Downloaded successfully: \(song.title)")
+                    
+                    // Trigger rating after 5s (Case 4)
+                    Logger.d("⭐️ [PlayOnline] Download success, triggering rating after 5s")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                        AppRatingManager.shared.tryShowRateApp()
+                    }
                 }
             } catch {
                 Logger.e("❌ [PlayOnline] Download failed: \(error)")

@@ -16,6 +16,7 @@ struct RootView: View {
     @State private var currentScreen: AppScreen = .splash
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
     @ObservedObject private var ratingManager = AppRatingManager.shared
+    @State private var toast: SimpleToast? = nil
     
     enum AppScreen {
         case splash
@@ -115,7 +116,24 @@ struct RootView: View {
                     RateAppDialog(
                         isPresented: $ratingManager.showRatingDialog,
                         onRate: { stars in
-                            ratingManager.handleRateAction(stars: stars)
+                            if stars >= 4 {
+                                // Show encouraging toast
+                                toast = SimpleToast(
+                                message: "Thanks for the love! 💛 A quick App Store rating would help us a lot!",
+                                    icon: "star.fill",
+                                    duration: 5.0
+                                )
+                                
+                                // Dismiss custom dialog immediately so they see the app/toast
+                                ratingManager.dismissDialog()
+                                
+                                // Show real rate prompt after a delay to let them read the toast
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                                    ratingManager.handleRateAction(stars: stars)
+                                }
+                            } else {
+                                ratingManager.handleRateAction(stars: stars)
+                            }
                         },
                         onDismiss: {
                             ratingManager.dismissDialog()
@@ -125,6 +143,7 @@ struct RootView: View {
                 }
             }
         )
+        .simpleToast($toast)
     }
 }
 
@@ -249,6 +268,7 @@ extension SplashScreenView {
     private func startLoading() {
         testLoggerFuncSoLongAbcefgh12345678()
         Logger.d("🚀 Splash: Start initialization")
+        AppRatingManager.shared.logStatus()
         
         // Progress step 1
         withAnimation(.easeInOut(duration: 0.5)) {

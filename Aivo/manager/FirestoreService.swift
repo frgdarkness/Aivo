@@ -106,9 +106,9 @@ final class FirestoreService: ObservableObject {
             // 2. Claim new username
             transaction.setData(["profileID": profileID], forDocument: newDocRef)
             
-            // 3. Update user profile
+            // 3. Update user profile (setData with merge:true handles non-premium users without docs)
             let userDocRef = self.db.collection(self.usersCollection).document(profileID)
-            transaction.updateData(["userName": newUsername], forDocument: userDocRef)
+            transaction.setData(["userName": newUsername], forDocument: userDocRef, merge: true)
             
             // 4. Release old username
             if let old = normalizedOld, !old.isEmpty {
@@ -280,7 +280,54 @@ final class FirestoreService: ObservableObject {
     }
     
     
-    // MARK: - Purchase History
+    private let bonusHistoryCollection = "bonus_history"
+    
+    // MARK: - Purchase & Bonus History
+    
+    /// Log a bonus credit grant to the user's bonus_history sub-collection
+    func logBonusCredit(profileID: String, amount: Int, reason: String, previousBalance: Int? = nil, afterBalance: Int? = nil) async {
+        ensureFirebaseConfigured()
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyMMdd"
+        let dateString = dateFormatter.string(from: Date())
+        
+        // Format check: if reason is "Buy", use yyMMdd__BuyXXXXCredit
+        // Otherwise use yyMMdd__xxxxCredit__reason
+        let docID: String
+        if reason == "Buy" {
+            docID = "\(dateString)__Buy\(amount)Credit"
+        } else {
+            docID = "\(dateString)__\(amount)Credit__\(reason)"
+        }
+        Logger.d("🔥 Firestore: Logging bonus credit \(docID) for user \(profileID)")
+        
+        let bonusRef = db.collection(usersCollection)
+            .document(profileID)
+            .collection(bonusHistoryCollection)
+            .document(docID)
+            
+        var data: [String: Any] = [
+            "amount": Int64(amount),
+            "reason": reason,
+            "timestamp": FieldValue.serverTimestamp(),
+            "date": dateString
+        ]
+        
+        if let previous = previousBalance {
+            data["previousBalance"] = Int64(previous)
+        }
+        if let after = afterBalance {
+            data["afterBalance"] = Int64(after)
+        }
+        
+        do {
+            try await bonusRef.setData(data)
+            Logger.d("✅ Firestore: Bonus credit logged successfully at \(bonusRef.path)")
+        } catch {
+            Logger.e("❌ Firestore: Failed to log bonus credit: \(error)")
+        }
+    }
     
     /// Log a purchase to the user's sub-collection
     func logPurchase(profileID: String, purchase: PurchaseConsumable) async throws {
