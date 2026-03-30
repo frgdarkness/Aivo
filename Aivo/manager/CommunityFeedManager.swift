@@ -49,10 +49,19 @@ final class CommunityFeedManager {
         let ageMinutes = Int(Date().timeIntervalSince(updatedDate) / 60)
         Logger.d("📡 [CommunityFeed] RTDB loaded: \(hottest.count) hot, \(newest.count) new (week: \(weekTag), age: \(ageMinutes)min)")
         
-        // If RTDB data is too old (> 2 hours) or empty, fallback to Firestore
+        // If RTDB is empty, fallback to Firestore first
         if hottest.isEmpty && newest.isEmpty {
             Logger.d("📡 [CommunityFeed] RTDB empty, falling back to Firestore")
             return try await fallbackToFirestore()
+        }
+        
+        // If hottest is still empty (new week just started), fetch from history
+        if hottest.isEmpty {
+            Logger.d("📡 [CommunityFeed] Hottest list empty, fetching from leaderboard history")
+            if let latestHottest = try? await FirestoreService.shared.fetchLatestWeeklyBoard() {
+                hottest = latestHottest
+                Logger.d("📡 [CommunityFeed] Loaded \(hottest.count) hot songs from leaderboard history")
+            }
         }
         
         return (hottest, newest)
@@ -61,8 +70,15 @@ final class CommunityFeedManager {
     /// Fallback to direct Firestore queries if RTDB is empty/unavailable
     private func fallbackToFirestore() async throws -> (hottest: [SunoData], newest: [SunoData]) {
         Logger.d("📡 [CommunityFeed] Falling back to direct Firestore queries")
-        let hottest = try await FirestoreService.shared.fetchHottestSongs(limit: 10)
+        var hottest = try await FirestoreService.shared.fetchHottestSongs(limit: 10)
         let newest = try await FirestoreService.shared.fetchNewSongs(limit: 50)
+        
+        // If hottest for current week is empty, try to get from history immediately
+        if hottest.isEmpty {
+            Logger.d("📡 [CommunityFeed] No hottest songs for current week in Firestore, checking history")
+            hottest = (try? await FirestoreService.shared.fetchLatestWeeklyBoard()) ?? []
+        }
+        
         return (hottest, newest)
     }
     

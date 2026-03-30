@@ -83,7 +83,7 @@ struct ExploreTabViewNew: View {
                 if !communityHottestSongs.isEmpty {
                     CommunityHottestSection(
                         songs: communityHottestSongs,
-                        onTitleTap: { showBillboardCongrats = true },
+                        onTitleTap: { showBillboardIntro = true },
                         onPlay: { song in
                             if let index = communityHottestSongs.firstIndex(where: { $0.id == song.id }) {
                                 selectedSongForPlayback = SongPlaybackItem(songs: communityHottestSongs, initialIndex: index)
@@ -185,13 +185,15 @@ struct ExploreTabViewNew: View {
             let expirationTime: TimeInterval = 12 * 60 * 60 // 12 hours
             let cacheAge = Date().timeIntervalSince(cache.lastFetch)
             
-            if cacheAge < expirationTime {
+            // Only use cache if it has data or is still fresh. 
+            // BUT: if hottest is empty, we MUST fetch to get history fallback.
+            if cacheAge < expirationTime && !cache.hottest.isEmpty {
                 self.communityHottestSongs = cache.hottest
                 self.communityNewestSongs = cache.newest
                 Logger.d("📦 [Explore] Loaded community songs from cache (Age: \(Int(cacheAge/3600))h)")
                 return
             }
-            Logger.d("📦 [Explore] Cache expired (Age: \(Int(cacheAge/3600))h), fetching fresh data")
+            Logger.d("📦 [Explore] Cache bypass/expired (Hot Empty: \(cache.hottest.isEmpty), Age: \(Int(cacheAge/3600))h), fetching fresh data")
         }
         
         isFetchingCommunity = true
@@ -1083,7 +1085,7 @@ struct CommunityHottestSection: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Button(action: {
-                    //onTitleTap?()
+                    onTitleTap?()
                 }) {
                     HStack(spacing: iPadScaleSmall(8)) {
                         Text("Weekly Billboard")

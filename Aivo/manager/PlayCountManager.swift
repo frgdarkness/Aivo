@@ -35,6 +35,12 @@ final class PlayCountManager {
     /// Start tracking a song play. After minimum time threshold, count will be recorded.
     /// Call this when a song starts playing.
     func startTracking(songID: String, songName: String = "") {
+        // Prevent tracking local files (don't clutter global DB)
+        if songID.hasPrefix("local_") {
+            Logger.d("📊 [PlayCountManager] Skipping tracking for local song: \(songName)")
+            return
+        }
+        
         // Stop previous tracking
         stopTracking()
         

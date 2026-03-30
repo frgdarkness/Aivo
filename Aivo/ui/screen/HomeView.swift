@@ -185,7 +185,15 @@ struct HomeView: View {
                  showFullPlayer = true
              }
         }
+        .overlay {
+            // 🎁 Daily Gift Popup
+            DailyGiftPopupOverlay(isPresented: $showDailyGift)
+                .zIndex(3000)
+        }
     }
+    
+    @State private var showDailyGift = false
+    @StateObject private var dailyGiftManager = DailyGiftManager.shared
     
     // MARK: - Header View
     private var headerView: some View {
@@ -194,9 +202,22 @@ struct HomeView: View {
                 Text(backgroundManager.isGenerating ? "AIVO" : "AIVO Music")
                     .font(.system(size: iPadScale(24), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
-                    .animation(nil, value: backgroundManager.isGenerating) // Disable animation for text change
+                    .animation(nil, value: backgroundManager.isGenerating)
+                    .onTapGesture {
+                        #if DEBUG
+                        if weeklyRewardManager.pendingReward == nil {
+                            // Set a mock reward for testing if none is pending
+                            weeklyRewardManager.pendingReward = WeeklyRewardManager.WeeklyRewardInfo(
+                                rank: 1,
+                                song: SunoData.mock,
+                                rewardAmount: 1000,
+                                weekTag: "2024-w01"
+                            )
+                        }
+                        showWeeklyRewardDialog = true
+                        #endif
+                    }
                 
-                // Generating Status Indicator
                 if backgroundManager.isGenerating {
                     ProgressView()
                         .scaleEffect(0.8)
@@ -204,9 +225,25 @@ struct HomeView: View {
                         .transition(.opacity)
                 }
             }
+            .contentShape(Rectangle())
             
             Spacer()
-            //SubscriptionManager.shared.isPremium
+            
+            // 🎁 Daily Gift Button
+            Button(action: { 
+                showDailyGift = true 
+            }) {
+                let canClaim = dailyGiftManager.canClaimToday()
+                Image("icon_gift_yes")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: iPadScale(36), height: iPadScale(36))
+                    //.opacity(canClaim ? 1.0 : 0.45)
+                    //.brightness(canClaim ? 0.0 : -0.2)
+                    //.blur(radius: canClaim ? 0 : 0.8)
+            }
+            .buttonStyle(.plain)
+            
             // VIP Button
             Button(action: { showSubscription = true }) {
                 Image(systemName: "crown.fill")

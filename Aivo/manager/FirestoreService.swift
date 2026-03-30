@@ -182,7 +182,6 @@ final class FirestoreService: ObservableObject {
             if let error = error {
                 Logger.e("❌ Firestore: Failed to increment playCount for \(songID): \(error)")
             } else {
-                Logger.d("✅ Firestore: playCount incremented for \(songID)")
             }
         }
     }
@@ -193,6 +192,7 @@ final class FirestoreService: ObservableObject {
         let targetWeek = weekTag ?? DateUtils.getCurrentWeekTag()
         Logger.d("🔥 Firestore: Fetching hottest songs for \(targetWeek)")
         
+        // 1. Try to fetch songs for the current week specifically
         let query = db.collection(songsCollection)
             .whereField("isPublic", isEqualTo: true)
             .whereField("weekTag", isEqualTo: targetWeek)
@@ -200,19 +200,28 @@ final class FirestoreService: ObservableObject {
             .limit(to: limit)
             
         let snapshot = try await query.getDocuments()
-        Logger.d("🔥 Firestore: Hottest query returned \(snapshot.documents.count) docs")
+        var results = snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
         
-        // Debug check
-        // let allDocsS = try? await db.collection(songsCollection).limit(to: 5).getDocuments()
-        // if let docs = allDocsS?.documents {
-        //     Logger.d("🔥 Firestore: Found \(docs.count) sample docs in total")
-        //     for doc in docs {
-        //         let d = doc.data()
-        //         Logger.d("📝 Sample Song \(doc.documentID): isPublic=\(d["isPublic"] ?? "nil"), weekTag=\(d["weekTag"] ?? "nil")")
-        //     }
-        // }
-
-        return snapshot.documents.compactMap { try? mapToSunoData(data: $0.data()) }
+        // 2. If no songs found for the requested week (and it is the current week), 
+        // fallback to the latest available ranking from the leaderboards collection.
+        if results.isEmpty && weekTag == nil {
+            Logger.d("🔥 Firestore: No hottest songs for current week, falling back to leaderboard history")
+            if let history = try? await fetchWeeklyBoardHistory(),
+               let latest = history.first,
+               let board = try? mapToWeeklyBoard(data: latest) {
+                results = board.songs
+                Logger.d("🔥 Firestore: Loaded \(results.count) songs from latest board: \(board.id)")
+            }
+        }
+        
+        Logger.d("🔥 Firestore: Hottest results: \(results.count) songs")
+        return results
+    }
+    
+    /// Map a dictionary to a WeeklyBoard object
+    func mapToWeeklyBoard(data: [String: Any]) throws -> WeeklyBoard {
+        let jsonData = try JSONSerialization.data(withJSONObject: data)
+        return try JSONDecoder().decode(WeeklyBoard.self, from: jsonData)
     }
     
     /// Fetch newest shared songs
@@ -262,6 +271,15 @@ final class FirestoreService: ObservableObject {
         }
         data["id"] = doc.documentID
         return convertTimestamps(data)
+    }
+    
+    /// Fetch the latest available weekly board songs
+    func fetchLatestWeeklyBoard() async throws -> [SunoData] {
+        Logger.d("🔥 Firestore: Fetching latest weekly board songs")
+        let history = try await fetchWeeklyBoardHistory()
+        guard let latest = history.first else { return [] }
+        let board = try mapToWeeklyBoard(data: latest)
+        return board.songs
     }
     
     /// Recursively convert Firestore Timestamps to Int64 for JSON compatibility

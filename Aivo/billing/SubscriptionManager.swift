@@ -16,6 +16,25 @@ final class SubscriptionManager: ObservableObject {
     
     // MARK: - Published states
     @Published private(set) var isPremium: Bool = false
+    
+    /// Internal store for App Store status
+    private var isStorePremium: Bool = false
+    
+    /// Returns true if user has active subscription OR active temporary trial
+    var isUserPremium: Bool {
+        if isStorePremium { return true }
+        if let trialExpiry = UserDefaults.standard.object(forKey: "DailyGiftTrialExpiryDate") as? Date {
+            return Date() < trialExpiry
+        }
+        return false
+    }
+    
+    func refreshTrialStatus() {
+        // Recalculate combined state and notify observers
+        self.isPremium = isUserPremium
+        objectWillChange.send()
+    }
+    
     @Published private(set) var products: [Product] = []
     @Published private(set) var currentSubscription: ActiveSubscription?
     @Published var isLoading: Bool = false
@@ -308,7 +327,8 @@ final class SubscriptionManager: ObservableObject {
                 sub.displayPrice = prod.displayPrice
             }
             currentSubscription = sub
-            isPremium = true
+            isStorePremium = true
+            refreshTrialStatus() // Cập nhật isPremium based on store + trial
             Logger.i("refreshStatus: ACTIVE product=\(sub.productID), expires=\(sub.expiresDate?.description ?? "nil")")
 
             // Cập nhật CreditManager
@@ -335,7 +355,8 @@ final class SubscriptionManager: ObservableObject {
             }
         } else {
             currentSubscription = nil
-            isPremium = false
+            isStorePremium = false
+            refreshTrialStatus() // Cập nhật isPremium
             Logger.i("refreshStatus: NO ACTIVE SUBSCRIPTION")
             CreditManager.shared.updatePremiumStatus(false)
             

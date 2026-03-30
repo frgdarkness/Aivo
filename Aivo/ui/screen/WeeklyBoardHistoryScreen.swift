@@ -117,7 +117,7 @@ struct WeeklyBoardHistoryScreen: View {
     private func loadBoardHistory() {
         // Check cache
         if let cached = LocalStorageManager.shared.getWeeklyBoardHistory() {
-            self.boards = cached.compactMap { try? mapToWeeklyBoard(data: $0) }
+            self.boards = cached.compactMap { try? FirestoreService.shared.mapToWeeklyBoard(data: $0) }
             Logger.d("📦 WeeklyBoardHistory: Loaded from cache (\(boards.count) items)")
             
             // Still fetch fresh data in background
@@ -138,7 +138,7 @@ struct WeeklyBoardHistoryScreen: View {
     private func fetchFreshHistory() async {
         do {
             let historyData = try await FirestoreService.shared.fetchWeeklyBoardHistory()
-            let fetchedBoards = historyData.compactMap { try? mapToWeeklyBoard(data: $0) }
+            let fetchedBoards = historyData.compactMap { try? FirestoreService.shared.mapToWeeklyBoard(data: $0) }
             
             await MainActor.run {
                 self.boards = fetchedBoards
@@ -151,10 +151,5 @@ struct WeeklyBoardHistoryScreen: View {
                 Logger.e("❌ Failed to fetch weekly board history: \(error)")
             }
         }
-    }
-    
-    private func mapToWeeklyBoard(data: [String: Any]) throws -> WeeklyBoard {
-        let jsonData = try JSONSerialization.data(withJSONObject: data)
-        return try JSONDecoder().decode(WeeklyBoard.self, from: jsonData)
     }
 }

@@ -95,6 +95,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, AppsFlyerLibDelegate {
             }
         }
         
+        // 🎁 Daily Gift Notification
+        DailyGiftNotificationManager.shared.requestAndScheduleReminders()
+        
         return true
     }
     

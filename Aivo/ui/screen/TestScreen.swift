@@ -35,6 +35,9 @@ struct TestScreen: View {
                         // Set Credit Section
                         setCreditSection
                         
+                        // Daily Gift Debug Section
+                        dailyGiftDebugSection
+                        
                         // Clear Data Buttons
                         clearDataSection
                     }
@@ -180,6 +183,99 @@ struct TestScreen: View {
                     .disabled(creditAmount.isEmpty || Int(creditAmount) == nil)
                     .opacity(creditAmount.isEmpty || Int(creditAmount) == nil ? 0.5 : 1.0)
                 }
+            }
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.white.opacity(0.08))
+        )
+    }
+    
+    // MARK: - Daily Gift Debug Section
+    private var dailyGiftDebugSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("🎁 Daily Gift Debug")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.white)
+            
+            Text("Current Streak: Day \(DailyGiftManager.shared.currentStreak) | Can Claim: \(DailyGiftManager.shared.canClaimToday() ? "✅" : "❌")")
+                .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.7))
+            
+            // Set Streak Buttons (1-7)
+            Text("Set Streak Day:")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.white.opacity(0.8))
+            
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 4), spacing: 8) {
+                ForEach(1...7, id: \.self) { day in
+                    Button(action: {
+                        DailyGiftManager.shared.debugSetStreak(day)
+                        showToast("Streak set to Day \(day) ✅")
+                    }) {
+                        Text("Day \(day)")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 40)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(DailyGiftManager.shared.currentStreak == day ? AivoTheme.Primary.orange : Color.white.opacity(0.15))
+                            )
+                    }
+                }
+            }
+            
+            // Reset Buttons
+            HStack(spacing: 12) {
+                Button(action: {
+                    DailyGiftManager.shared.debugResetToday()
+                    showToast("Daily gift reset for today ✅")
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14))
+                        Text("Reset Today")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.orange.opacity(0.7)))
+                }
+                
+                Button(action: {
+                    DailyGiftManager.shared.debugResetCreditMissions()
+                    showToast("Credit missions reset ✅")
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(.system(size: 14))
+                        Text("Reset Missions")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.cyan.opacity(0.7)))
+                }
+            }
+            
+            Button(action: {
+                DailyGiftManager.shared.debugClearTrial()
+                showToast("Premium Trial cleared ✅")
+            }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "crown.slash.fill")
+                        .font(.system(size: 14))
+                    Text("Clear Premium Trial")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.red.opacity(0.6)))
             }
         }
         .padding(20)
