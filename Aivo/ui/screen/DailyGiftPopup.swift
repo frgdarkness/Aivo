@@ -272,6 +272,11 @@ struct DailyGiftPopup: View {
     
     // MARK: - Actions
     private func handleClaim() {
+        // Log daily checkin event
+        let dayToLog = manager.todayDayNumber
+        let eventName = "event_daily_checkin_day\(dayToLog)"
+        FirebaseLogger.shared.logEvent(eventName)
+        
         if subscriptionManager.isUserPremium {
             manager.claim()
             showClaimToast()
@@ -563,6 +568,7 @@ struct BonusMissionsDialog: View {
         guard userDefaults.canWatchVideoForCredit(maxPerDay: maxVideoPerDay) else { return }
         AdManager.shared.showRewardAd { success in
             if success {
+                FirebaseLogger.shared.logEvent(FirebaseLogger.EVENT_WATCH_VIDEO_TO_EARN_CREDIT)
                 userDefaults.markVideoCreditUsed()
                 Task { await CreditManager.shared.increaseCredits(by: videoRewardAmount) }
                 toast = SimpleToast(message: "+\(videoRewardAmount) credits rewarded!", icon: "checkmark.circle.fill", duration: 2.0)
@@ -572,6 +578,7 @@ struct BonusMissionsDialog: View {
     
     private func handleRateApp() {
         guard !userDefaults.hasRatedForCredit else { return }
+        FirebaseLogger.shared.logEvent(FirebaseLogger.EVENT_RATE_US_TO_EARN_CREDIT)
         userDefaults.hasRatedForCredit = true
         Task { await CreditManager.shared.increaseCredits(by: rateRewardAmount) }
         toast = SimpleToast(message: "+\(rateRewardAmount) credits rewarded!", icon: "star.fill", duration: 2.0)
@@ -585,6 +592,7 @@ struct BonusMissionsDialog: View {
         let activityVC = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
         activityVC.completionWithItemsHandler = { _, completed, _, _ in
             if completed {
+                FirebaseLogger.shared.logEvent(FirebaseLogger.EVENT_SHARE_TO_EARN_CREDIT)
                 manager.claimShareReward()
                 toast = SimpleToast(message: "+\(shareRewardAmount) credits rewarded!", icon: "square.and.arrow.up.fill", duration: 2.0)
             }

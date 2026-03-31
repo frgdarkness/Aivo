@@ -220,12 +220,28 @@ extension SunoData {
 }
 
 // MARK: - Enums
+// MARK: - Enums
 enum SunoModel: String, Codable, CaseIterable {
-    case V3_5 = "V3_5"
+    case V5 = "V5"
+    case V5_5 = "V3_5"
     case V4 = "V4"
     case V4_5 = "V4_5"
     case V4_5PLUS = "V4_5PLUS"
-    case V5 = "V5"
+    
+    var displayName: String {
+        switch self {
+        case .V5:
+            return "ULTRA_V5"
+        case .V5_5:
+            return "ULTRA_V5.5"
+        case .V4:
+            return "AIVO_V4"
+        case .V4_5:
+            return "AIVO_V4.5"
+        case .V4_5PLUS:
+            return "AIVO_V4.5+"
+        }
+    }
 }
 
 enum VocalGender: String, Codable {

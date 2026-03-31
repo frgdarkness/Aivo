@@ -190,6 +190,7 @@ struct GetFreeCreditDialog: View {
         guard userDefaults.canWatchVideoForCredit(maxPerDay: maxVideoPerDay) else { return }
         AdManager.shared.showRewardAd { success in
             if success {
+                FirebaseLogger.shared.logEvent(FirebaseLogger.EVENT_WATCH_VIDEO_TO_EARN_CREDIT)
                 userDefaults.markVideoCreditUsed()
                 Task {
                     await creditManager.increaseCredits(by: videoRewardAmount)
@@ -201,6 +202,7 @@ struct GetFreeCreditDialog: View {
     
     private func handleRateApp() {
         guard !userDefaults.hasRatedForCredit else { return }
+        FirebaseLogger.shared.logEvent(FirebaseLogger.EVENT_RATE_US_TO_EARN_CREDIT)
         userDefaults.hasRatedForCredit = true
         
         // Update UI immediately

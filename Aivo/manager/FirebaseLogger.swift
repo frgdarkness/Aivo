@@ -250,4 +250,17 @@ extension FirebaseLogger {
     static let EVENT_ERROR = "event_error"
     static let EVENT_NETWORK_ERROR = "event_network_error"
     static let EVENT_CREDIT_INSUFFICIENT = "event_credit_insufficient"
+    
+    // Gamification Events
+    static let EVENT_DAILY_CHECKIN_DAY1 = "event_daily_checkin_day1"
+    static let EVENT_DAILY_CHECKIN_DAY2 = "event_daily_checkin_day2"
+    static let EVENT_DAILY_CHECKIN_DAY3 = "event_daily_checkin_day3"
+    static let EVENT_DAILY_CHECKIN_DAY4 = "event_daily_checkin_day4"
+    static let EVENT_DAILY_CHECKIN_DAY5 = "event_daily_checkin_day5"
+    static let EVENT_DAILY_CHECKIN_DAY6 = "event_daily_checkin_day6"
+    static let EVENT_DAILY_CHECKIN_DAY7 = "event_daily_checkin_day7"
+    
+    static let EVENT_WATCH_VIDEO_TO_EARN_CREDIT = "event_watch_video_to_earn_credit"
+    static let EVENT_RATE_US_TO_EARN_CREDIT = "event_rate_us_to_earn_credit"
+    static let EVENT_SHARE_TO_EARN_CREDIT = "event_share_to_earn_credit"
 }

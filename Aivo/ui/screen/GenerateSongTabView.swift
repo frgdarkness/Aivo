@@ -913,7 +913,7 @@ struct GenerateSongTabView: View {
                         Button(action: {
                             selectedModel = model
                         }) {
-                            Text(model.rawValue)
+                            Text(model.displayName)
                                 .font(.system(size: iPadScale(14), weight: .medium))
                                 .foregroundColor(selectedModel == model ? .black : .white)
                                 .frame(minWidth: iPadScale(50))
