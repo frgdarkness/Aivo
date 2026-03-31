@@ -11,16 +11,17 @@ struct DailyGiftPopup: View {
     
     @State private var selectedDay: Int = 0
     @State private var showBonusMissions = false
+    @State private var toast: SimpleToast?
     
     /// Check if any bonus mission is still available
     private var hasAvailableMissions: Bool {
-        userDefaults.canWatchVideoForCredit(maxPerDay: 3)
+        userDefaults.canWatchVideoForCredit(maxPerDay: 5)
         || !userDefaults.hasRatedForCredit
         || !manager.dailyShareClaimed
     }
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: iPadScaleSmall(24)) {
             // Header
             headerSection
             
@@ -39,68 +40,66 @@ struct DailyGiftPopup: View {
         .padding(24)
         .background(
             ZStack {
-                Color.black.opacity(0.95)
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.black.opacity(0.95))
+                
                 RoundedRectangle(cornerRadius: 24)
                     .stroke(
                         LinearGradient(
-                            colors: [
-                                AivoTheme.Primary.orange,
-                                .orange.opacity(0.3),
-                                .orange,
-                                .white.opacity(0.5),
-                                AivoTheme.Primary.orange
-                            ],
+                            colors: [.orange, .orange.opacity(0.5), .orange],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: 2.5
+                        lineWidth: 4
                     )
-                    .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 10, x: 0, y: 0)
-                    .shadow(color: AivoTheme.Primary.orange.opacity(0.3), radius: 20, x: 0, y: 0)
             }
         )
-        .cornerRadius(24)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
         .padding(.horizontal, 20)
+        .shadow(color: .orange.opacity(0.25), radius: 15)
+        .shadow(color: .black.opacity(0.5), radius: 40)
         .onAppear {
             selectedDay = manager.todayDayNumber
         }
         .fullScreenCover(isPresented: $showBonusMissions) {
             BonusMissionsDialog(onClose: { showBonusMissions = false })
         }
+        .simpleToast($toast)
     }
     
     // MARK: - Header
     private var headerSection: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Spacer()
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.white.opacity(0.8))
-                        .padding(8)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Circle())
+        VStack(spacing: iPadScaleSmall(12)) {
+            // Title centered + Close button at trailing (same row)
+            ZStack {
+                Text("Daily Gift Streak")
+                    .font(.system(size: iPadScale(26), weight: .black))
+                    .foregroundColor(.white)
+                
+                HStack {
+                    Spacer()
+                    Button(action: onClose) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: iPadScale(18), weight: .bold))
+                            .foregroundColor(.white.opacity(0.8))
+                            .padding(iPadScaleSmall(8))
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Circle())
+                    }
+                    .padding(.trailing, iPadScaleSmall(-5))
                 }
             }
             
-            VStack(spacing: 8) {
-                Text("Daily Gift Streak")
-                    .font(.system(size: 28, weight: .black))
-                    .foregroundColor(.white)
-                
-                Text("Claim rewards every day to maintain your streak!")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.6))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 12)
-            }
-            .padding(.bottom, 8) // More space between Text and Icon
+            Text("Claim rewards every day to maintain your streak!")
+                .font(.system(size: iPadScale(14)))
+                .foregroundColor(.white.opacity(0.6))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, iPadScaleSmall(12))
             
             Image("icon_gift_yes")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 88, height: 88) // 10% increase from 80
+                .frame(width: iPadScale(94), height: iPadScale(94))
                 .shadow(color: AivoTheme.Primary.orange.opacity(0.8), radius: 15, x: 0, y: 0)
                 .shadow(color: .yellow.opacity(0.6), radius: 25, x: 0, y: 0)
                 .shadow(color: .orange.opacity(0.4), radius: 40, x: 0, y: 0)
@@ -109,8 +108,8 @@ struct DailyGiftPopup: View {
     
     // MARK: - 7-Day Grid
     private var dayGridSection: some View {
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
-        return LazyVGrid(columns: columns, spacing: 10) {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: iPadScaleSmall(10)), count: 4)
+        return LazyVGrid(columns: columns, spacing: iPadScaleSmall(12)) {
             ForEach(1...7, id: \.self) { day in
                 let reward = manager.dayRewards[day - 1]
                 let isToday = day == manager.todayDayNumber
@@ -150,13 +149,13 @@ struct DailyGiftPopup: View {
                         .foregroundColor(isToday ? AivoTheme.Primary.orange : .white.opacity(0.35))
                     
                     Text(reward.description)
-                        .font(.system(size: 14, weight: .medium))
+                        .font(.system(size: iPadScale(14), weight: .medium))
                         .foregroundColor(isToday ? .white.opacity(0.85) : .white.opacity(0.35))
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(10))
                 .background(Color.white.opacity(0.06))
-                .cornerRadius(10)
+                .cornerRadius(iPadScale(10))
             }
         }
     }
@@ -171,6 +170,11 @@ struct DailyGiftPopup: View {
                             .resizable()
                             .scaledToFit()
                             .frame(width: 24, height: 24)
+                    } else if manager.canClaimToday() && subscriptionManager.isUserPremium {
+                        Image("icon_claim")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
                     } else if !manager.canClaimToday() {
                         Image("icon_next_day")
                             .resizable()
@@ -179,24 +183,24 @@ struct DailyGiftPopup: View {
                     }
                     
                     Text(claimButtonText)
-                        .font(.system(size: 17, weight: .bold))
+                        .font(.system(size: iPadScale(17), weight: .bold))
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: iPadScale(56))
                 .background(
                     manager.canClaimToday()
                     ? LinearGradient(colors: [AivoTheme.Primary.orange, .red], startPoint: .leading, endPoint: .trailing)
                     : LinearGradient(colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.2)], startPoint: .leading, endPoint: .trailing)
                 )
-                .cornerRadius(14)
+                .cornerRadius(iPadScale(14))
                 .shadow(color: manager.canClaimToday() ? AivoTheme.Primary.orange.opacity(0.3) : .clear, radius: 8, y: 4)
             }
             .disabled(!manager.canClaimToday())
             
             if !subscriptionManager.isUserPremium {
                 Text("🔥 Premium users claim without ads!")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: iPadScale(12), weight: .medium))
                     .foregroundColor(AivoTheme.Primary.orange.opacity(0.8))
             }
         }
@@ -206,7 +210,7 @@ struct DailyGiftPopup: View {
         if !manager.canClaimToday() {
             return "Come Back Tomorrow"
         }
-        return subscriptionManager.isUserPremium ? "Claim Reward 🎁" : "Watch Ad to Claim"
+        return subscriptionManager.isUserPremium ? "Claim Reward" : "Watch Ad to Claim"
     }
     
     // MARK: - Bonus Missions Button (with notification badge)
@@ -216,7 +220,7 @@ struct DailyGiftPopup: View {
             HStack {
                 Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
                 Text("BONUS")
-                    .font(.system(size: 10, weight: .heavy))
+                    .font(.system(size: iPadScale(11), weight: .heavy))
                     .foregroundColor(.white.opacity(0.3))
                 Rectangle().fill(Color.white.opacity(0.1)).frame(height: 1)
             }
@@ -227,25 +231,25 @@ struct DailyGiftPopup: View {
                     Image("icon_schedule")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 20, height: 20)
+                        .frame(width: iPadScale(20), height: iPadScale(20))
                         .foregroundColor(.white)
                         .colorMultiply(.white)
                     
                     Text("Get More Free Credits")
-                        .font(.system(size: 17, weight: .bold)) // Matched with Claim button
+                        .font(.system(size: iPadScale(17), weight: .bold))
                         .foregroundColor(.white)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .frame(height: 54) // Overall height matched with Claim button
+                .padding(.horizontal, iPadScaleSmall(16))
+                .padding(.vertical, iPadScaleSmall(14))
+                .frame(height: iPadScale(56))
                 .background(
-                    LinearGradient(colors: [Color.white.opacity(0.08), Color.white.opacity(0.04)], startPoint: .leading, endPoint: .trailing)
+                    Color.white.opacity(0.06)
                 )
-                .cornerRadius(14)
+                .cornerRadius(iPadScale(14))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: iPadScale(14))
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1)
                 )
             }
             .buttonStyle(.plain)
@@ -260,7 +264,7 @@ struct DailyGiftPopup: View {
                             .font(.system(size: 11, weight: .bold))
                             .foregroundColor(.white)
                     }
-                    .offset(x: 4, y: -8) // Positioned where the chevron was
+                    .offset(x: 4, y: -8)
                 }
             }
         }
@@ -270,11 +274,26 @@ struct DailyGiftPopup: View {
     private func handleClaim() {
         if subscriptionManager.isUserPremium {
             manager.claim()
+            showClaimToast()
         } else {
             AdManager.shared.showRewardAd { success in
-                if success { manager.claim() }
+                if success {
+                    manager.claim()
+                    showClaimToast()
+                }
             }
         }
+    }
+    
+    private func showClaimToast() {
+        let day = manager.currentStreak
+        let reward = manager.dayRewards[day - 1]
+        var msg = "+\(reward.credits) credits claimed!"
+        if reward.trialHours > 0 {
+            let label = reward.trialHours >= 24 ? "\(reward.trialHours/24)d" : "\(reward.trialHours)h"
+            msg += " + \(label) Premium"
+        }
+        toast = SimpleToast(message: msg, icon: "gift.fill", duration: 2.5)
     }
 }
 
@@ -308,59 +327,59 @@ struct DaySlotView: View {
     }
     
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: iPadScaleSmall(6)) {
             Text("Day \(day)")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: iPadScale(13), weight: .bold))
                 .foregroundColor(isToday ? AivoTheme.Primary.orange : .white.opacity(0.5))
             
             ZStack {
-                RoundedRectangle(cornerRadius: 12)
+                RoundedRectangle(cornerRadius: iPadScale(12))
                     .fill(bgColor)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: iPadScale(12))
                             .stroke(borderColor, lineWidth: isToday ? 2 : 1)
                     )
                 
-                VStack(spacing: 2) {
+                VStack(spacing: iPadScaleSmall(2)) {
                     if isClaimed {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.green)
-                            .font(.system(size: 22))
+                            .font(.system(size: iPadScale(22)))
                     } else if hasVIP {
                         // Line 1: credits + coin
                         HStack(spacing: 3) {
                             Text("+\(reward.credits)")
-                                .font(.system(size: 12, weight: .black))
+                                .font(.system(size: iPadScale(13), weight: .black))
                                 .foregroundColor(.white)
                             Image("icon_coin")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 14, height: 14)
+                                .frame(width: iPadScale(14), height: iPadScale(14))
                         }
                         // Line 2: VIP + crown
                         HStack(spacing: 3) {
                             Text(reward.trialHours >= 24 ? "\(reward.trialHours/24)d VIP" : "\(reward.trialHours)h VIP")
-                                .font(.system(size: 10, weight: .heavy))
+                                .font(.system(size: iPadScale(10.5), weight: .heavy))
                                 .foregroundColor(.yellow)
                             Image(systemName: "crown.fill")
                                 .foregroundColor(.yellow)
-                                .font(.system(size: 10))
+                                .font(.system(size: iPadScale(10.5)))
                         }
                     } else {
                         HStack(spacing: 3) {
                             Text("+\(reward.credits)")
-                                .font(.system(size: 14, weight: .black))
+                                .font(.system(size: iPadScale(15), weight: .black))
                                 .foregroundColor(.white)
                             Image("icon_coin")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 16, height: 16)
+                                .frame(width: iPadScale(18), height: iPadScale(18))
                         }
                     }
                 }
                 .padding(.horizontal, 4)
             }
-            .frame(height: 60)
+            .frame(height: iPadScale(70))
         }
     }
 }
@@ -373,10 +392,12 @@ struct BonusMissionsDialog: View {
     
     let onClose: () -> Void
     
-    private let maxVideoPerDay = 3
+    private let maxVideoPerDay = 5
     private let videoRewardAmount = 5
     private let rateRewardAmount = 10
-    private let shareRewardAmount = 20
+    private let shareRewardAmount = 10
+    
+    @State private var toast: SimpleToast?
     
     var body: some View {
         ZStack {
@@ -464,6 +485,7 @@ struct BonusMissionsDialog: View {
                 }
             }
         }
+        .simpleToast($toast)
     }
     
     // MARK: - Mission Row
@@ -543,6 +565,7 @@ struct BonusMissionsDialog: View {
             if success {
                 userDefaults.markVideoCreditUsed()
                 Task { await CreditManager.shared.increaseCredits(by: videoRewardAmount) }
+                toast = SimpleToast(message: "+\(videoRewardAmount) credits rewarded!", icon: "checkmark.circle.fill", duration: 2.0)
             }
         }
     }
@@ -551,6 +574,7 @@ struct BonusMissionsDialog: View {
         guard !userDefaults.hasRatedForCredit else { return }
         userDefaults.hasRatedForCredit = true
         Task { await CreditManager.shared.increaseCredits(by: rateRewardAmount) }
+        toast = SimpleToast(message: "+\(rateRewardAmount) credits rewarded!", icon: "star.fill", duration: 2.0)
         if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
             SKStoreReviewController.requestReview(in: scene)
         }
@@ -560,7 +584,10 @@ struct BonusMissionsDialog: View {
         let shareText = "Check out Aivo - AI Music Creator! Create amazing songs with AI 🎵\nhttps://apps.apple.com/app/id6754759511"
         let activityVC = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
         activityVC.completionWithItemsHandler = { _, completed, _, _ in
-            if completed { manager.claimShareReward() }
+            if completed {
+                manager.claimShareReward()
+                toast = SimpleToast(message: "+\(shareRewardAmount) credits rewarded!", icon: "square.and.arrow.up.fill", duration: 2.0)
+            }
         }
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {

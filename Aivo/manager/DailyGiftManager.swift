@@ -27,7 +27,7 @@ class DailyGiftManager: ObservableObject {
         
         var description: String {
             if trialHours >= 24 {
-                return "Claim \(credits) credits and \(trialHours/24) day premium free"
+                return "Claim \(credits) credits and \(trialHours/24)d premium free"
             } else if trialHours > 0 {
                 return "Claim \(credits) credits and \(trialHours)h premium free"
             } else {
@@ -152,9 +152,9 @@ class DailyGiftManager: ObservableObject {
         UserDefaults.standard.set(Date(), forKey: lastShareDateKey)
         
         Task {
-            await CreditManager.shared.increaseCredits(by: 20)
+            await CreditManager.shared.increaseCredits(by: 10)
         }
-        Logger.d("🎁 [DailyGift] Share mission claimed! +20 credits")
+        Logger.d("🎁 [DailyGift] Share mission claimed! +10 credits")
     }
     
     // MARK: - Trial Premium

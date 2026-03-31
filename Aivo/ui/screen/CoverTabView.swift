@@ -39,6 +39,7 @@ struct CoverTabView: View {
     @State private var showBackgroundBusyAlert = false
     @State private var showPremiumFeatureDialog = false
     @State private var isFreeTryCover = false
+    @State private var showInsufficientCreditsDialog = false
     @ObservedObject private var profileManager = ProfileManager.shared
     
     enum SourceType { case song, youtube }
@@ -157,6 +158,24 @@ struct CoverTabView: View {
                 )
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
+            }
+        }
+        .overlay {
+            if showInsufficientCreditsDialog {
+                InsufficientCreditsDialog(
+                    creditsRequired: creditsRequired,
+                    creditsAvailable: creditManager.credits,
+                    featureType: .cover,
+                    onBuyCredits: {
+                        showInsufficientCreditsDialog = false
+                        showSubscriptionScreen = true
+                    },
+                    onDismiss: {
+                        showInsufficientCreditsDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showInsufficientCreditsDialog)
             }
         }
         .fullScreenCover(isPresented: $showModelSelectionScreen) {
@@ -557,7 +576,7 @@ struct CoverTabView: View {
         // Check credits before starting (skip for free trial)
         if !isFreeTryCover {
             guard creditManager.credits >= creditsRequired else {
-                showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a cover song.")
+                showInsufficientCreditsDialog = true
                 return
             }
         }

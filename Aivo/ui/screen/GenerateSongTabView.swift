@@ -42,6 +42,7 @@ struct GenerateSongTabView: View {
     @State private var getInspiredCount: Int = 0 // Track "Get Inspired" tap count for reward ad
     @State private var showPremiumFeatureDialog = false // Premium feature dialog
     @State private var isFreeTrySong = false // Whether current generation is a free trial
+    @State private var showInsufficientCreditsDialog = false // Insufficient credits dialog
     @State private var showSongNameRequiredAlert = false // Song name required for lyrics mode
     @ObservedObject private var profileManager = ProfileManager.shared
     @State private var showUsernameRequiredDialog = false // Dialog for default username users
@@ -214,6 +215,24 @@ struct GenerateSongTabView: View {
                 )
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: showPremiumFeatureDialog)
+            }
+        }
+        .overlay {
+            if showInsufficientCreditsDialog {
+                InsufficientCreditsDialog(
+                    creditsRequired: creditsRequired,
+                    creditsAvailable: creditManager.credits,
+                    featureType: .song,
+                    onBuyCredits: {
+                        showInsufficientCreditsDialog = false
+                        showSubscriptionScreen = true
+                    },
+                    onDismiss: {
+                        showInsufficientCreditsDialog = false
+                    }
+                )
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: showInsufficientCreditsDialog)
             }
         }
         .overlay {
@@ -1155,7 +1174,7 @@ struct GenerateSongTabView: View {
         // Check credits before starting (skip for free trial)
         if !isFreeTrySong {
             guard creditManager.credits >= creditsRequired else {
-                showToastMessage("Not enough credits! You need \(creditsRequired) credits to generate a song.")
+                showInsufficientCreditsDialog = true
                 return
             }
         }

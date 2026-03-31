@@ -10,11 +10,13 @@ struct HomeView: View {
     @State private var showSubscription = false
     @State private var showProfile = false
     @State private var showBuyCreditDialog = false
-    @State private var showFullPlayer = false
+    @State var showFullPlayer = false
     @StateObject private var weeklyRewardManager = WeeklyRewardManager.shared
     @State private var showWeeklyRewardDialog = false
-    
-    // Hardcoded SunoData for testing
+    @State private var showBillboardIntro = false
+    @State private var showDailyGift = false
+    @State private var cachedReward: WeeklyRewardManager.WeeklyRewardInfo?
+    @StateObject private var dailyGiftManager = DailyGiftManager.shared
     private let hardcodedSunoData: [SunoData] = [
 //        SunoData(
 //            id: "bed102bd-f445-4a14-b5d2-918f0e389d2c",
@@ -82,7 +84,7 @@ struct HomeView: View {
                                 //.padding(.bottom, 100) // Space for bottom navigation
                             
                         case .explore:
-                            ExploreTabViewNew()
+                            ExploreTabViewNew(showBillboardIntro: $showBillboardIntro)
                                 //.padding(.bottom, 100) // Space for bottom navigation
                             
                         case .cover:
@@ -144,19 +146,10 @@ struct HomeView: View {
         .ignoresSafeArea(.container, edges: .bottom)
         .animation(.easeInOut(duration: 0.3), value: showProfile)
         .buyCreditDialog(isPresented: $showBuyCreditDialog)
-        .overlay {
-            if showWeeklyRewardDialog, let reward = weeklyRewardManager.pendingReward {
-                BillboardCongratsDialog(
-                    isPresented: $showWeeklyRewardDialog,
-                    rank: reward.rank,
-                    song: reward.song,
-                    rewardAmount: reward.rewardAmount
-                )
-                .transition(.opacity)
-            }
-        }
         .onReceive(weeklyRewardManager.$pendingReward) { reward in
-            if reward != nil {
+            if let reward = reward {
+                // Cache the reward data for animation persistence
+                cachedReward = reward
                 // Delay slightly to let the Home screen appear first
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                     withAnimation {
@@ -167,7 +160,11 @@ struct HomeView: View {
         }
         .onChange(of: showWeeklyRewardDialog) { newValue in
             if !newValue {
-                weeklyRewardManager.dismissReward()
+                // Delay dismissReward so the closing animation can finish
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    weeklyRewardManager.dismissReward()
+                    cachedReward = nil
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchMainTab"))) { notification in
@@ -185,15 +182,55 @@ struct HomeView: View {
                  showFullPlayer = true
              }
         }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowDailyGiftPopup"))) { _ in
+            withAnimation {
+                showDailyGift = true
+            }
+        }
         .overlay {
             // 🎁 Daily Gift Popup
             DailyGiftPopupOverlay(isPresented: $showDailyGift)
                 .zIndex(3000)
+            
+            // 📊 Billboard Intro Dialog
+            ZStack {
+                if showBillboardIntro {
+                    Color.black.opacity(0.7)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showBillboardIntro = false }
+                        }
+                    
+                    BillboardIntroDialog(isPresented: $showBillboardIntro)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showBillboardIntro)
+            .zIndex(4000)
+            
+            // 🏆 Billboard Congrats Dialog
+            ZStack {
+                if showWeeklyRewardDialog, let reward = cachedReward {
+                    Color.black.opacity(0.7)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showWeeklyRewardDialog = false }
+                        }
+                    
+                    BillboardCongratsDialog(
+                        isPresented: $showWeeklyRewardDialog,
+                        rank: reward.rank,
+                        song: reward.song,
+                        rewardAmount: reward.rewardAmount
+                    )
+                    .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showWeeklyRewardDialog)
+            .zIndex(5000)
         }
     }
     
-    @State private var showDailyGift = false
-    @StateObject private var dailyGiftManager = DailyGiftManager.shared
     
     // MARK: - Header View
     private var headerView: some View {
@@ -205,16 +242,19 @@ struct HomeView: View {
                     .animation(nil, value: backgroundManager.isGenerating)
                     .onTapGesture {
                         #if DEBUG
+                        let mockReward = WeeklyRewardManager.WeeklyRewardInfo(
+                            rank: 1,
+                            song: SunoData.mock,
+                            rewardAmount: 1000,
+                            weekTag: "2024-w01"
+                        )
                         if weeklyRewardManager.pendingReward == nil {
-                            // Set a mock reward for testing if none is pending
-                            weeklyRewardManager.pendingReward = WeeklyRewardManager.WeeklyRewardInfo(
-                                rank: 1,
-                                song: SunoData.mock,
-                                rewardAmount: 1000,
-                                weekTag: "2024-w01"
-                            )
+                            weeklyRewardManager.pendingReward = mockReward
                         }
-                        showWeeklyRewardDialog = true
+                        cachedReward = mockReward
+                        withAnimation {
+                            showWeeklyRewardDialog = true
+                        }
                         #endif
                     }
                 

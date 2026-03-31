@@ -30,7 +30,7 @@ struct ExploreTabViewNew: View {
     @State private var selectedThemeList: ThemeList?
     @State private var showSubscription = false
     @State private var showWeeklyHistory = false
-    @State private var showBillboardIntro = false
+    @Binding var showBillboardIntro: Bool
     @State private var showBillboardCongrats = false
     @State private var songsForYou: [SunoData] = []
     
@@ -137,9 +137,6 @@ struct ExploreTabViewNew: View {
             WeeklyBoardHistoryScreen()
         }
         .overlay {
-            if showBillboardIntro {
-                BillboardIntroDialog(isPresented: $showBillboardIntro)
-            }
             if showBillboardCongrats {
                 BillboardCongratsDialog(isPresented: $showBillboardCongrats, rank: 3, song: communityHottestSongs.first, rewardAmount: WeeklyRewardManager.rewardForRank(3))
             }
@@ -1208,7 +1205,7 @@ struct CommunitySongCard: View {
 // MARK: - Preview
 struct ExploreTabViewNew_Previews: PreviewProvider {
     static var previews: some View {
-        ExploreTabViewNew()
+        ExploreTabViewNew(showBillboardIntro: .constant(false))
         // - [x] Integrate `incrementPlayCount` in `MusicPlayer` `[x]`
         // - [x] Update `ExploreTabViewNew` to show community categories `[x]`
         // - [x] Final walkthrough and verification `[x]`
@@ -1223,10 +1220,10 @@ struct DiscountAdView: View {
     
     var body: some View {
         HStack {
-            Image(systemName: "tag.fill") // Placeholder
+            Image("icon_tag3")
                 .resizable()
+                .scaledToFit()
                 .frame(width: iPadScale(40), height: iPadScale(40))
-                .foregroundColor(AivoTheme.Primary.orange)
                 .padding(iPadScaleSmall(8))
                 .background(Color.white.opacity(0.1))
                 .cornerRadius(iPadScale(8))

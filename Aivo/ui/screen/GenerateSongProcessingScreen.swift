@@ -26,24 +26,41 @@ struct GenerateSongProcessingScreen: View {
         ZStack {
             // Background
             AivoSunsetBackground()
-            VStack(spacing: iPadScaleSmall(40)) {
-                // Header (Close/Cancel button)
-                 HStack {
-                    Spacer()
-                    Button(action: {
-                        showCancelAlert = true
-                    }) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: iPadScale(22)))
+            VStack {
+                VStack(spacing: iPadScaleSmall(12)) {
+                    // Header: Title centered + Close button at trailing
+                    ZStack {
+                        // Close button at trailing
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                showCancelAlert = true
+                            }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: iPadScale(20)))
+                                    .foregroundColor(.white)
+                                    .padding()
+                            }
+                        }
+                        
+                        // Title centered in full width
+                        Text(requestType.displayName)
+                            .font(.system(size: iPadScale(24), weight: .bold))
                             .foregroundColor(.white)
-                            .padding()
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 30)
+                    
+                    // Subtitle close to title
+                    Text("Just a Moment!")
+                        .font(.system(size: iPadScale(16), weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                        .padding(.top, -6)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 10)
                 
-                // Title
-                titleView
+                if SubscriptionManager.shared.isPremium {
+                    Spacer()
+                }
                 
                 // Animation Area
                 animationView
@@ -52,6 +69,16 @@ struct GenerateSongProcessingScreen: View {
                 statusView
                 
                 Spacer()
+                
+                // Native Ad (non-premium only)
+                if !SubscriptionManager.shared.isPremium {
+                    LargeNativeAdContainerView()
+                        .frame(height: iPadScale(280))
+                        .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
+                        .padding(.horizontal, 24)
+                }
+                
+                Spacer().frame(height: 8)
                 
                 // Process in Background Button
                 Button(action: {
@@ -69,8 +96,8 @@ struct GenerateSongProcessingScreen: View {
                                 .stroke(Color.white.opacity(0.5), lineWidth: 1)
                         )
                 }
-                .padding(.horizontal, 40)
-                .padding(.bottom, 50)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 40)
             }
         }
         .onAppear {
@@ -108,23 +135,10 @@ struct GenerateSongProcessingScreen: View {
         }
     }
     
-    // MARK: - Title View
-    private var titleView: some View {
-        VStack(spacing: iPadScaleSmall(8)) {
-            Text(requestType.displayName)
-                .font(.system(size: iPadScale(28), weight: .bold))
-                .foregroundColor(.white)
-            
-            Text("Just a Moment!")
-                .font(.system(size: iPadScale(18), weight: .medium))
-                .foregroundColor(.white)
-        }
-    }
-    
     // MARK: - Animation View
     private var animationView: some View {
-        let animSize: CGFloat = DeviceScale.isIPad ? 440 : 220
-        let lottieSize: CGFloat = DeviceScale.isIPad ? 400 : 200
+        let animSize: CGFloat = DeviceScale.isIPad ? 440 : 240
+        let lottieSize: CGFloat = DeviceScale.isIPad ? 400 : 240
         
         return ZStack {
             Circle()
@@ -143,7 +157,7 @@ struct GenerateSongProcessingScreen: View {
                 )
                 .frame(width: animSize, height: animSize)
         }
-        .padding(.top, 8)
+        .padding(.top, 18)
     }
 
     
@@ -158,7 +172,7 @@ struct GenerateSongProcessingScreen: View {
             Text("(2-5 Min)")
                 .font(.system(size: iPadScale(14), weight: .regular))
                 .foregroundColor(.white.opacity(0.8))
-        }
+        }.padding(.top, 12)
     }
     
     // MARK: - Helper Methods

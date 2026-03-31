@@ -22,7 +22,7 @@ struct GetFreeCreditDialog: View {
     private let dailyRewardAmount: Int = 5
     private let videoRewardAmount: Int = 5
     private let rateRewardAmount: Int = 10
-    private let maxVideoPerDay: Int = 3
+    private let maxVideoPerDay: Int = 5
     
     var body: some View {
         VStack(spacing: 20) {

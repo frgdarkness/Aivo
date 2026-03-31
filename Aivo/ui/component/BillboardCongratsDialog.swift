@@ -16,16 +16,7 @@ struct BillboardCongratsDialog: View {
     }
     
     var body: some View {
-        ZStack {
-            // Semi-transparent background
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-            
-            // Dialog Content
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Crown Icon with Glow (same style as Intro)
                 ZStack {
                     Circle()
@@ -149,23 +140,29 @@ struct BillboardCongratsDialog: View {
                 }
                 .padding(.bottom, iPadScaleSmall(24))
                 
-                // Buttons
                 VStack(spacing: iPadScaleSmall(12)) {
                     Button(action: { isPresented = false }) {
-                        Text("Claim Reward")
-                            .font(.system(size: iPadScale(18), weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, iPadScaleSmall(14))
-                            .background(
-                                LinearGradient(
-                                    colors: [AivoTheme.Primary.orange, AivoTheme.Primary.orangeDark],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
+                        HStack(spacing: 8) {
+                            Image("icon_claim")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: iPadScale(22), height: iPadScale(22))
+                            
+                            Text("Claim Reward")
+                                .font(.system(size: iPadScale(18), weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, iPadScaleSmall(14))
+                        .background(
+                            LinearGradient(
+                                colors: [AivoTheme.Primary.orange, AivoTheme.Primary.orangeDark],
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
-                            .cornerRadius(iPadScale(30))
-                            .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 10, x: 0, y: 5)
+                        )
+                        .cornerRadius(iPadScale(30))
+                        .shadow(color: AivoTheme.Primary.orange.opacity(0.4), radius: 10, x: 0, y: 5)
                     }.padding(.bottom, iPadScaleSmall(12))
                     
 //                    Button(action: { /* Share action */ }) {
@@ -186,12 +183,20 @@ struct BillboardCongratsDialog: View {
                         .fill(AivoTheme.Primary.blackOrangeDark)
                     
                     RoundedRectangle(cornerRadius: iPadScale(32))
-                        .stroke(LinearGradient(colors: [.orange.opacity(0.6), .clear, .orange.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.orange, .orange.opacity(0.5), .orange],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 4
+                        )
                 }
             )
+            .clipShape(RoundedRectangle(cornerRadius: iPadScale(32)))
             .padding(.horizontal, DeviceScale.isIPad ? 100 : 20)
+            .shadow(color: .orange.opacity(0.25), radius: 15)
             .shadow(color: .black.opacity(0.5), radius: 40)
-        }
     }
     
     private func compactRewardRow(rank: String, credit: String) -> some View {

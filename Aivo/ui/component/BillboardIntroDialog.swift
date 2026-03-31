@@ -4,16 +4,7 @@ struct BillboardIntroDialog: View {
     @Binding var isPresented: Bool
     
     var body: some View {
-        ZStack {
-            // Semi-transparent background
-            Color.black.opacity(0.8)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    isPresented = false
-                }
-            
-            // Dialog Content
-            VStack(spacing: 0) {
+        VStack(spacing: 0) {
                 // Header with Title and Close Button
                 HStack {
                     Text("New Feature!")
@@ -129,12 +120,20 @@ struct BillboardIntroDialog: View {
                         .fill(AivoTheme.Primary.blackOrangeDark)
                     
                     RoundedRectangle(cornerRadius: iPadScale(32))
-                        .stroke(LinearGradient(colors: [.orange.opacity(0.6), .clear, .orange.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 2)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.orange, .orange.opacity(0.5), .orange],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 4
+                        )
                 }
             )
+            .clipShape(RoundedRectangle(cornerRadius: iPadScale(32)))
             .padding(.horizontal, DeviceScale.isIPad ? 100 : 20)
+            .shadow(color: .orange.opacity(0.25), radius: 15)
             .shadow(color: .black.opacity(0.5), radius: 40)
-        }
     }
     
     private func rewardRow(rank: String, credit: String, isTop: Bool = false) -> some View {

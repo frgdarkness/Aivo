@@ -316,7 +316,7 @@ final class LargeNativeAdUIView: GADNativeAdView {
         addSubview(media)
 
         // ── CTA button (full width, bottom) ──
-        let ctaHeight: CGFloat = 40
+        let ctaHeight: CGFloat = DeviceScale.isIPad ? 54 : 40
         callToActionButton.translatesAutoresizingMaskIntoConstraints = false
         callToActionButton.backgroundColor = UIColor(red: 1.0, green: 0.55, blue: 0.1, alpha: 1.0)
         callToActionButton.setTitleColor(.black, for: .normal)
