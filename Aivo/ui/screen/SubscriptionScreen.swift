@@ -6,6 +6,7 @@ struct SubscriptionScreen: View {
     
     @Environment(\.dismiss) private var dismiss
     @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var dailyGiftManager = DailyGiftManager.shared
     @ObservedObject private var creditManager = CreditManager.shared
     @State private var selectedPlan: Plan = .yearly
     @State private var isPurchasing = false
@@ -16,6 +17,11 @@ struct SubscriptionScreen: View {
     @State private var buttonScale: CGFloat = 1.0
     @State private var glowIntensity: Double = 0.5
     @State private var showBuyCreditDialog = false
+    
+    // Trial Countdown
+    @State private var countdownText: String = ""
+    @State private var trialProgress: Double = 0.0
+    @State private var countdownTimer: Timer?
 
     init(onDismiss: (() -> Void)? = nil) {
         self.onDismiss = onDismiss
@@ -39,9 +45,17 @@ struct SubscriptionScreen: View {
                             .padding(.top, 2)
                             .padding(.bottom, 20)
                         
-                        if subscriptionManager.isPremium, let currentSub = subscriptionManager.currentSubscription {
-                            // Active subscription view
-                            activeSubscriptionView(subscription: currentSub)
+                        if subscriptionManager.isPremium {
+                            if let currentSub = subscriptionManager.currentSubscription {
+                                // Active subscription view (Paid)
+                                activeSubscriptionView(subscription: currentSub)
+                            } else if dailyGiftManager.isPremiumTrialActive {
+                                // Premium Trial view
+                                trialSubscriptionView
+                            } else {
+                                // Fallback to purchase view if state is inconsistent
+                                purchaseView
+                            }
                         } else {
                             // Purchase view
                             purchaseView
@@ -67,6 +81,12 @@ struct SubscriptionScreen: View {
                 await subscriptionManager.fetchProducts()
                 await subscriptionManager.refreshStatus()
             }
+            
+            // Start countdown timer if trial is active
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
         }
         .alert("Purchase Error", isPresented: $showPurchaseError) {
             Button("OK", role: .cancel) { }
@@ -214,7 +234,7 @@ struct SubscriptionScreen: View {
         }
         .padding(.top, iPadScaleSmall(50))
     }
-
+    
     // MARK: - Active Subscription View
     private func activeSubscriptionView(subscription: SubscriptionManager.ActiveSubscription) -> some View {
         VStack(spacing: 0) {
@@ -258,8 +278,139 @@ struct SubscriptionScreen: View {
             creditInfoView
                 .padding(.top, iPadScaleSmall(18))
                 .padding(.bottom, iPadScaleSmall(12))
+        }
+    }
+    
+    // MARK: - Premium Trial View
+    private var trialSubscriptionView: some View {
+        VStack(spacing: 0) {
+            // Title
+            VStack(alignment: .leading, spacing: iPadScaleSmall(8)) {
+                HStack {
+                    Text("Premium Trial")
+                        .font(.system(size: iPadScale(28), weight: .heavy))
+                        .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.4), radius: 6, x: 0, y: 2)
+                    Spacer()
+                }
+                
+                Text("Enjoying limited-time VIP benefits")
+                    .font(.system(size: iPadScale(15), weight: .medium))
+                    .foregroundColor(.white.opacity(0.75))
+            }
+            .padding(.top, iPadScaleSmall(8))
             
-            //Spacer()
+            // Countdown and Progress Bar Card
+            VStack(spacing: 16) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("REMAINING TIME")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundColor(.white.opacity(0.5))
+                        
+                        Text(countdownText)
+                            .font(.system(size: 28, weight: .black, design: .monospaced))
+                            .foregroundColor(AivoTheme.Secondary.goldenSun)
+                    }
+                    Spacer()
+                    
+                    Image(systemName: "timer")
+                        .font(.system(size: 30))
+                        .foregroundColor(AivoTheme.Secondary.goldenSun.opacity(0.8))
+                }
+                
+                // Progress Bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Capsule()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(height: 8)
+                        
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [AivoTheme.Primary.orange, AivoTheme.Secondary.goldenSun],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: geo.size.width * CGFloat(max(0, min(1, trialProgress))), height: 8)
+                            .shadow(color: AivoTheme.Primary.orange.opacity(0.5), radius: 4, x: 0, y: 0)
+                    }
+                }
+                .frame(height: 8)
+            }
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.08))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+            )
+            .padding(.top, 24)
+            
+            // Purchase Options (Users in trial can still buy)
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Want to keep VIP forever?")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                
+                purchaseView
+            }
+            .padding(.top, 32)
+        }
+    }
+    
+    // MARK: - Helper Methods for Trial
+    private func startTimer() {
+        updateTrialStatus()
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            updateTrialStatus()
+        }
+    }
+    
+    private func stopTimer() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+    }
+    
+    private func updateTrialStatus() {
+        guard let expiry = dailyGiftManager.trialExpiryDate else {
+            return
+        }
+        
+        let now = Date()
+        
+        // 1. Update Countdown Text
+        if now >= expiry {
+            countdownText = "00:00:00"
+            trialProgress = 0.0
+            dailyGiftManager.checkTrialExpiry() // Trigger expiry cleanup
+            return
+        }
+        
+        let remaining = expiry.timeIntervalSince(now)
+        let hours = Int(remaining) / 3600
+        let minutes = (Int(remaining) % 3600) / 60
+        let seconds = Int(remaining) % 60
+        
+        countdownText = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        
+        // 2. Update Progress (remaining / total duration)
+        if let start = dailyGiftManager.trialStartDate {
+            let totalDuration = expiry.timeIntervalSince(start)
+            if totalDuration > 0 {
+                // Progress decreases from 1.0 down to 0.0
+                trialProgress = remaining / totalDuration
+            } else {
+                trialProgress = 0.0
+            }
+        } else {
+            // Fallback: Assume 24h total duration if start date is missing
+            let defaultTotal: TimeInterval = 24 * 3600
+            trialProgress = min(1.0, remaining / defaultTotal)
         }
     }
     

@@ -9,6 +9,7 @@ class DailyGiftManager: ObservableObject {
     @Published var lastClaimDate: Date?
     @Published var isPremiumTrialActive: Bool = false
     @Published var trialExpiryDate: Date?
+    @Published var trialStartDate: Date?
     
     // Credit mission states
     @Published var dailyShareClaimed: Bool = false
@@ -17,6 +18,7 @@ class DailyGiftManager: ObservableObject {
     private let streakKey = "DailyGiftStreakCount"
     private let lastClaimDateKey = "DailyGiftLastClaimDate"
     private let trialExpiryKey = "DailyGiftTrialExpiryDate"
+    private let trialStartDateKey = "DailyGiftTrialStartDate"
     private let shareClaimedKey = "DailyGiftShareClaimed"
     private let lastShareDateKey = "DailyGiftLastShareDate"
     
@@ -79,6 +81,9 @@ class DailyGiftManager: ObservableObject {
         }
         if let trialTs = UserDefaults.standard.object(forKey: trialExpiryKey) as? Date {
             trialExpiryDate = trialTs
+        }
+        if let startTs = UserDefaults.standard.object(forKey: trialStartDateKey) as? Date {
+            trialStartDate = startTs
         }
         // Share mission
         dailyShareClaimed = UserDefaults.standard.bool(forKey: shareClaimedKey)
@@ -159,9 +164,14 @@ class DailyGiftManager: ObservableObject {
     
     // MARK: - Trial Premium
     private func activateTrialPremium(hours: Int) {
-        let expiry = Date().addingTimeInterval(TimeInterval(hours * 3600))
+        let now = Date()
+        let expiry = now.addingTimeInterval(TimeInterval(hours * 3600))
+        trialStartDate = now
         trialExpiryDate = expiry
-        saveTrialExpiry()
+        
+        UserDefaults.standard.set(now, forKey: trialStartDateKey)
+        UserDefaults.standard.set(expiry, forKey: trialExpiryKey)
+        
         isPremiumTrialActive = true
         SubscriptionManager.shared.refreshTrialStatus()
         Logger.d("🎁 [DailyGift] 💎 Trial Premium activated for \(hours)h until \(expiry)")
@@ -172,8 +182,10 @@ class DailyGiftManager: ObservableObject {
             if Date() > expiry {
                 Logger.d("🎁 [DailyGift] 💎 Trial Premium expired.")
                 trialExpiryDate = nil
+                trialStartDate = nil
                 isPremiumTrialActive = false
                 saveTrialExpiry()
+                UserDefaults.standard.removeObject(forKey: trialStartDateKey)
                 SubscriptionManager.shared.refreshTrialStatus()
             } else {
                 isPremiumTrialActive = true
@@ -223,11 +235,18 @@ class DailyGiftManager: ObservableObject {
     
     func debugClearTrial() {
         trialExpiryDate = nil
+        trialStartDate = nil
         isPremiumTrialActive = false
         saveTrialExpiry()
+        UserDefaults.standard.removeObject(forKey: trialStartDateKey)
         SubscriptionManager.shared.refreshTrialStatus()
         objectWillChange.send()
         Logger.d("🎁 [DEBUG] Premium Trial cleared")
+    }
+    
+    func debugSetTrial(hours: Int) {
+        activateTrialPremium(hours: hours)
+        objectWillChange.send()
     }
     
     // MARK: - Persistence

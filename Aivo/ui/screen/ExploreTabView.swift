@@ -262,7 +262,7 @@ struct SongRowView: View {
             HStack(spacing: 12) {
                 // Album Art
                 ZStack {
-                    AsyncImage(url: getImageURL(for: song)) { phase in
+                    AsyncImage(url: SunoDataManager.getImageURL(for: song)) { phase in
                         switch phase {
                         case .empty:
                             Image("demo_cover")
@@ -334,15 +334,7 @@ struct SongRowView: View {
         .buttonStyle(.plain)
     }
     
-    private func getImageURL(for song: SunoData) -> URL? {
-        // Check if local cover exists first
-        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-            return localCoverPath
-        }
-        
-        // Fallback to source URL or regular image URL
-        return URL(string: song.sourceImageUrl.isEmpty ? song.imageUrl : song.sourceImageUrl)
-    }
+
     
     private func formatCount(_ count: Int) -> String {
         if count >= 1000000 {

@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import Kingfisher
 
 // MARK: - Shape: Only top corners rounded
 struct TopRoundedRectangle: Shape {
@@ -57,29 +58,15 @@ struct PlayingBannerView: View {
             let shape = TopRoundedRectangle(radius: cornerRadius)
 
             HStack(spacing: iPadScaleSmall(12)) {
-                // Album Art - Check local cover first (for imported songs), then remote URL
-                Group {
-                    if let localCoverURL = SunoDataManager.shared.getLocalCoverPath(for: currentSong.id),
-                       let uiImage = UIImage(contentsOfFile: localCoverURL.path) {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                    } else if !currentSong.imageUrl.isEmpty, let url = URL(string: currentSong.imageUrl) {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        } placeholder: {
-                            Image("demo_cover")
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                        }
-                    } else {
+                KFImage(SunoDataManager.getImageURL(for: currentSong))
+                    .placeholder {
                         Image("demo_cover")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                     }
-                }
+                    .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
                 .frame(width: iPadScale(40), height: iPadScale(40))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 

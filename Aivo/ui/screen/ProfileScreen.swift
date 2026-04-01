@@ -14,7 +14,8 @@ import PhotosUI
 struct ProfileScreen: View {
     @Binding var isPresented: Bool
     @ObservedObject private var creditManager = CreditManager.shared
-    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var subscriptionManager = SubscriptionManager.shared
+    @StateObject private var dailyGiftManager = DailyGiftManager.shared
     @StateObject private var localStorage = LocalStorageManager.shared
     @StateObject private var remoteConfig = RemoteConfigManager.shared
     
@@ -35,6 +36,10 @@ struct ProfileScreen: View {
     #if DEBUG
     @State private var showTestScreen = false
     #endif
+    
+    // Trial Countdown
+    @State private var trialCountdown: String = ""
+    @State private var countdownTimer: Timer?
     
     private var profile: UserProfile {
         localStorage.getLocalProfile()
@@ -58,6 +63,10 @@ struct ProfileScreen: View {
     }
     
     private var memberName: String {
+        if dailyGiftManager.isPremiumTrialActive {
+            return "Premium Trial"
+        }
+        
         guard subscriptionManager.isPremium else {
             return "Basic"
         }
@@ -122,6 +131,10 @@ struct ProfileScreen: View {
              AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_PROFILE)
              checkMailAvailability()
              editingUserName = userName
+             startCountdownTimer()
+        }
+        .onDisappear {
+             stopCountdownTimer()
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionView()
@@ -451,6 +464,16 @@ struct ProfileScreen: View {
                     Text(memberName)
                         .font(.system(size: iPadScale(16), weight: .bold))
                         .foregroundColor(subscriptionManager.isPremium ? Color(red: 1.0, green: 0.4, blue: 0.1) : .white)
+                    
+                    if dailyGiftManager.isPremiumTrialActive && !trialCountdown.isEmpty {
+                        Text(trialCountdown)
+                            .font(.system(size: iPadScale(13), weight: .medium, design: .monospaced))
+                            .foregroundColor(AivoTheme.Secondary.goldenSun)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(4)
+                    }
                 }
             }
             
@@ -767,6 +790,40 @@ struct ProfileScreen: View {
         }
         
         isUploadingAvatar = false
+    }
+    
+    // MARK: - Trial UI Helpers
+    private func startCountdownTimer() {
+        updateTrialCountdown()
+        countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            updateTrialCountdown()
+        }
+    }
+    
+    private func stopCountdownTimer() {
+        countdownTimer?.invalidate()
+        countdownTimer = nil
+    }
+    
+    private func updateTrialCountdown() {
+        guard let expiry = dailyGiftManager.trialExpiryDate else {
+            trialCountdown = ""
+            return
+        }
+        
+        let now = Date()
+        if now >= expiry {
+            trialCountdown = "00:00:00"
+            dailyGiftManager.checkTrialExpiry()
+            return
+        }
+        
+        let remaining = expiry.timeIntervalSince(now)
+        let hours = Int(remaining) / 3600
+        let minutes = (Int(remaining) % 3600) / 60
+        let seconds = Int(remaining) % 60
+        
+        trialCountdown = String(format: "%02d:%02d:%02d", hours, minutes, seconds)
     }
 }
 

@@ -49,6 +49,13 @@ struct PlayMySongScreen: View {
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
         self.initialIndex = initialIndex
+        
+        let initialSong = indexInBounds(initialIndex) ? songs[initialIndex] : nil
+        self._cachedCoverImageURL = State(initialValue: SunoDataManager.getImageURL(for: initialSong))
+    }
+    
+    private func indexInBounds(_ index: Int) -> Bool {
+        return index >= 0 && index < songs.count
     }
 
     private var currentSong: SunoData? { musicPlayer.currentSong }
@@ -209,7 +216,7 @@ struct PlayMySongScreen: View {
                 isFavorite = FavoriteManager.shared.isFavorite(songId: songId)
                 
                 // Cache cover image URL to prevent reload
-                if let coverURL = getImageURLForSong(currentSong) {
+                if let coverURL = SunoDataManager.getImageURL(for: currentSong) {
                     cachedCoverImageURL = coverURL
                 }
             }
@@ -567,7 +574,7 @@ struct PlayMySongScreen: View {
 
     // MARK: - Album Art
     private var albumArtView: some View {
-        let coverURL = cachedCoverImageURL ?? getImageURLForSong(currentSong)
+        let coverURL = cachedCoverImageURL ?? SunoDataManager.getImageURL(for: currentSong)
         
         return Group {
             if let url = coverURL {
@@ -578,13 +585,10 @@ struct PlayMySongScreen: View {
         }
         .frame(width: DeviceScale.isIPad ? 420 : 280, height: DeviceScale.isIPad ? 420 : 280)
         .clipShape(Circle())
-        //.shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-        // Use rotation3DEffect instead of rotationEffect for better GPU performance
         .rotation3DEffect(
             .degrees(isRotating ? 360 : 0),
             axis: (x: 0, y: 0, z: 1), perspective: 2.0
         )
-        // Apply smooth animation mapped to state value to prevent interference from other state changes
         .animation(isRotating ? .linear(duration: 8).repeatForever(autoreverses: false) : .linear(duration: 0), value: isRotating)
     }
 
@@ -592,6 +596,7 @@ struct PlayMySongScreen: View {
         KFImage(url)
             .placeholder { defaultCoverView }
             .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 800, height: 800)))
+            .fade(duration: 0.25)
             .resizable()
             .aspectRatio(contentMode: .fill)
     }
@@ -1142,7 +1147,7 @@ struct PlayMySongScreen: View {
             loadTimestampedLyrics(for: song.id)
             
             // Cache cover image URL on appear
-            if let coverURL = getImageURLForSong(song) {
+            if let coverURL = SunoDataManager.getImageURL(for: song) {
                 cachedCoverImageURL = coverURL
             }
         }
@@ -1397,30 +1402,40 @@ struct PlayMySongScreen: View {
     
     // MARK: - Custom Background
     private var customBackgroundView: some View {
-        GeometryReader { geometry in
+        let bgURL = cachedCoverImageURL ?? SunoDataManager.getImageURL(for: currentSong)
+        
+        return GeometryReader { geometry in
             ZStack {
                 // Nửa trên: Ảnh cover blur
                 VStack {
-                    AsyncImage(url: getImageURLForSong(currentSong)) { image in
-                        image
+                    if let url = bgURL {
+                        KFImage(url)
+                            .placeholder {
+                                Image("demo_cover")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .blur(radius: 20)
+                            }
+                            .setProcessor(BlurImageProcessor(blurRadius: 30).append(another: DownsamplingImageProcessor(size: CGSize(width: 300, height: 300))))
+                            .fade(duration: 0.3)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .blur(radius: 20)
                             .scaleEffect(1.2)
-                            .clipped()  // Clip early to prevent overflow issues
-                    } placeholder: {
+                            .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
+                            .clipped()
+                    } else {
                         Image("demo_cover")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .blur(radius: 20)
                             .scaleEffect(1.2)
+                            .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                             .clipped()
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
-                    .clipped()
                     
                     Spacer()
                 }
+                .clipped()
                 
                 // Nửa dưới: Đen từ 80% để nối tiếp
                 VStack {
@@ -1738,18 +1753,7 @@ struct LyricSentence: Identifiable {
     let words: [AlignedWord]
 }
 
-// MARK: - Helper Functions
-func getImageURLForSong(_ song: SunoData?) -> URL? {
-    guard let song = song else { return nil }
-    
-    // Check if local cover exists first
-    if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-        return localCoverPath
-    }
-    
-    // Fallback to source URL
-    return URL(string: song.sourceImageUrl)
-}
+
 
 // MARK: - Preview
 struct PlayMySongScreen_Previews: PreviewProvider {

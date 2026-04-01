@@ -206,9 +206,9 @@ async function syncPlayCounts() {
 }
 
 /**
- * 3. Scheduled: Sync RTDB play counts to Firestore every 6 hours
+ * 3. Scheduled: Sync RTDB play counts to Firestore every 30 minutes
  */
-exports.syncPlayCountFromRTDB = onSchedule('0 */6 * * *', async (event) => {
+exports.syncPlayCountFromRTDB = onSchedule('*/30 * * * *', async (event) => {
     return await syncPlayCounts();
 });
 

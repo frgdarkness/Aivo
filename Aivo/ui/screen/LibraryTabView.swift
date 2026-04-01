@@ -357,14 +357,13 @@ struct LibrarySongRowView: View {
             HStack(spacing: iPadScaleSmall(12)) {
                 ZStack {
                     // Cover image using Kingfisher for optimized loading
-                    KFImage(getImageURL(for: song))
+                    KFImage(SunoDataManager.getImageURL(for: song))
                         .placeholder {
                             Image("demo_cover")
                                 .resizable()
                                 .scaledToFill()
                         }
                         .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
-                        .cacheMemoryOnly()
                         .resizable()
                         .scaledToFill()
                         .frame(width: coverSize, height: coverSize)
@@ -473,16 +472,7 @@ struct LibrarySong: Identifiable {
     let albumArtColor: Color
 }
 
-// MARK: - Helper Functions
-func getImageURL(for song: SunoData) -> URL? {
-    // Check if local cover exists first
-    if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-        return localCoverPath
-    }
-    
-    // Fallback to source URL
-    return URL(string: song.sourceImageUrl)
-}
+
 
 // MARK: - Preview
 struct LibraryTabView_Previews: PreviewProvider {

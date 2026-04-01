@@ -215,7 +215,7 @@ struct GenerateSunoSongResultScreen: View {
     private var coverImageView: some View {
         ZStack {
             // Cover image from Suno - use getImageURL to support local covers
-            AsyncImage(url: getImageURL(for: currentSong)) { phase in
+            AsyncImage(url: SunoDataManager.getImageURL(for: currentSong)) { phase in
                 switch phase {
                 case .empty:
                     Image("demo_cover")
@@ -490,15 +490,7 @@ struct GenerateSunoSongResultScreen: View {
     }
     
     // MARK: - Helper Methods
-    private func getImageURL(for song: SunoData) -> URL? {
-        // Check if local cover exists first
-        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-            return localCoverPath
-        }
-        
-        // Fallback to source URL or regular image URL
-        return URL(string: song.sourceImageUrl.isEmpty ? song.imageUrl : song.sourceImageUrl)
-    }
+
     
     private func downloadSong(_ song: SunoData) {
         Logger.d("📥 [SunoResult] Starting download for song: \(song.title)")
@@ -742,7 +734,7 @@ struct SunoSongRowView: View {
 
                 ZStack {
                     // Ảnh - Check local first, then use source URL
-                    AsyncImage(url: getImageURL(for: song)) { image in
+                    AsyncImage(url: SunoDataManager.getImageURL(for: song)) { image in
                         image.resizable().scaledToFill()
                     } placeholder: {
                         Image("demo_cover").resizable().scaledToFill()

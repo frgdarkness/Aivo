@@ -339,7 +339,7 @@ private struct SongSelectionDialogCard: View {
                 ForEach(filteredDownloadedSongs, id: \.id) { song in
                     SelectSongRowView(
                         title: song.title,
-                        coverImageUrl: getImageURL(for: song)?.absoluteString ?? "",
+                        coverImageUrl: SunoDataManager.getImageURL(for: song)?.absoluteString ?? "",
                         isRemote: false
                     ) {
                         onSelectSong(.fromSunoData(song), nil)
@@ -380,12 +380,6 @@ private struct SongSelectionDialogCard: View {
         .frame(height: 200)
     }
     
-    private func getImageURL(for song: SunoData) -> URL? {
-        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
-            return localCoverPath
-        }
-        return URL(string: song.sourceImageUrl)
-    }
     
     private func loadDownloadedSongs() {
         isLoading = true
@@ -481,7 +475,6 @@ struct SelectSongRowView: View {
                             .scaledToFill()
                     }
                     .setProcessor(DownsamplingImageProcessor(size: CGSize(width: 240, height: 240)))
-                    .cacheMemoryOnly()
                     .resizable()
                     .scaledToFill()
                     .frame(width: 60, height: 60)

@@ -40,6 +40,9 @@ struct PlayOnlineSongScreen: View {
     init(songs: [SunoData], initialIndex: Int = 0) {
         self.songs = songs
         self.initialIndex = initialIndex
+        
+        let initialSong = (initialIndex >= 0 && initialIndex < songs.count) ? songs[initialIndex] : nil
+        self._cachedCoverImageURL = State(initialValue: SunoDataManager.getImageURL(for: initialSong))
     }
 
     private var currentSong: SunoData? { streamPlayer.currentSong }
@@ -113,7 +116,7 @@ struct PlayOnlineSongScreen: View {
                 checkIfDownloaded(songId: songId)
                 
                 // Cache cover image URL to prevent reload
-                if let coverURL = getImageURLForSong(currentSong) {
+                if let coverURL = SunoDataManager.getImageURL(for: currentSong) {
                     cachedCoverImageURL = coverURL
                 }
             }
@@ -257,7 +260,7 @@ struct PlayOnlineSongScreen: View {
 
     // MARK: - Album Art
     private var albumArtView: some View {
-        let coverURL = cachedCoverImageURL ?? getImageURLForSong(currentSong)
+        let coverURL = cachedCoverImageURL ?? SunoDataManager.getImageURL(for: currentSong)
         
         return Group {
             if let url = coverURL {
@@ -867,7 +870,7 @@ struct PlayOnlineSongScreen: View {
             loadTimestampedLyrics(for: song.id)
             
             // Cache cover image URL on appear
-            if let coverURL = getImageURLForSong(song) {
+            if let coverURL = SunoDataManager.getImageURL(for: song) {
                 cachedCoverImageURL = coverURL
             }
         }
@@ -1113,23 +1116,32 @@ struct PlayOnlineSongScreen: View {
             ZStack {
                 // Nửa trên: Ảnh cover blur
                 VStack {
-                    AsyncImage(url: getImageURLForSong(currentSong)) { image in
-                        image
+                    let bgURL = cachedCoverImageURL ?? SunoDataManager.getImageURL(for: currentSong)
+                    
+                    if let url = bgURL {
+                        KFImage(url)
+                            .placeholder {
+                                Image("demo_cover")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .blur(radius: 20)
+                            }
+                            .setProcessor(BlurImageProcessor(blurRadius: 30).append(another: DownsamplingImageProcessor(size: CGSize(width: 300, height: 300))))
+                            .fade(duration: 0.3)
                             .resizable()
                             .aspectRatio(contentMode: .fill)
-                            .blur(radius: 20)
                             .scaleEffect(1.2)
-                            .clipped()  // Clip early to prevent overflow issues
-                    } placeholder: {
+                            .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
+                            .clipped()
+                    } else {
                         Image("demo_cover")
                             .resizable()
                             .aspectRatio(contentMode: .fill)
                             .blur(radius: 20)
                             .scaleEffect(1.2)
+                            .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
                             .clipped()
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height * 0.6)
-                    .clipped()
                     
                     Spacer()
                 }

@@ -353,6 +353,27 @@ class SunoDataManager {
         return nil
     }
     
+    static func getImageURL(for song: SunoData?) -> URL? {
+        guard let song = song else { return nil }
+        
+        // 1. Priority: Check if local cover exists first
+        if let localCoverPath = SunoDataManager.shared.getLocalCoverPath(for: song.id) {
+            return localCoverPath
+        }
+        
+        // 2. Secondary: Fallback to sourceImageUrl (high-res remote)
+        if !song.sourceImageUrl.isEmpty {
+            return URL(string: song.sourceImageUrl)
+        }
+        
+        // 3. Last resort: Fallback to regular imageUrl (standard remote)
+        if !song.imageUrl.isEmpty {
+            return URL(string: song.imageUrl)
+        }
+        
+        return nil
+    }
+    
     func getLocalCoverPath(for songId: String) -> URL? {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         var searchDirectories = [documentsPath.appendingPathComponent("SunoData")]
