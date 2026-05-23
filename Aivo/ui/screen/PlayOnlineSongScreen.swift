@@ -32,6 +32,8 @@ struct PlayOnlineSongScreen: View {
     @State private var headerHeight: CGFloat = 0
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var showDownloadAccessDialog = false
+    @State private var showExportAccessDialog = false
     @State private var timestampedLyrics: TimestampedLyricsData?
     @State private var lyricSentences: [PlayOnlineLyricSentence] = []
     @State private var currentSentenceIndex: Int = 0
@@ -87,20 +89,59 @@ struct PlayOnlineSongScreen: View {
         }
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionScreenIntro()
-//            if SubscriptionManager.shared.isPremium {
-//                SubscriptionScreen()
-//            } else {
-//                SubscriptionScreenIntro()
-//            }
         }
-        .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
-            Button("Upgrade to Premium", role: .none) {
-                showSubscriptionScreen = true
+        .overlay {
+            if showDownloadAccessDialog {
+                DownloadExportAccessDialog(
+                    action: .download,
+                    onGoPremium: {
+                        showDownloadAccessDialog = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showSubscriptionScreen = true
+                        }
+                    },
+                    onWatchAds: {
+                        showDownloadAccessDialog = false
+                        guard let song = currentSong, !isDownloaded, !isDownloading else { return }
+                        AdManager.shared.showRewardAd { [self] success in
+                            guard success else { return }
+                            self.performDownload(song: song)
+                        }
+                    },
+                    onDismiss: {
+                        showDownloadAccessDialog = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(10)
             }
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("You have used all 3 free downloads for today. Upgrade to Premium for unlimited downloads and VIP features.")
+            if showExportAccessDialog {
+                DownloadExportAccessDialog(
+                    action: .export,
+                    onGoPremium: {
+                        showExportAccessDialog = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showSubscriptionScreen = true
+                        }
+                    },
+                    onWatchAds: {
+                        showExportAccessDialog = false
+                        guard let song = currentSong else { return }
+                        AdManager.shared.showRewardAd { [self] success in
+                            guard success else { return }
+                            self.performExport(song: song)
+                        }
+                    },
+                    onDismiss: {
+                        showExportAccessDialog = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(10)
+            }
         }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: showDownloadAccessDialog)
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: showExportAccessDialog)
         .onAppear { onAppearTasks() }
         .onDisappear {
             // Reset animation state immediately when dismissing to prevent lag
@@ -907,16 +948,11 @@ struct PlayOnlineSongScreen: View {
     private func downloadCurrentSong() {
         guard let song = currentSong, !isDownloaded, !isDownloading else { return }
         
-        // Non-premium users must watch a reward ad before downloading
+        // Non-premium users: show dialog with Go Premium / Watch Ads options
         if !subscriptionManager.isPremium {
-            Logger.d("📢 [Download] Non-premium user, showing reward ad before download...")
-            AdManager.shared.showRewardAd { [self] success in
-                guard success else {
-                    Logger.d("📢 [Download] User skipped reward ad, blocking download")
-                    return
-                }
-                Logger.d("📢 [Download] Reward ad completed, proceeding with download")
-                self.performDownload(song: song)
+            Logger.d("📢 [Download] Non-premium user, showing access dialog...")
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                showDownloadAccessDialog = true
             }
         } else {
             performDownload(song: song)
@@ -957,20 +993,16 @@ struct PlayOnlineSongScreen: View {
     }
 
     private func exportCurrentSong() {
-        guard let song = currentSong else { return }
+        guard currentSong != nil else { return }
         
-        // Non-premium users must watch a reward ad before exporting
+        // Non-premium users: show dialog with Go Premium / Watch Ads options
         if !subscriptionManager.isPremium {
-            Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
-            AdManager.shared.showRewardAd { [self] success in
-                guard success else {
-                    Logger.d("📢 [Export] User skipped reward ad, blocking export")
-                    return
-                }
-                Logger.d("📢 [Export] Reward ad completed, proceeding with export")
-                self.performExport(song: song)
+            Logger.d("📢 [Export] Non-premium user, showing access dialog...")
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                showExportAccessDialog = true
             }
         } else {
+            guard let song = currentSong else { return }
             performExport(song: song)
         }
     }

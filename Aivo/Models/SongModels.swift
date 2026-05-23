@@ -11,6 +11,7 @@ enum RequestType: String, CaseIterable, Codable {
     case buyCredits500 = "buy_500_credits"
     case buyCredits1000 = "buy_1000_credits"
     case buyCredits5000 = "buy_5000_credits"
+    case bonusPromoCode = "bonus_promo_code"
     
     // Legacy case for backward compatibility with old history data
     case shareSong = "share_song"
@@ -35,16 +36,17 @@ enum RequestType: String, CaseIterable, Codable {
             return "Buy 1000 Credits"
         case .buyCredits5000:
             return "Buy 5000 Credits"
+        case .bonusPromoCode:
+            return "Promo Code Bonus"
         case .shareSong:
             return "Share to Community"
         }
     }
     
-    /// Whether this type adds credits (true) or consumes them (false)
     var isCredit: Bool {
         switch self {
         case .bonusPremiumWeekly, .bonusPremiumYearly, .weeklyReward,
-             .buyCredits500, .buyCredits1000, .buyCredits5000:
+             .buyCredits500, .buyCredits1000, .buyCredits5000, .bonusPromoCode:
             return true
         default:
             return false
@@ -71,6 +73,8 @@ enum RequestType: String, CaseIterable, Codable {
             return 1000
         case .buyCredits5000:
             return 5000
+        case .bonusPromoCode:
+            return 100
         case .shareSong:
             return 0
         }

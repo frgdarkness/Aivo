@@ -39,6 +39,7 @@ final class SubscriptionManager: ObservableObject {
     @Published private(set) var currentSubscription: ActiveSubscription?
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var showPromoCodeSuccess: Bool = false
     
     private var isCheckingBonus = false
     
@@ -261,6 +262,11 @@ final class SubscriptionManager: ObservableObject {
 
         // 1) Chỉ sync nếu thực sự cần (tránh sandbox bắt login liên tục)
         await ensureReceiptIfNeeded(force: forceSync)
+
+        // Process unfinished transactions (for promo codes like AIVO_100_CREDITS)
+        for await verification in Transaction.unfinished {
+            await handleUpdate(verification)
+        }
 
         // 2) Thử đọc entitlements trước (nhanh nhất)
         var best: ActiveSubscription?
@@ -564,6 +570,12 @@ final class SubscriptionManager: ObservableObject {
         case .unverified(_, let error):
             Logger.w("handleUpdate: unverified \(error.localizedDescription)")
         case .verified(let transaction):
+            if transaction.productID == "AIVO_100_CREDITS" {
+                Logger.i("handleUpdate: detected AIVO_100_CREDITS promo code claim. txID=\(transaction.id)")
+                await handlePromoCode(transaction)
+                return
+            }
+            
             guard productIDs.contains(transaction.productID) else {
                 Logger.d("handleUpdate: non-sub product \(transaction.productID) → finish")
                 await transaction.finish()
@@ -572,6 +584,51 @@ final class SubscriptionManager: ObservableObject {
             Logger.i("handleUpdate: verified id=\(transaction.id), product=\(transaction.productID)")
             await handleVerified(transaction)
         }
+    }
+    
+    private func handlePromoCode(_ transaction: Transaction) async {
+        let txID = String(transaction.id)
+        Logger.i("handlePromoCode: Process start for tx=\(txID)")
+        
+        if !processedTransactionIDs.insert(txID).inserted {
+            Logger.w("handlePromoCode: Transaction already processed in this session. tx=\(txID)")
+            await transaction.finish()
+            return
+        }
+        
+        let claimedKey = "AIVO_100_CREDITS_CLAIMED_\(txID)"
+        if UserDefaults.standard.bool(forKey: claimedKey) {
+            Logger.w("handlePromoCode: Transaction already claimed previously in UserDefaults. tx=\(txID)")
+            await transaction.finish()
+            return
+        }
+        
+        Logger.i("handlePromoCode: Granting 100 credits for tx=\(txID)")
+        // Add 100 credits
+        let previousBalance = CreditManager.shared.credits
+        await CreditManager.shared.increaseCredits(by: 100)
+        let afterBalance = CreditManager.shared.credits
+        
+        Logger.i("handlePromoCode: Balance updated. Previous=\(previousBalance), After=\(afterBalance)")
+        
+        // Log to history
+        CreditHistoryManager.shared.addRequest(.bonusPromoCode, cost: 100) 
+        Logger.i("handlePromoCode: Added to CreditHistoryManager (.bonusPromoCode)")
+        
+        let profileID = LocalStorageManager.shared.getLocalProfile().profileID
+        await FirestoreService.shared.logBonusCredit(profileID: profileID, amount: 100, reason: "PromoCode_AIVO_100_CREDITS", previousBalance: previousBalance, afterBalance: afterBalance)
+        Logger.i("handlePromoCode: Logged bonus to Firestore for profile=\(profileID)")
+        
+        UserDefaults.standard.set(true, forKey: claimedKey)
+        
+        // Broadcast for UI by setting published var
+        DispatchQueue.main.async {
+            Logger.i("handlePromoCode: Showing PromoCodeSuccessDialog via published state")
+            self.showPromoCodeSuccess = true
+        }
+        
+        await transaction.finish()
+        Logger.i("handlePromoCode: Finished transaction successfully. tx=\(txID)")
     }
 
     private func handleVerified(_ transaction: Transaction) async {

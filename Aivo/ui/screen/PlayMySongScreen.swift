@@ -36,6 +36,7 @@ struct PlayMySongScreen: View {
     @State private var showEqualizer = false
     @State private var showPremiumAlert = false
     @State private var showSubscriptionScreen = false
+    @State private var showExportAccessDialog = false
     @State private var timestampedLyrics: TimestampedLyricsData?
     @State private var lyricSentences: [LyricSentence] = []
     @State private var currentSentenceIndex: Int = 0
@@ -168,20 +169,39 @@ struct PlayMySongScreen: View {
         .fullScreenCover(isPresented: $showSubscriptionScreen) {
             SubscriptionView()
         }
+        .overlay {
+            if showExportAccessDialog {
+                DownloadExportAccessDialog(
+                    action: .export,
+                    onGoPremium: {
+                        showExportAccessDialog = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            showSubscriptionScreen = true
+                        }
+                    },
+                    onWatchAds: {
+                        showExportAccessDialog = false
+                        guard let song = currentSong else { return }
+                        AdManager.shared.showRewardAd { [self] success in
+                            guard success else { return }
+                            self.performExport(song: song)
+                        }
+                    },
+                    onDismiss: {
+                        showExportAccessDialog = false
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(10)
+            }
+        }
+        .animation(.spring(response: 0.3, dampingFraction: 0.85), value: showExportAccessDialog)
         .sheet(isPresented: $showSleepTimer) {
              SleepTimerView()
                  .mediumPresentationDetents()
         }
         .fullScreenCover(isPresented: $showEqualizer) {
              EqualizerView()
-        }
-        .alert("Export Limit Reached", isPresented: $showPremiumAlert) {
-            Button("Upgrade to Premium", role: .none) {
-                showSubscriptionScreen = true
-            }
-            Button("OK", role: .cancel) { }
-        } message: {
-            Text("You have used all 3 free downloads for today. Upgrade to Premium for unlimited downloads and VIP features.")
         }
         .overlay {
             if showEditSheet, let song = currentSong {
@@ -460,9 +480,17 @@ struct PlayMySongScreen: View {
             Divider().background(Color.white.opacity(0.2))
 
             Button {
-                exportCurrentSong()
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                     showMenu = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    if subscriptionManager.isPremium {
+                        exportCurrentSong()
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                            showExportAccessDialog = true
+                        }
+                    }
                 }
             } label: {
                 HStack(spacing: iPadScaleSmall(8)) {
@@ -1175,16 +1203,11 @@ struct PlayMySongScreen: View {
     private func exportCurrentSong() {
         guard let song = currentSong else { return }
         
-        // Non-premium users must watch a reward ad before exporting
+        // Non-premium users: show dialog with Go Premium / Watch Ads options
         if !subscriptionManager.isPremium {
-            Logger.d("📢 [Export] Non-premium user, showing reward ad before export...")
-            AdManager.shared.showRewardAd { [self] success in
-                guard success else {
-                    Logger.d("📢 [Export] User skipped reward ad, blocking export")
-                    return
-                }
-                Logger.d("📢 [Export] Reward ad completed, proceeding with export")
-                self.performExport(song: song)
+            Logger.d("📢 [Export] Non-premium user, showing access dialog...")
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+                showExportAccessDialog = true
             }
         } else {
             performExport(song: song)

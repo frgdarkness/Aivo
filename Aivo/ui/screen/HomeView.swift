@@ -228,6 +228,13 @@ struct HomeView: View {
             }
             .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showWeeklyRewardDialog)
             .zIndex(5000)
+            
+            // 🎉 Promo Code Success Dialog
+            if subscriptionManager.showPromoCodeSuccess {
+                PromoCodeSuccessDialog(isPresented: $subscriptionManager.showPromoCodeSuccess)
+                    .transition(.scale.combined(with: .opacity))
+                    .zIndex(6000)
+            }
         }
     }
     

@@ -374,6 +374,11 @@ struct ExploreTabViewNew: View {
                 Text("New from the Community")
                     .font(.system(size: iPadScale(20), weight: .bold))
                     .foregroundColor(.white)
+                    .onTapGesture {
+                        #if DEBUG
+                        subscriptionManager.showPromoCodeSuccess = true
+                        #endif
+                    }
                 
                 Button(action: {
                     handleReloadCommunity()
