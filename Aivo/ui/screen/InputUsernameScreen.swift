@@ -28,8 +28,9 @@ struct InputUsernameScreen: View {
     }
     
     var body: some View {
-        ZStack {
-            AivoSunsetBackground()
+        VStack(spacing: 0) {
+            ZStack {
+                AivoSunsetBackground()
             
             // Sticker decorations
             GeometryReader { geo in
@@ -76,7 +77,13 @@ struct InputUsernameScreen: View {
                 // Continue Button - matching IntroScreen
                 continueButtonView
             }
-            .padding(.horizontal, iPadScaleSmall(20))
+            .padding(.horizontal, iPadScaleSmall(10))
+            .padding(.top, iPadScaleSmall(68))
+            }
+            .ignoresSafeArea()
+            
+            // Compact native ad at bottom
+            BasicNativeAdView(isCtaButtonOntop: true, isIntroMode: true)
         }
         .onAppear {
             showContent = true
@@ -205,28 +212,19 @@ struct InputUsernameScreen: View {
         )
     }
     
-    // MARK: - Continue Button (matching IntroScreen)
+    // MARK: - Continue Button
     private var continueButtonView: some View {
         Button(action: {
             handleContinue()
         }) {
-            HStack {
-                Text("Continue")
-                    .font(.system(size: iPadScale(17), weight: .semibold))
-                
-                Image(systemName: "arrow.right")
-                    .font(.system(size: iPadScale(17)))
-            }
-            .foregroundColor(.black)
-            .frame(maxWidth: .infinity)
-            .frame(height: iPadScale(50))
-            .background(AivoTheme.Primary.orange)
-            .cornerRadius(iPadScale(12))
-            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+            Text("Continue")
+                .font(.system(size: iPadScale(17), weight: .semibold))
+                .foregroundColor(.white.opacity(0.8))
+                .padding(.vertical, 8)
         }
-        .padding(.bottom, iPadScaleSmall(30))
+        .padding(.bottom, 2)
         .opacity(showButton ? 1 : 0)
-        .offset(y: showButton ? 0 : 40)
+        .offset(y: showButton ? 0 : 20)
         .animation(.easeOut(duration: 0.9).delay(1.0), value: showButton)
     }
     

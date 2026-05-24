@@ -17,9 +17,12 @@ struct RootView: View {
     @StateObject private var userDefaultsManager = UserDefaultsManager.shared
     @ObservedObject private var ratingManager = AppRatingManager.shared
     @State private var toast: SimpleToast? = nil
+    @State private var isFirstOpen: Bool = false
     
     enum AppScreen {
         case splash
+        case preIntro
+        case welcomeBack
         case selectLanguage
         case interview
         case introSample
@@ -34,11 +37,39 @@ struct RootView: View {
             switch currentScreen {
             case .splash:
                 SplashScreenView { nextScreen in
+                    if nextScreen == .preIntro {
+                        isFirstOpen = true
+                    }
                     withAnimation(.easeInOut(duration: 0.3)) {
                         currentScreen = nextScreen
                     }
                 }
                 .transition(.opacity)
+                
+            case .preIntro:
+                PreIntroScreen(
+                    onCompleted: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .introSample
+                        }
+                    },
+                    onSkip: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .introSample
+                        }
+                    }
+                )
+                .transition(.pushFromRight)
+                
+            case .welcomeBack:
+                WelcomeBackScreen(
+                    onContinue: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .subscription
+                        }
+                    }
+                )
+                .transition(.pushFromRight)
                 
             case .selectLanguage:
                 LanguageAwareView {
@@ -97,10 +128,24 @@ struct RootView: View {
                 
             case .subscription:
                 SubscriptionView {
-                    // When subscription screen is dismissed (user taps X), navigate to home
-                    // This allows user to skip subscription and use app with limited features
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        currentScreen = .home
+                    // When subscription screen is dismissed, show Interstitial Ad based on config
+                    if !SubscriptionManager.shared.isPremium {
+                        let shouldShowAd = isFirstOpen || RemoteConfigManager.shared.enableInterAdAfterSubScreenFromSecondOpen
+                        if shouldShowAd {
+                            AdManager.shared.showInterAd { _ in
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    currentScreen = .home
+                                }
+                            }
+                        } else {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentScreen = .home
+                            }
+                        }
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            currentScreen = .home
+                        }
                     }
                 }
                 .transition(.pushFromRight)
@@ -295,11 +340,23 @@ extension SplashScreenView {
                 AppOpenAdManager.shared.preloadAppOpenAd { success in
                     Logger.d("📢 Splash: App Open Ad preload result: \(success)")
                 }
+                
+                // Fetch Remote Config AND Preload Interstitial concurrently
+                Logger.d("🔄 Fetching Remote Config and preloading Interstitial...")
+                async let fetchConfig: () = remoteConfigManager.fetchRemoteConfig()
+                async let preloadInter: () = withCheckedContinuation { continuation in
+                    Task { @MainActor in
+                        AdManager.shared.preloadInterstitial { _ in
+                            continuation.resume()
+                        }
+                    }
+                }
+                
+                _ = await (fetchConfig, preloadInter)
+            } else {
+                Logger.d("🔄 Fetching Remote Config...")
+                await remoteConfigManager.fetchRemoteConfig()
             }
-            
-            // Fetch remote config
-            Logger.d("🔄 Fetching Remote Config...")
-            await remoteConfigManager.fetchRemoteConfig()
             
             // Update progress
             await MainActor.run {
@@ -321,28 +378,33 @@ extension SplashScreenView {
                 Logger.d("🔍 Splash: isPremium = \(SubscriptionManager.shared.isPremium)")
                 
                 if userDefaultsManager.shouldShowIntro() {
-                    // First time: Show interview first, then intro, then subscription
-                    nextScreen = .interview
-                    Logger.d("🔍 Splash: Navigating to interview (first time)")
+                    // First time: Show preIntro
+                    nextScreen = .preIntro
+                    Logger.d("🔍 Splash: Navigating to preIntro (first time)")
                 } else if !SubscriptionManager.shared.isPremium {
-                    // Not first time, but not subscribed: Show subscription directly
-                    nextScreen = .subscription
-                    Logger.d("🔍 Splash: Navigating to subscription (user not subscribed)")
+                    // Not first time, but not subscribed: Show welcomeBack
+                    nextScreen = .welcomeBack
+                    Logger.d("🔍 Splash: Navigating to welcomeBack (user not subscribed)")
                 } else {
                     // User is subscribed: Go to home
                     nextScreen = .home
                     Logger.d("🔍 Splash: Navigating to home (user is premium)")
                 }
                 
-                // Show App Open Ad before navigating (only for non-premium returning users)
-                if !SubscriptionManager.shared.isPremium && !userDefaultsManager.shouldShowIntro() {
-                    Logger.d("📢 Splash: Showing App Open Ad before navigation...")
-                    AppOpenAdManager.shared.showAppOpenAd { _ in
-                        Logger.d("📢 Splash: App Open Ad dismissed, navigating to \(nextScreen)")
+                // Show Interstitial Ad before navigating (only for non-premium users)
+                if !SubscriptionManager.shared.isPremium {
+                    if AdManager.shared.interstitial != nil {
+                        Logger.d("📢 Splash: Showing Interstitial Ad before navigation...")
+                        AdManager.shared.showInterAd { _ in
+                            Logger.d("📢 Splash: Interstitial Ad dismissed, navigating to \(nextScreen)")
+                            onSplashCompleted(nextScreen)
+                        }
+                    } else {
+                        Logger.d("📢 Splash: Interstitial Ad not loaded, skipping...")
                         onSplashCompleted(nextScreen)
                     }
                 } else {
-                    // Premium user or first-time user: skip ad
+                    // Premium user: skip ad
                     onSplashCompleted(nextScreen)
                 }
             }

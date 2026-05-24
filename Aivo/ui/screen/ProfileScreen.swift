@@ -250,6 +250,8 @@ struct ProfileScreen: View {
                     Text(userName)
                         .font(.system(size: iPadScale(20), weight: .bold))
                         .foregroundColor(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                     
                     Button(action: {
                         editingUserName = userName

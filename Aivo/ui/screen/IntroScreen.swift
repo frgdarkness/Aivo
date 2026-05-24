@@ -13,47 +13,57 @@ struct IntroScreen: View {
     @State private var selectedSong: SunoData?
     @State private var processingTask: Task<Void, Never>?
     
+    @ObservedObject private var remoteConfig = RemoteConfigManager.shared
+    
     var body: some View {
-        ZStack {
-            // Background
-            AivoSunsetBackground()
-            
-            VStack(spacing: 0) {
-                // Header
-                headerView
+        VStack(spacing: 0) {
+            ZStack {
+                // Background
+                AivoSunsetBackground()
                 
-                // Content based on current step
-                contentView
-                
-                Spacer()
-                
-                // Continue Button
-                continueButton
-            }
-            .padding(.horizontal, iPadScaleSmall(20))
-            .padding(.top, iPadScaleSmall(50))
-            
-            // Skip button - top right
-            VStack {
-                HStack {
+                VStack(spacing: 0) {
+                    // Header
+                    headerView
+                        .padding(.top, 20)
+                    
                     Spacer()
-                    Button(action: {
-                        onSkip()
-                    }) {
-                        Text("Skip")
-                            .font(.system(size: iPadScale(15), weight: .medium))
-                            .foregroundColor(.white.opacity(0.7))
-                            .padding(.horizontal, iPadScaleSmall(16))
-                            .padding(.vertical, iPadScaleSmall(8))
-                            .background(Color.white.opacity(0.1))
-                            .cornerRadius(iPadScale(20))
-                    }
-                    .padding(.trailing, iPadScaleSmall(20))
-                    .padding(.top, iPadScaleSmall(16))
+                    
+                    // Content based on current step
+                    contentView
+                    
+                    Spacer()
+                    
+                    // Continue Button
+                    continueButton
                 }
-                Spacer()
-            }
-        }
+                
+                // Skip button - top right
+                if remoteConfig.enableSkipIntro {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                onSkip()
+                            }) {
+                                Text("Skip")
+                                    .font(.system(size: iPadScale(15), weight: .medium))
+                                    .foregroundColor(.white.opacity(0.7))
+                                    .padding(.horizontal, iPadScaleSmall(16))
+                                    .padding(.vertical, iPadScaleSmall(8))
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(iPadScale(20))
+                            }
+                            .padding(.trailing, iPadScaleSmall(20))
+                            .padding(.top, iPadScaleSmall(16))
+                        }
+                        Spacer()
+                    }
+                }
+            } // End ZStack
+            
+            // Native Ad at bottom
+            BasicNativeAdView(isCtaButtonOntop: true, isIntroMode: true, reloadTrigger: currentStep)
+        } // End Main VStack
         .onAppear {
             // Log screen view to both Firebase and AppsFlyer
             AnalyticsLogger.shared.logScreenView(AnalyticsLogger.EVENT.EVENT_SCREEN_INTRO)
@@ -166,24 +176,33 @@ struct IntroScreen: View {
     
     // MARK: - Continue Button
     private var continueButton: some View {
-        Button(action: handleContinue) {
-            HStack {
-                Text("Continue")
-                    .font(.system(size: iPadScale(17), weight: .semibold))
-                
-                Image(systemName: "arrow.right")
-                    .font(.system(size: iPadScale(17)))
+        HStack {
+            Button(action: handleBack) {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left")
+                    Text("Prev")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
             }
-            .foregroundColor(.black)
-            .frame(maxWidth: .infinity)
-            .frame(height: iPadScale(50))
-            .background(AivoTheme.Primary.orange)
-            .cornerRadius(iPadScale(12))
-            .shadow(color: AivoTheme.Shadow.orange, radius: 10, x: 0, y: 0)
+            .opacity(currentStep > 1 ? 1 : 0)
+            .disabled(currentStep <= 1)
+            
+            Spacer()
+            
+            Button(action: handleContinue) {
+                HStack(spacing: 4) {
+                    Text(currentStep == 3 ? "Start" : "Next")
+                    Image(systemName: "chevron.right")
+                }
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.white)
+            }
+            .disabled(!canContinue)
+            .opacity(canContinue ? 1.0 : 0.3)
         }
-        .disabled(!canContinue)
-        .opacity(canContinue ? 1.0 : 0.6)
-        .padding(.bottom, iPadScaleSmall(30))
+        .padding(.horizontal, 24)
+        .padding(.bottom, 12)
     }
     
     // MARK: - Computed Properties
@@ -207,6 +226,14 @@ struct IntroScreen: View {
             return nil
         }
         return SongCreationData(mood: mood, genre: genre, theme: theme)
+    }
+    
+    private func handleBack() {
+        if currentStep > 1 {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentStep -= 1
+            }
+        }
     }
     
     // MARK: - Actions
@@ -305,10 +332,10 @@ struct MoodSelectionView: View {
     @Binding var selectedMood: SongMood?
     
     var body: some View {
-        VStack(spacing: iPadScaleSmall(30)) {
+        VStack(spacing: iPadScaleSmall(40)) {
             // Step indicator
             VStack(spacing: iPadScaleSmall(8)) {
-                Text("STEP I")
+                Text("STEP 1")
                     .font(.system(size: iPadScale(28), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 
@@ -318,14 +345,17 @@ struct MoodSelectionView: View {
             }
             
             // Mood options
-            VStack(spacing: iPadScaleSmall(16)) {
-                ForEach(SongMood.getIntroList(), id: \.self) { mood in
-                    MoodOptionButton(
-                        mood: mood,
-                        isSelected: selectedMood == mood,
-                        action: { selectedMood = mood }
-                    )
+            ScrollView {
+                VStack(spacing: iPadScaleSmall(16)) {
+                    ForEach(SongMood.getIntroList(), id: \.self) { mood in
+                        MoodOptionButton(
+                            mood: mood,
+                            isSelected: selectedMood == mood,
+                            action: { selectedMood = mood }
+                        )
+                    }
                 }
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -336,7 +366,7 @@ struct GenreSelectionView: View {
     @Binding var selectedGenre: SongGenre?
     
     var body: some View {
-        VStack(spacing: iPadScaleSmall(30)) {
+        VStack(spacing: iPadScaleSmall(40)) {
             // Step indicator
             VStack(spacing: iPadScaleSmall(8)) {
                 Text("STEP 2")
@@ -349,14 +379,17 @@ struct GenreSelectionView: View {
             }
             
             // Genre options
-            VStack(spacing: iPadScaleSmall(16)) {
-                ForEach(SongGenre.getIntroList(), id: \.self) { genre in
-                    GenreOptionButton(
-                        genre: genre,
-                        isSelected: selectedGenre == genre,
-                        action: { selectedGenre = genre }
-                    )
+            ScrollView {
+                VStack(spacing: iPadScaleSmall(16)) {
+                    ForEach(SongGenre.getIntroList(), id: \.self) { genre in
+                        GenreOptionButton(
+                            genre: genre,
+                            isSelected: selectedGenre == genre,
+                            action: { selectedGenre = genre }
+                        )
+                    }
                 }
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -367,27 +400,30 @@ struct ThemeSelectionView: View {
     @Binding var selectedTheme: SongTheme?
     
     var body: some View {
-        VStack(spacing: iPadScaleSmall(30)) {
+        VStack(spacing: iPadScaleSmall(40)) {
             // Step indicator
             VStack(spacing: iPadScaleSmall(8)) {
                 Text("STEP 3")
                     .font(.system(size: iPadScale(28), weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 
-                Text("WHO is song for?")
+                Text("WHO is the song for?")
                     .font(.system(size: iPadScale(22), weight: .medium))
                     .foregroundColor(.white)
             }
             
             // Theme options
-            VStack(spacing: iPadScaleSmall(16)) {
-                ForEach(SongTheme.getHottest(), id: \.self) { theme in
-                    ThemeOptionButton(
-                        theme: theme,
-                        isSelected: selectedTheme == theme,
-                        action: { selectedTheme = theme }
-                    )
+            ScrollView {
+                VStack(spacing: iPadScaleSmall(16)) {
+                    ForEach(SongTheme.getHottest(), id: \.self) { theme in
+                        ThemeOptionButton(
+                            theme: theme,
+                            isSelected: selectedTheme == theme,
+                            action: { selectedTheme = theme }
+                        )
+                    }
                 }
+                .padding(.horizontal, 20)
             }
         }
     }

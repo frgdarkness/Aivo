@@ -26,6 +26,10 @@ class RemoteConfigManager: ObservableObject {
     // Genre filtering behavior
     @Published var enableTargetNewSongForGenre: Bool = true // Prioritize new/community songs in genre lists
     
+    // Configs from user request
+    @Published var enableInterAdAfterSubScreenFromSecondOpen: Bool = false
+    @Published var enableSkipIntro: Bool = true
+    
     @Published var adminEmail = "hananyogev77@gmail.com"
     @Published var supportUrl = "https://www.google.com/"
     @Published var introSongList: [IntroSongJSON] = []
@@ -75,7 +79,9 @@ class RemoteConfigManager: ObservableObject {
             "ENABLE_RANDOM_PLAY_COUNT": false as NSNumber,
             "RANDOM_PLAY_COUNT_VALUE": 5 as NSNumber,
             "TIME_TO_RECORD_PLAY_COUNT": 30 as NSNumber,
-            "ENABLE_TARGET_NEW_SONG_FOR_GENRE": false as NSNumber
+            "ENABLE_TARGET_NEW_SONG_FOR_GENRE": false as NSNumber,
+            "ENABLE_INTER_AD_AFTER_SUBSCREEN_FROM_SECOND_OPEN": false as NSNumber,
+            "ENABLE_SKIP_INTRO": true as NSNumber
         ]
         
         remoteConfig.setDefaults(defaults)
@@ -189,6 +195,16 @@ class RemoteConfigManager: ObservableObject {
                 let enableTargetNewSongValue = remoteConfig.configValue(forKey: "ENABLE_TARGET_NEW_SONG_FOR_GENRE").boolValue
                 enableTargetNewSongForGenre = enableTargetNewSongValue
                 Logger.d("### RemoteConfigManager: ENABLE_TARGET_NEW_SONG_FOR_GENRE: \(enableTargetNewSongForGenre)")
+                
+                let enableInterAdSecondOpen = remoteConfig.configValue(forKey: "ENABLE_INTER_AD_AFTER_SUBSCREEN_FROM_SECOND_OPEN").boolValue
+                enableInterAdAfterSubScreenFromSecondOpen = enableInterAdSecondOpen
+                Logger.d("### RemoteConfigManager: ENABLE_INTER_AD_AFTER_SUBSCREEN_FROM_SECOND_OPEN: \(enableInterAdAfterSubScreenFromSecondOpen)")
+                
+                // For ENABLE_SKIP_INTRO, if it's missing it defaults to false, but we want true if it's not set.
+                // However we already set default to true in setupRemoteConfig.
+                let enableSkipIntroValue = remoteConfig.configValue(forKey: "ENABLE_SKIP_INTRO").boolValue
+                enableSkipIntro = enableSkipIntroValue
+                Logger.d("### RemoteConfigManager: ENABLE_SKIP_INTRO: \(enableSkipIntro)")
             }
             
             // Always try to activate, even if fetch didn't get new data

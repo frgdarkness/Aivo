@@ -50,12 +50,12 @@ class DailyGiftManager: ObservableObject {
     
     let dayRewards: [DayReward] = [
         DayReward(credits: 5,  trialHours: 0),   // Day 1
-        DayReward(credits: 5,  trialHours: 0),   // Day 2
-        DayReward(credits: 10, trialHours: 0),   // Day 3
-        DayReward(credits: 10, trialHours: 1),   // Day 4: 1h premium
-        DayReward(credits: 15, trialHours: 0),   // Day 5
-        DayReward(credits: 15, trialHours: 0),   // Day 6
-        DayReward(credits: 20, trialHours: 24),  // Day 7: 1 day premium
+        DayReward(credits: 10, trialHours: 0),   // Day 2
+        DayReward(credits: 15, trialHours: 0),   // Day 3
+        DayReward(credits: 20, trialHours: 1),   // Day 4: 1h premium
+        DayReward(credits: 25, trialHours: 0),   // Day 5
+        DayReward(credits: 30, trialHours: 0),   // Day 6
+        DayReward(credits: 50, trialHours: 24),  // Day 7: 1 day premium
     ]
     
     /// The day number waiting to be claimed (1-7), or 0 if streak complete
