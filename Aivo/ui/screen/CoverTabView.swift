@@ -39,6 +39,7 @@ struct CoverTabView: View {
     @State private var showBackgroundBusyAlert = false
     @State private var showPremiumFeatureDialog = false
     @State private var isFreeTryCover = false
+    @State private var isVIPTrialAdWatched = false
     @State private var showInsufficientCreditsDialog = false
     @ObservedObject private var profileManager = ProfileManager.shared
     
@@ -73,7 +74,7 @@ struct CoverTabView: View {
                 songNameSection
 
                 // Native Ad above Language (non-premium only)
-                if !SubscriptionManager.shared.isPremium {
+                if !SubscriptionManager.shared.isAdFree {
                     NativeAdContainerView()
                         .frame(height: iPadScale(150))
                         .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
@@ -542,7 +543,7 @@ struct CoverTabView: View {
             .opacity((!isGenerateEnabled) ? 0.5 : 1.0)
             .shadow(color: (isGenerateEnabled && hasEnoughCreditsForCover) ? AivoTheme.Shadow.orange : Color.clear, radius: 10, x: 0, y: 0)
         }
-        .disabled(!isGenerateEnabled || !hasEnoughCreditsForCover)
+        .disabled(!isGenerateEnabled)
     }
     
     private var hasEnoughCreditsForCover: Bool {
@@ -568,9 +569,29 @@ struct CoverTabView: View {
         }
         
         // Check subscription first
-        guard subscriptionManager.isPremium || isFreeTryCover else {
-            showPremiumFeatureDialog = true
-            return
+        if subscriptionManager.isVIPTrialActive {
+            if !isVIPTrialAdWatched {
+                // First check credits (they must have enough credits)
+                guard creditManager.credits >= creditsRequired else {
+                    showInsufficientCreditsDialog = true
+                    return
+                }
+                
+                // Show reward ad
+                AdManager.shared.showRewardAd { success in
+                    guard success else { return }
+                    DispatchQueue.main.async {
+                        self.isVIPTrialAdWatched = true
+                        self.generateCoverSong()
+                    }
+                }
+                return
+            }
+        } else if !subscriptionManager.isAdFree {
+            guard isFreeTryCover else {
+                showPremiumFeatureDialog = true
+                return
+            }
         }
         
         // Check credits before starting (skip for free trial)
@@ -660,6 +681,10 @@ struct CoverTabView: View {
                     profileManager.markFreeCoverGenerationUsed()
                     isFreeTryCover = false
                     AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_COVER)
+                }
+                
+                if isVIPTrialAdWatched {
+                    isVIPTrialAdWatched = false
                 }
             }
         }

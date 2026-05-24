@@ -457,9 +457,9 @@ final class AdManager: NSObject, ObservableObject {
     
     /// Trigger interstitial ad based on count and time interval from Remote Config
     func countEventToTriggerShowInterAds(completion: (() -> Void)? = nil) {
-        // Skip for premium users
-        guard !SubscriptionManager.shared.isPremium else {
-            Logger.d("📢 [InterAd] Skipping: User is premium")
+        // Skip for ad-free users
+        guard !SubscriptionManager.shared.isAdFree else {
+            Logger.d("📢 [InterAd] Skipping: User is ad-free premium")
             completion?()
             return
         }

@@ -112,7 +112,7 @@ struct PlayMySongScreen: View {
                 }
                 
                 // Banner Ad at very bottom, full width, for non-premium users
-                if !subscriptionManager.isPremium {
+                if !subscriptionManager.isAdFree {
                     BannerAdView()
                         .frame(height: 50)
                         .frame(maxWidth: .infinity)

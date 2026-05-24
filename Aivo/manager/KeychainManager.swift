@@ -232,4 +232,14 @@ final class KeychainManager {
         }
         return str == "1"
     }
+    
+    func delete(forKey key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(query as CFDictionary)
+        Logger.d("KeychainManager: Deleted \(key) from Keychain")
+    }
 }

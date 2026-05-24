@@ -126,6 +126,7 @@ struct GenerateLyricsScreen: View {
     @State private var showServerErrorAlert = false
     @State private var showResultScreen = false
     @State private var showPremiumFeatureDialog = false
+    @State private var isVIPTrialAdWatched = false
 
     var body: some View {
         ZStack {
@@ -149,7 +150,7 @@ struct GenerateLyricsScreen: View {
                     .padding(.bottom, iPadScaleSmall(16))
                 
                 // Banner Ad at very bottom, full width edge-to-edge, for non-premium users
-                if !subscriptionManager.isPremium {
+                if !subscriptionManager.isAdFree {
                     BannerAdView()
                         .frame(height: 50)
                         .frame(maxWidth: .infinity)
@@ -262,7 +263,7 @@ struct GenerateLyricsScreen: View {
              // Input Section (always shown)
              inputSection
              
-             if !subscriptionManager.isPremium {
+             if !subscriptionManager.isAdFree {
                  NativeAdContainerView()
                      .frame(height: iPadScale(150))
                      .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
@@ -771,24 +772,45 @@ struct GenerateLyricsScreen: View {
     }
     
     private func generateLyrics() {
-        // Check premium status
-        let canFreeTry = !subscriptionManager.isPremium && remoteConfig.enableFreeFirstTime && !profileManager.hasUsedFreeLyricGeneration
-
-        guard subscriptionManager.isPremium || canFreeTry else {
-            // Non-premium, no free trial → show dialog
-            showPremiumFeatureDialog = true
-            return
-        }
-        
-        if canFreeTry {
-            // Has free trial → show dialog with Try Free option
-            showPremiumFeatureDialog = true
-            return
-        }
-
-        // Premium user → check credits
         let baseCost = config.mode == .simple ? 10 : (config.mode == .custom ? 15 : 20)
         let totalCost = baseCost * config.lyricCount
+
+        // 1. VIP Trial user gating (must watch reward ad, but uses credits)
+        if subscriptionManager.isVIPTrialActive {
+            if !isVIPTrialAdWatched {
+                // First check credits (they must have enough credits)
+                guard creditManager.credits >= totalCost else {
+                    showInsufficientCreditsAlert = true
+                    return
+                }
+                
+                // Show reward ad
+                AdManager.shared.showRewardAd { success in
+                    guard success else { return }
+                    DispatchQueue.main.async {
+                        self.isVIPTrialAdWatched = true
+                        self.generateLyrics()
+                    }
+                }
+                return
+            }
+        }
+        
+        // 2. Free user gating (must go through free try or show premium dialog)
+        if !subscriptionManager.isVIPTrialActive && !subscriptionManager.isAdFree {
+            let canFreeTry = !subscriptionManager.isPremium && remoteConfig.enableFreeFirstTime && !profileManager.hasUsedFreeLyricGeneration
+            
+            guard canFreeTry else {
+                showPremiumFeatureDialog = true
+                return
+            }
+            
+            // Show premium dialog to watch ad for free trial
+            showPremiumFeatureDialog = true
+            return
+        }
+
+        // 3. Paid premium / VIP trial: check credits
         guard creditManager.credits >= totalCost else {
             showInsufficientCreditsAlert = true
             return
@@ -830,6 +852,9 @@ struct GenerateLyricsScreen: View {
                         profileManager.markFreeLyricGenerationUsed()
                         AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_LYRIC)
                     } else {
+                        if isVIPTrialAdWatched {
+                            isVIPTrialAdWatched = false
+                        }
                         // Deduct credits only after successful generation
                         Task {
                             await CreditManager.shared.deductForSuccessfulRequest(count: totalCost)

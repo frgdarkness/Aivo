@@ -17,6 +17,13 @@ struct HomeView: View {
     @State private var showDailyGift = false
     @State private var cachedReward: WeeklyRewardManager.WeeklyRewardInfo?
     @StateObject private var dailyGiftManager = DailyGiftManager.shared
+    @State private var showVIPTrialGiftDialog = false
+    @State private var showVIPTrialInfoDialog = false
+    @State private var showYearlyDiscountDialog = false
+    @State private var showWelcomeGiftDialog = false
+    @State private var showFloatingGiftWidget = false
+    @StateObject private var musicPlayer = MusicPlayer.shared
+    @StateObject private var onlinePlayer = OnlineStreamPlayer.shared
     private let hardcodedSunoData: [SunoData] = [
 //        SunoData(
 //            id: "bed102bd-f445-4a14-b5d2-918f0e389d2c",
@@ -104,7 +111,7 @@ struct HomeView: View {
                     bottomNavigationView
                     
                     // Banner Ad at very bottom, below tab bar, full width, for non-premium users
-                    if !subscriptionManager.isPremium {
+                    if !subscriptionManager.isAdFree {
                         BannerAdView()
                             .frame(height: 50)
                             .frame(maxWidth: .infinity)
@@ -235,6 +242,145 @@ struct HomeView: View {
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(6000)
             }
+            
+            // 🕒 Left Floating Indicators Stack (Pro on top, Gift below)
+            if !showProfile && (subscriptionManager.isVIPTrialActive || (!subscriptionManager.isAdFree && showFloatingGiftWidget)) {
+                VStack {
+                    Spacer()
+                    HStack {
+                        VStack(alignment: .leading, spacing: 8) {
+                            if subscriptionManager.isVIPTrialActive {
+                                VIPTrialFloatingIndicator(onTap: {
+                                    withAnimation {
+                                        showVIPTrialInfoDialog = true
+                                    }
+                                })
+                            }
+                            if !subscriptionManager.isAdFree && showFloatingGiftWidget {
+                                YearlyDiscountFloatingIndicator(onTap: {
+                                    withAnimation {
+                                        showYearlyDiscountDialog = true
+                                    }
+                                })
+                                .padding(.bottom, 10)
+                            }
+                        }
+                        .padding(.leading, 16)
+                        .padding(.bottom, (onlinePlayer.currentSong != nil || musicPlayer.currentSong != nil) ? 154 : 94)
+                        Spacer()
+                    }
+                }
+                .ignoresSafeArea(.keyboard)
+                .zIndex(2500)
+            }
+            
+            // 🎁 Yearly Discount Dialog
+            ZStack {
+                if showYearlyDiscountDialog {
+                    Color.black.opacity(0.65)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showYearlyDiscountDialog = false }
+                        }
+                    
+                    YearlyDiscountDialog(isPresented: $showYearlyDiscountDialog)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showYearlyDiscountDialog)
+            .zIndex(7100)
+            
+            // 🎁 Welcome Gift Dialog
+            ZStack {
+                if showWelcomeGiftDialog {
+                    Color.black.opacity(0.65)
+                        .ignoresSafeArea()
+                    
+                    WelcomeGiftDialog(onOpenGift: {
+                        UserDefaults.standard.set(true, forKey: "WelcomeGiftShown")
+                        UserDefaults.standard.set(true, forKey: "showFloatingGiftWidget")
+                        withAnimation {
+                            showWelcomeGiftDialog = false
+                            showFloatingGiftWidget = true
+                            showYearlyDiscountDialog = true
+                        }
+                    })
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showWelcomeGiftDialog)
+            .zIndex(7200)
+            
+            // 🎁 VIP Trial Gift Announcement Dialog
+            ZStack {
+                if showVIPTrialGiftDialog {
+                    Color.black.opacity(0.65)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showVIPTrialGiftDialog = false }
+                        }
+                    
+                    VIPTrialGiftDialog(isPresented: $showVIPTrialGiftDialog)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showVIPTrialGiftDialog)
+            .zIndex(7000)
+            
+            // 🕒 VIP Trial Info Dialog
+            ZStack {
+                if showVIPTrialInfoDialog {
+                    Color.black.opacity(0.65)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation { showVIPTrialInfoDialog = false }
+                        }
+                    
+                    VIPTrialInfoDialog(isPresented: $showVIPTrialInfoDialog)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .animation(.spring(response: 0.4, dampingFraction: 0.7), value: showVIPTrialInfoDialog)
+            .zIndex(8000)
+        }
+        .onAppear {
+            let welcomeShown = UserDefaults.standard.bool(forKey: "WelcomeGiftShown")
+            if !subscriptionManager.isAdFree && !welcomeShown {
+                withAnimation {
+                    showWelcomeGiftDialog = true
+                }
+                showFloatingGiftWidget = false
+            } else {
+                showWelcomeGiftDialog = false
+                showFloatingGiftWidget = UserDefaults.standard.bool(forKey: "showFloatingGiftWidget")
+                
+                // If they completed the welcome gift, but haven't received VIP trial yet, let's run the 1s delay to show VIP Trial
+                let gifted = UserDefaults.standard.bool(forKey: "VIPTrialGifted")
+                if !gifted {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        SubscriptionManager.shared.grantVIPTrialAndCredits()
+                        withAnimation {
+                            showVIPTrialGiftDialog = true
+                        }
+                    }
+                }
+            }
+        }
+        .onChange(of: showYearlyDiscountDialog) { newValue in
+            if !newValue {
+                // If Yearly Discount Dialog was dismissed, check if we need to show VIP Trial
+                let gifted = UserDefaults.standard.bool(forKey: "VIPTrialGifted")
+                if !gifted {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        SubscriptionManager.shared.grantVIPTrialAndCredits()
+                        withAnimation {
+                            showVIPTrialGiftDialog = true
+                        }
+                    }
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowSubscriptionScreen"))) { _ in
+            showSubscription = true
         }
     }
     
@@ -295,12 +441,21 @@ struct HomeView: View {
             Button(action: { showSubscription = true }) {
                 Image(systemName: "crown.fill")
                     .font(.system(size: iPadScale(14), weight: .semibold))
-                    .foregroundColor(SubscriptionManager.shared.isPremium ? .white : .white.opacity(0.7))
+                    .foregroundColor(subscriptionManager.isPremium ? .white : .white.opacity(0.7))
                     .frame(width: iPadScale(32), height: iPadScale(32))
-                    // NỀN: chỉ có khi VIP
+                    // NỀN: đỏ/cam cho Premium, xanh nước biển cho VIP Trial, trong suốt cho Free
                     .background(
                         Group {
-                            if SubscriptionManager.shared.isPremium {
+                            if subscriptionManager.isVIPTrialActive {
+                                LinearGradient(
+                                    gradient: Gradient(colors: [
+                                        Color(red: 0.12, green: 0.53, blue: 0.90),
+                                        Color(red: 0.23, green: 0.87, blue: 0.96)
+                                    ]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            } else if subscriptionManager.isPremium {
                                 LinearGradient(
                                     gradient: Gradient(colors: [
                                         Color(red: 1.0, green: 0.08, blue: 0.05),  // đỏ hơi pha cam
@@ -316,17 +471,23 @@ struct HomeView: View {
                         }
                     )
                     .clipShape(Circle())
-                    // VIỀN: VIP viền đỏ-cam; Non-VIP viền trắng mờ, không nền
+                    // VIỀN:
                     .overlay(
                         Circle().stroke(
-                            SubscriptionManager.shared.isPremium
-                            ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
-                            : Color.white.opacity(0.5),
+                            subscriptionManager.isVIPTrialActive
+                            ? Color(red: 0.12, green: 0.53, blue: 0.90).opacity(0.9)
+                            : (subscriptionManager.isPremium
+                               ? Color(red: 1.0, green: 0.25, blue: 0.05).opacity(0.9)
+                               : Color.white.opacity(0.5)),
                             lineWidth: 1
                         )
                     )
-                    // Bóng nhẹ chỉ khi VIP để nổi bật
-                    .shadow(color: SubscriptionManager.shared.isPremium ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45) : .clear,
+                    // Bóng nhẹ
+                    .shadow(color: subscriptionManager.isVIPTrialActive
+                            ? Color(red: 0.12, green: 0.53, blue: 0.90).opacity(0.45)
+                            : (subscriptionManager.isPremium
+                               ? Color(red: 1.0, green: 0.2, blue: 0.05).opacity(0.45)
+                               : .clear),
                             radius: 8, x: 0, y: 3)
             }
             
@@ -508,6 +669,22 @@ struct HomeView: View {
                     print("❌ [Test] Data corrupted: \(context)")
                 @unknown default:
                     print("❌ [Test] Unknown error")
+                }
+            }
+        }
+    }
+    
+    private func checkAndShowVIPTrialGiftDialog() {
+        let trialActive = subscriptionManager.isVIPTrialActive
+        let gifted = UserDefaults.standard.bool(forKey: "VIPTrialGifted")
+        let shown = UserDefaults.standard.bool(forKey: "VIPTrialGiftDialogShown")
+        
+        if gifted && trialActive && !shown {
+            UserDefaults.standard.set(true, forKey: "VIPTrialGiftDialogShown")
+            // Show with animation after a short delay so the Home screen displays first
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                withAnimation {
+                    showVIPTrialGiftDialog = true
                 }
             }
         }

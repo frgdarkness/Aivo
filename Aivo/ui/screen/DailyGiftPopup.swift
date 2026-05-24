@@ -296,7 +296,7 @@ struct DailyGiftPopup: View {
         var msg = "+\(reward.credits) credits claimed!"
         if reward.trialHours > 0 {
             let label = reward.trialHours >= 24 ? "\(reward.trialHours/24)d" : "\(reward.trialHours)h"
-            msg += " + \(label) Premium"
+            msg += " + \(label) VIP Trial"
         }
         toast = SimpleToast(message: msg, icon: "gift.fill", duration: 2.5)
     }
@@ -365,9 +365,9 @@ struct DaySlotView: View {
                         HStack(spacing: 3) {
                             Text(reward.trialHours >= 24 ? "\(reward.trialHours/24)d VIP" : "\(reward.trialHours)h VIP")
                                 .font(.system(size: iPadScale(10.5), weight: .heavy))
-                                .foregroundColor(.yellow)
+                                .foregroundColor(Color(red: 0.0, green: 0.85, blue: 1.0))
                             Image(systemName: "crown.fill")
-                                .foregroundColor(.yellow)
+                                .foregroundColor(Color(red: 0.0, green: 0.85, blue: 1.0))
                                 .font(.system(size: iPadScale(10.5)))
                         }
                     } else {

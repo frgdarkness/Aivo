@@ -17,8 +17,8 @@ class DailyGiftManager: ObservableObject {
     
     private let streakKey = "DailyGiftStreakCount"
     private let lastClaimDateKey = "DailyGiftLastClaimDate"
-    private let trialExpiryKey = "DailyGiftTrialExpiryDate"
-    private let trialStartDateKey = "DailyGiftTrialStartDate"
+    private let trialExpiryKey = "VIPTrialExpiryDate"
+    private let trialStartDateKey = "VIPTrialStartDate"
     private let shareClaimedKey = "DailyGiftShareClaimed"
     private let lastShareDateKey = "DailyGiftLastShareDate"
     
@@ -162,7 +162,6 @@ class DailyGiftManager: ObservableObject {
         Logger.d("🎁 [DailyGift] Share mission claimed! +10 credits")
     }
     
-    // MARK: - Trial Premium
     private func activateTrialPremium(hours: Int) {
         let now = Date()
         let expiry = now.addingTimeInterval(TimeInterval(hours * 3600))
@@ -172,9 +171,13 @@ class DailyGiftManager: ObservableObject {
         UserDefaults.standard.set(now, forKey: trialStartDateKey)
         UserDefaults.standard.set(expiry, forKey: trialExpiryKey)
         
+        // Mark VIPTrial as gifted/activated to align with launch flow state
+        UserDefaults.standard.set(true, forKey: "VIPTrialGifted")
+        KeychainManager.shared.saveBool(true, forKey: "VIPTrialGifted")
+        
         isPremiumTrialActive = true
         SubscriptionManager.shared.refreshTrialStatus()
-        Logger.d("🎁 [DailyGift] 💎 Trial Premium activated for \(hours)h until \(expiry)")
+        Logger.d("🎁 [DailyGift] 💎 VIP Trial activated for \(hours)h until \(expiry)")
     }
     
     func checkTrialExpiry() {

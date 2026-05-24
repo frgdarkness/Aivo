@@ -24,7 +24,22 @@ final class SubscriptionManager: ObservableObject {
     var isUserPremium: Bool {
         if isStorePremium { return true }
         if let trialExpiry = UserDefaults.standard.object(forKey: "DailyGiftTrialExpiryDate") as? Date {
-            return Date() < trialExpiry
+            if Date() < trialExpiry { return true }
+        }
+        return false
+    }
+    
+    var isVIPTrialActive: Bool {
+        if let expiry = UserDefaults.standard.object(forKey: "VIPTrialExpiryDate") as? Date {
+            return Date() < expiry
+        }
+        return false
+    }
+    
+    var isAdFree: Bool {
+        if isStorePremium { return true }
+        if let trialExpiry = UserDefaults.standard.object(forKey: "DailyGiftTrialExpiryDate") as? Date {
+            if Date() < trialExpiry { return true }
         }
         return false
     }
@@ -47,26 +62,25 @@ final class SubscriptionManager: ObservableObject {
     enum ProductID: String, CaseIterable {
         case weekly = "AIVO_PREMIUM_WEEKLY"
         case yearly = "AIVO_PREMIUM_YEARLY"
+        case yearlyDiscount = "AIVO_PREMIUM_YEARLY_DISCOUNT"
         
-//        case weekly = "aivo.premium.weekly"
-//        case yearly = "aivo.premium.yearly"
-
         var sortOrder: Int {
             switch self {
             case .weekly: return 0
             case .yearly: return 1
+            case .yearlyDiscount: return 2
             }
         }
         var period: SubscriptionPeriod {
             switch self {
             case .weekly: return .weekly
-            case .yearly: return .yearly
+            case .yearly, .yearlyDiscount: return .yearly
             }
         }
         var creditsPerPeriod: Int {
             switch self {
             case .weekly: return 1000  // 1000 credits/tuần
-            case .yearly: return 1200 // 1200 credits/tuần
+            case .yearly, .yearlyDiscount: return 1200 // 1200 credits/tuần
             }
         }
     }
@@ -383,6 +397,49 @@ final class SubscriptionManager: ObservableObject {
 
         // 6) Bonus credit nếu premium
         await checkBonusCreditForSubscription()
+    }
+
+    func checkAndGrantVIPTrial() async {
+        let isTrialGiftedLocal = UserDefaults.standard.bool(forKey: "VIPTrialGifted")
+        let isTrialGiftedKey = KeychainManager.shared.getBool(forKey: "VIPTrialGifted")
+        
+        guard !isTrialGiftedLocal && !isTrialGiftedKey else {
+            return
+        }
+        
+        Logger.i("🎁 checkAndGrantVIPTrial: Granting 1 hour VIP Trial on first open")
+        
+        // 1. Mark as gifted in both UserDefaults and Keychain
+        UserDefaults.standard.set(true, forKey: "VIPTrialGifted")
+        KeychainManager.shared.saveBool(true, forKey: "VIPTrialGifted")
+        
+        // 2. Set expiry date (1 hour from now)
+        let expiryDate = Date().addingTimeInterval(3600)
+        UserDefaults.standard.set(expiryDate, forKey: "VIPTrialExpiryDate")
+        
+        // 3. Determine if offer code transaction AIVO_100_CREDITS was already claimed during refreshStatus
+        var hasClaimedPromoCode = false
+        let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
+        for key in allKeys {
+            if key.hasPrefix("AIVO_100_CREDITS_CLAIMED_") && UserDefaults.standard.bool(forKey: key) {
+                hasClaimedPromoCode = true
+                break
+            }
+        }
+        
+        if hasClaimedPromoCode {
+            // Already claimed 100 credits via handlePromoCode, do NOT gift 60
+            Logger.i("🎁 checkAndGrantVIPTrial: User claimed AIVO_100_CREDITS. Direct gift of 60 credits skipped.")
+            UserDefaults.standard.set(100, forKey: "VIPTrialGiftCreditsAmount")
+        } else {
+            // Direct install, gift 60 credits
+            Logger.i("🎁 checkAndGrantVIPTrial: User is direct install. Gifting 60 credits.")
+            await CreditManager.shared.increaseCredits(by: 60)
+            UserDefaults.standard.set(60, forKey: "VIPTrialGiftCreditsAmount")
+        }
+        
+        // Refresh local trial status immediately
+        self.refreshTrialStatus()
     }
 
     func setPremiumDebug(isPremiumEnable: Bool) {
@@ -772,6 +829,72 @@ final class SubscriptionManager: ObservableObject {
             Logger.i("syncSubscriptionFirestore: success profileID=\(profile.profileID)")
         } catch {
             Logger.e("syncSubscriptionFirestore: error=\(error.localizedDescription)")
+        }
+    }
+    
+    func resetNewUserGiftData() {
+        Logger.i("🗑️ resetNewUserGiftData: Clearing all new user gift/trial data and extra discount status")
+        
+        // 1. Reset VIP Trial Keys
+        UserDefaults.standard.removeObject(forKey: "VIPTrialGifted")
+        UserDefaults.standard.removeObject(forKey: "VIPTrialExpiryDate")
+        UserDefaults.standard.removeObject(forKey: "DailyGiftTrialExpiryDate")
+        UserDefaults.standard.removeObject(forKey: "VIPTrialGiftDialogShown")
+        UserDefaults.standard.removeObject(forKey: "VIPTrialGiftCreditsAmount")
+        UserDefaults.standard.removeObject(forKey: "YearlyDiscountExpiryDate")
+        UserDefaults.standard.removeObject(forKey: "WelcomeGiftShown")
+        UserDefaults.standard.removeObject(forKey: "showFloatingGiftWidget")
+        KeychainManager.shared.delete(forKey: "VIPTrialGifted")
+        
+        // 2. Reset promo keys if any
+        let allKeys = UserDefaults.standard.dictionaryRepresentation().keys
+        for key in allKeys {
+            if key.hasPrefix("AIVO_100_CREDITS_CLAIMED_") {
+                UserDefaults.standard.removeObject(forKey: key)
+            }
+        }
+        // 3. Force check status to update UI
+        Task {
+            await refreshStatus()
+        }
+    }
+    
+    func stopVIPTrialAndGift() {
+        Logger.i("🛑 stopVIPTrialAndGift: Expiring VIP trial and gift countdown instantly for debug")
+        let pastDate = Date().addingTimeInterval(-10)
+        UserDefaults.standard.set(pastDate, forKey: "VIPTrialExpiryDate")
+        UserDefaults.standard.set(pastDate, forKey: "YearlyDiscountExpiryDate")
+        Task {
+            await refreshStatus()
+        }
+    }
+    
+    func grantVIPTrialAndCredits() {
+        let isTrialGiftedLocal = UserDefaults.standard.bool(forKey: "VIPTrialGifted")
+        let isTrialGiftedKey = KeychainManager.shared.getBool(forKey: "VIPTrialGifted")
+        
+        guard !isTrialGiftedLocal && !isTrialGiftedKey else {
+            return
+        }
+        
+        Logger.i("🎁 grantVIPTrialAndCredits: Manually granting 1 hour VIP Trial and credits")
+        
+        // 1. Mark as gifted in both UserDefaults and Keychain
+        UserDefaults.standard.set(true, forKey: "VIPTrialGifted")
+        KeychainManager.shared.saveBool(true, forKey: "VIPTrialGifted")
+        
+        // 2. Set expiry date (1 hour from now)
+        let expiryDate = Date().addingTimeInterval(3600)
+        UserDefaults.standard.set(expiryDate, forKey: "VIPTrialExpiryDate")
+        
+        // 3. Gift 60 credits
+        let giftCredits = 60
+        UserDefaults.standard.set(giftCredits, forKey: "VIPTrialGiftCreditsAmount")
+        
+        // Force check status to update UI
+        Task {
+            await CreditManager.shared.increaseCredits(by: 60)
+            await refreshStatus()
         }
     }
 }

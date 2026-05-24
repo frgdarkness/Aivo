@@ -574,6 +574,30 @@ struct ProfileScreen: View {
                 Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
                 
                 menuRow(
+                    icon: "gift.fill",
+                    title: "Clear New User Gift Data",
+                    showArrow: false,
+                    action: {
+                        subscriptionManager.resetNewUserGiftData()
+                        showToast(message: "Gift data cleared. Restart app.")
+                    }
+                )
+                
+                Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
+                
+                menuRow(
+                    icon: "xmark.octagon.fill",
+                    title: "Stop VIP Trial and Gift",
+                    showArrow: false,
+                    action: {
+                        subscriptionManager.stopVIPTrialAndGift()
+                        showToast(message: "VIP Trial and Gift stopped.")
+                    }
+                )
+                
+                Divider().background(Color.white.opacity(0.1)).padding(.horizontal, 16)
+                
+                menuRow(
                     icon: "exclamationmark.triangle.fill",
                     title: "Test Crashlytics",
                     showArrow: false,

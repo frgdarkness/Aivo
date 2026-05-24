@@ -178,6 +178,34 @@
           "winbackOffers" : [
 
           ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "49.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "89761B88",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Discounted Yearly Membership",
+              "displayName" : "Yearly Discount 45%",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "AIVO_PREMIUM_YEARLY_DISCOUNT",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "AIVO Premium Yearly Discount",
+          "subscriptionGroupID" : "BD6FC9E2",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
         }
       ]
     }

@@ -56,8 +56,9 @@ struct DownloadExportAccessDialog: View {
 
     var body: some View {
         ZStack {
-            // Dimmed backdrop
-            Color.black.opacity(0.65)
+            // Invisible backdrop to catch taps
+            Color.clear
+                .contentShape(Rectangle())
                 .ignoresSafeArea()
                 .onTapGesture { onDismiss() }
 

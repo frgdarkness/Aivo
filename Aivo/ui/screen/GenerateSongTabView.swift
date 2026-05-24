@@ -42,6 +42,7 @@ struct GenerateSongTabView: View {
     @State private var getInspiredCount: Int = 0 // Track "Get Inspired" tap count for reward ad
     @State private var showPremiumFeatureDialog = false // Premium feature dialog
     @State private var isFreeTrySong = false // Whether current generation is a free trial
+    @State private var isVIPTrialAdWatched = false
     @State private var showInsufficientCreditsDialog = false // Insufficient credits dialog
     @State private var showSongNameRequiredAlert = false // Song name required for lyrics mode
     @ObservedObject private var profileManager = ProfileManager.shared
@@ -82,7 +83,7 @@ struct GenerateSongTabView: View {
                 modeSelectionSection
                 
                 // Native Ad above Mood (non-premium only)
-                if !SubscriptionManager.shared.isPremium {
+                if !SubscriptionManager.shared.isAdFree {
                     NativeAdContainerView()
                         .frame(height: iPadScale(150))
                         .clipShape(RoundedRectangle(cornerRadius: iPadScale(12)))
@@ -1166,9 +1167,29 @@ struct GenerateSongTabView: View {
         }
         
         // Check subscription first
-        guard subscriptionManager.isPremium || isFreeTrySong else {
-            showPremiumFeatureDialog = true
-            return
+        if subscriptionManager.isVIPTrialActive {
+            if !isVIPTrialAdWatched {
+                // First check credits (they must have enough credits)
+                guard creditManager.credits >= creditsRequired else {
+                    showInsufficientCreditsDialog = true
+                    return
+                }
+                
+                // Show reward ad
+                AdManager.shared.showRewardAd { success in
+                    guard success else { return }
+                    DispatchQueue.main.async {
+                        self.isVIPTrialAdWatched = true
+                        self.generateSong()
+                    }
+                }
+                return
+            }
+        } else if !subscriptionManager.isAdFree {
+            guard isFreeTrySong else {
+                showPremiumFeatureDialog = true
+                return
+            }
         }
         
         // Check credits before starting (skip for free trial)
@@ -1234,6 +1255,10 @@ struct GenerateSongTabView: View {
             profileManager.markFreeSongGenerationUsed()
             isFreeTrySong = false
             AnalyticsLogger.shared.logEvent(AnalyticsLogger.EVENT.EVENT_FREE_GEN_SONG)
+        }
+        
+        if isVIPTrialAdWatched {
+            isVIPTrialAdWatched = false
         }
     }
     
